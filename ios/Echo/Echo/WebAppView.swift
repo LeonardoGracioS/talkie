@@ -40,6 +40,12 @@ struct WebAppView: UIViewRepresentable {
         // Without this, iOS switches to "playback" mode after TTS and blocks the mic
         configureAudioSession()
 
+        // Clear cached HTML/JS so fresh bundle files always load
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+            modifiedSince: Date.distantPast
+        ) { }
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
