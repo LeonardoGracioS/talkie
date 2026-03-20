@@ -452,7 +452,13 @@ html, body {
    ═══════════════════════════════════════════ */
 
 #view-settings {
+  position:fixed; top:0; left:0; right:0; bottom:0;
   background:var(--bg);
+  z-index:50;
+  display:none; flex-direction:column;
+}
+#view-settings.active {
+  display:flex;
 }
 .settings-header {
   display:flex; align-items:center; gap:12px;
@@ -857,6 +863,11 @@ html, body {
           <div class="settings-row">
             <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
             <button class="toggle-btn" id="toggleEL">Afficher</button>
+          </div>
+          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+            <span class="name" style="margin-bottom:4px;">Voice ID</span>
+            <span class="desc" style="margin-bottom:8px;">ID d'une voix existante (évite de re-cloner)</span>
+            <input class="settings-input" id="settingsVoiceId" type="text" placeholder="Ex: pNInz6obpgDQGcFmaJgB" autocomplete="off" autocapitalize="off" spellcheck="false">
           </div>
         </div>
       </div>
@@ -1651,6 +1662,7 @@ function loadSettings() {
   $('settingsName').value = state.userName;
   $('settingsPrompt').value = state.systemPrompt;
   $('settingsELKey').value = state.elApiKey;
+  $('settingsVoiceId').value = state.voiceId || '';
   $('llmToggle').classList.toggle('active', state.llmEnabled);
   $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
   renderSamples();
@@ -1660,10 +1672,11 @@ function saveSettings() {
   state.userName = $('settingsName').value;
   state.systemPrompt = $('settingsPrompt').value;
   state.elApiKey = $('settingsELKey').value;
+  state.voiceId = $('settingsVoiceId').value.trim();
   save();
 }
 
-[$('settingsName'), $('settingsPrompt'), $('settingsELKey')].forEach(el => {
+[$('settingsName'), $('settingsPrompt'), $('settingsELKey'), $('settingsVoiceId')].forEach(el => {
   el.oninput = saveSettings;
   el.onchange = saveSettings;
 });
