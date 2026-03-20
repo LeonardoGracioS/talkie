@@ -187,7 +187,6 @@ html, body {
   background:linear-gradient(135deg, rgba(91,106,240,0.06) 0%, rgba(91,106,240,0.02) 100%);
   border-radius:var(--radius);
   padding:18px 20px;
-  border-left:4px solid var(--accent);
   margin-bottom:12px; flex-shrink:0;
   min-height:60px;
   transition:box-shadow .3s;
@@ -256,7 +255,6 @@ html, body {
   position:relative;
   overflow:hidden;
   animation:cardFadeIn .4s ease both;
-  border-left:4px solid var(--green);
 }
 .suggestion-card::after {
   content:'';
@@ -283,7 +281,6 @@ html, body {
 }
 .suggestion-card.speaking {
   background:var(--green-soft);
-  border-left-color:var(--green);
   box-shadow:0 0 0 2px var(--green), var(--shadow-card);
   pointer-events:none;
 }
@@ -1267,6 +1264,8 @@ async function playElevenLabsBlob(blob) {
   await playElevenLabsBlobHTML5(blob);
 }
 
+let _speechPollTimer = null;
+
 function speakLocal(text) {
   stopAudio();
   const utterance = new SpeechSynthesisUtterance(text);
@@ -1279,12 +1278,32 @@ function speakLocal(text) {
     || voices.find(v => v.lang.startsWith('fr'));
   if (frVoice) utterance.voice = frVoice;
   currentAudio = { isSpeechSynth: true, utterance };
-  utterance.onend = () => { currentAudio = null; _onTTSDone(); };
-  utterance.onerror = () => { currentAudio = null; _onTTSDone(); };
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearInterval(_speechPollTimer);
+    currentAudio = null;
+    _onTTSDone();
+  };
+
+  utterance.onend = finish;
+  utterance.onerror = finish;
+
+  // iOS WKWebView often doesn't fire onend — poll as fallback
+  clearInterval(_speechPollTimer);
+  _speechPollTimer = setInterval(() => {
+    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+      finish();
+    }
+  }, 300);
+
   speechSynthesis.speak(utterance);
 }
 
 function stopAudio() {
+  clearInterval(_speechPollTimer);
   try { window.webkit?.messageHandlers?.stopNativeTTS?.postMessage({}); } catch (_) {}
   if (currentAudio) {
     if (currentAudio.isSpeechSynth) {
