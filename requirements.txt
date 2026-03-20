@@ -1,4 +1,0 @@
-qwen-tts
-gradio>=4.0
-soundfile
-numpy
