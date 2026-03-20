@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F5F6FA">
+<title>Écho</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
+
+:root {
+  --bg: #F5F6FA;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F0F1F5;
+  --accent: #5B6AF0;
+  --accent-light: #7B87F5;
+  --accent-soft: rgba(91,106,240,0.08);
+  --accent-glow: rgba(91,106,240,0.18);
+  --green: #34C785;
+  --green-soft: rgba(52,199,133,0.1);
+  --red: #EF4444;
+  --orange: #F59E0B;
+  --text: #1A1D2E;
+  --text-secondary: #6B7194;
+  --text-tertiary: #A0A5BD;
+  --separator: rgba(26,29,46,0.06);
+  --shadow-sm: 0 1px 4px rgba(26,29,46,0.06);
+  --shadow-md: 0 4px 20px rgba(26,29,46,0.08);
+  --shadow-card: 0 2px 12px rgba(26,29,46,0.06), 0 0 0 1px rgba(26,29,46,0.03);
+  --shadow-card-active: 0 1px 4px rgba(26,29,46,0.08);
+  --radius: 20px;
+  --radius-sm: 14px;
+  --font: 'DM Sans', -apple-system, system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none; user-select:none; }
+textarea, input { -webkit-user-select:text; user-select:text; }
+
+html, body {
+  height:100%; overflow:hidden;
+  background:var(--bg); color:var(--text);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+}
+
+#app {
+  display:flex; flex-direction:column;
+  height:100vh; height:100dvh;
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  opacity:0; transition:opacity .4s ease;
+}
+
+.view { display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0; }
+.view.active { display:flex; }
+
+/* ─── Splash ─── */
+#splash {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:linear-gradient(145deg, #5B6AF0 0%, #7B87F5 50%, #A5AEFF 100%);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  z-index:999; transition:opacity .6s ease;
+}
+#splash.hidden { opacity:0; pointer-events:none; }
+.splash-icon {
+  width:96px; height:96px;
+  background:rgba(255,255,255,0.18); border-radius:28px;
+  display:flex; align-items:center; justify-content:center;
+  animation:splashPulse 1.4s ease-in-out infinite alternate;
+  backdrop-filter:blur(10px);
+}
+.splash-icon svg { width:52px; height:52px; fill:white; }
+@keyframes splashPulse {
+  from { transform:scale(0.94); opacity:0.85; }
+  to { transform:scale(1); opacity:1; }
+}
+.splash-title {
+  font:800 36px var(--font); color:white;
+  margin-top:20px; letter-spacing:-0.5px;
+}
+.splash-sub {
+  font:500 15px var(--font); color:rgba(255,255,255,0.75);
+  margin-top:6px;
+}
+
+/* ─── Toast ─── */
+#toast {
+  position:fixed; top:calc(var(--safe-top) + 16px); left:50%;
+  transform:translateX(-50%) translateY(-80px);
+  padding:12px 24px; border-radius:var(--radius-sm);
+  background:var(--text); color:white;
+  font:600 15px var(--font);
+  z-index:200; transition:transform .3s ease;
+  box-shadow:0 8px 32px rgba(0,0,0,0.2);
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════════
+   MAIN VIEW — SUGGESTIONS
+   ═══════════════════════════════════════════ */
+
+#view-suggestions {
+  padding: calc(var(--safe-top) + 12px) 20px calc(var(--safe-bottom) + 12px);
+  display:flex; flex-direction:column; gap:0;
+}
+
+/* ─── Top bar ─── */
+.top-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 0 8px;
+  flex-shrink:0;
+}
+.top-bar-left { display:flex; align-items:center; gap:10px; }
+.top-bar h1 {
+  font:800 22px var(--font); color:var(--text);
+  letter-spacing:-0.3px;
+}
+.settings-btn {
+  width:42px; height:42px; border-radius:50%;
+  border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent-soft); color:var(--accent);
+  transition:background .2s;
+}
+.settings-btn:active { background:var(--accent-glow); }
+.settings-btn svg { width:22px; height:22px; fill:currentColor; }
+
+/* ─── Listening indicator ─── */
+.listening-bar {
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; padding:10px 16px;
+  background:var(--green-soft);
+  border-radius:var(--radius-sm);
+  margin-bottom:10px; flex-shrink:0;
+  transition:background .3s, opacity .3s;
+}
+.listening-bar.inactive {
+  background:var(--separator);
+}
+.listening-bar.inactive .listening-dot { background:var(--text-tertiary); animation:none; }
+.listening-bar.inactive .listening-text { color:var(--text-tertiary); }
+.listening-dot {
+  width:10px; height:10px; border-radius:50%;
+  background:var(--green); flex-shrink:0;
+  animation:dotPulse 1.6s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.4; transform:scale(0.7); }
+}
+.listening-waves {
+  display:flex; align-items:center; gap:2px; height:18px;
+}
+.listening-waves i {
+  display:block; width:3px; border-radius:2px;
+  background:var(--green);
+  animation:waveBar 1.2s ease-in-out infinite;
+}
+.listening-bar.inactive .listening-waves i { background:var(--text-tertiary); animation:none; height:4px !important; }
+.listening-waves i:nth-child(1){height:6px;animation-delay:0s}
+.listening-waves i:nth-child(2){height:12px;animation-delay:.1s}
+.listening-waves i:nth-child(3){height:18px;animation-delay:.2s}
+.listening-waves i:nth-child(4){height:12px;animation-delay:.3s}
+.listening-waves i:nth-child(5){height:6px;animation-delay:.4s}
+@keyframes waveBar {
+  0%,100% { transform:scaleY(0.4); opacity:0.5; }
+  50% { transform:scaleY(1); opacity:1; }
+}
+.listening-text {
+  font:600 14px var(--font); color:var(--green);
+  letter-spacing:0.2px;
+}
+
+/* ─── Context zone (top) ─── */
+.context-zone {
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  padding:18px 20px;
+  box-shadow:var(--shadow-card);
+  margin-bottom:12px; flex-shrink:0;
+  min-height:60px;
+  transition:box-shadow .3s;
+}
+.context-label {
+  font:600 11px var(--font);
+  text-transform:uppercase; letter-spacing:1px;
+  color:var(--text-tertiary);
+  margin-bottom:6px;
+}
+.context-text {
+  font:600 20px/1.35 var(--font);
+  color:var(--text);
+  min-height:27px;
+  word-break:break-word;
+}
+.context-text.interim {
+  color:var(--text-secondary);
+  font-style:italic;
+}
+.context-text.interim::after {
+  content:'';
+  display:inline-block;
+  width:7px; height:7px;
+  background:var(--accent);
+  border-radius:50%;
+  margin-left:6px;
+  animation:blink 1s infinite;
+  vertical-align:middle;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+.context-text.empty {
+  color:var(--text-tertiary);
+  font-weight:500;
+  font-style:italic;
+  font-size:17px;
+}
+
+/* ─── Suggestions zone (center) ─── */
+.suggestions-zone {
+  flex:1; display:flex; flex-direction:column;
+  gap:10px; min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:2px 0;
+}
+
+.suggestion-card {
+  background:var(--bg-card);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  min-height:90px;
+  box-shadow:var(--shadow-card);
+  cursor:pointer;
+  display:flex; align-items:center;
+  font:600 19px/1.4 var(--font);
+  color:var(--text);
+  transition:transform .15s ease, box-shadow .15s ease, background .15s;
+  position:relative;
+  overflow:hidden;
+  animation:cardFadeIn .4s ease both;
+}
+.suggestion-card:nth-child(1) { animation-delay:0s; }
+.suggestion-card:nth-child(2) { animation-delay:.08s; }
+.suggestion-card:nth-child(3) { animation-delay:.16s; }
+@keyframes cardFadeIn {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.suggestion-card:active {
+  transform:scale(0.97);
+  box-shadow:var(--shadow-card-active);
+  background:var(--bg-card-hover);
+}
+.suggestion-card.speaking {
+  background:var(--accent-soft);
+  box-shadow:0 0 0 2px var(--accent), var(--shadow-card);
+  pointer-events:none;
+}
+.suggestion-card.speaking::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  border-radius:var(--radius);
+  box-shadow:0 0 0 2px var(--accent);
+  animation:speakRing 1.5s ease-in-out infinite;
+}
+@keyframes speakRing {
+  0%,100% { opacity:1; }
+  50% { opacity:0.4; }
+}
+
+.suggestion-card.empty {
+  background:var(--separator);
+  min-height:80px;
+  color:transparent;
+  pointer-events:none;
+}
+
+.suggestion-card.loading {
+  background:linear-gradient(90deg, #EDEDF2 25%, #F5F5FA 50%, #EDEDF2 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s ease-in-out infinite;
+  color:transparent; pointer-events:none;
+  min-height:80px;
+}
+@keyframes shimmer {
+  0% { background-position:200% 0; }
+  100% { background-position:-200% 0; }
+}
+
+.suggestions-empty {
+  flex:1; display:flex;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:20px;
+}
+.suggestions-empty-icon { font-size:40px; opacity:0.5; }
+.suggestions-empty-text {
+  font:500 16px var(--font); color:var(--text-tertiary);
+  text-align:center; line-height:1.5;
+}
+
+/* ─── Controls zone (bottom) ─── */
+.controls-zone {
+  display:flex; gap:10px;
+  padding-top:12px; flex-shrink:0;
+}
+.control-btn {
+  flex:1; min-height:58px;
+  border:none; border-radius:var(--radius);
+  font:700 16px var(--font);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .12s, background .2s;
+}
+.control-btn:active { transform:scale(0.96); }
+.control-btn.refresh {
+  background:var(--accent-soft); color:var(--accent);
+}
+.control-btn.refresh:active { background:var(--accent-glow); }
+.control-btn.keyboard {
+  background:var(--bg-card); color:var(--text);
+  box-shadow:var(--shadow-sm);
+}
+.control-btn.keyboard:active { background:var(--bg-card-hover); }
+.control-btn .btn-emoji { font-size:20px; }
+
+/* ─── TTS overlay ─── */
+#ttsOverlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(26,29,46,0.18);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  z-index:80;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+}
+#ttsOverlay.active { opacity:1; pointer-events:auto; }
+.tts-overlay-content {
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+}
+.tts-overlay-icon {
+  width:64px; height:64px; border-radius:50%;
+  background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  animation:speakPulse 1.2s ease-in-out infinite;
+  box-shadow:0 0 40px rgba(91,106,240,0.3);
+}
+.tts-overlay-icon svg { width:32px; height:32px; fill:white; }
+@keyframes speakPulse {
+  0%,100% { transform:scale(1); box-shadow:0 0 40px rgba(91,106,240,0.3); }
+  50% { transform:scale(1.08); box-shadow:0 0 60px rgba(91,106,240,0.5); }
+}
+.tts-overlay-text {
+  font:600 15px var(--font); color:white;
+  text-shadow:0 1px 8px rgba(0,0,0,0.3);
+}
+.tts-stop-btn {
+  margin-top:8px; padding:12px 32px;
+  border:2px solid rgba(255,255,255,0.5);
+  border-radius:var(--radius-sm);
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(8px);
+  color:white; font:700 15px var(--font);
+  cursor:pointer;
+}
+.tts-stop-btn:active { background:rgba(255,255,255,0.25); }
+
+/* ═══════════════════════════════════════════
+   MANUAL MODE
+   ═══════════════════════════════════════════ */
+
+#view-manual {
+  padding: calc(var(--safe-top) + 12px) 20px 12px;
+}
+
+.manual-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 0 14px; flex-shrink:0;
+}
+.manual-back-btn {
+  display:flex; align-items:center; gap:6px;
+  background:none; border:none; cursor:pointer;
+  font:600 16px var(--font); color:var(--accent);
+  padding:8px 4px;
+}
+.manual-back-btn svg { width:20px; height:20px; fill:currentColor; }
+.manual-title { font:800 20px var(--font); color:var(--text); }
+
+.manual-input-wrap {
+  flex:1; display:flex; flex-direction:column; min-height:0;
+}
+.manual-textarea {
+  flex:1; width:100%;
+  background:var(--bg-card);
+  border:2px solid var(--separator);
+  border-radius:var(--radius);
+  padding:20px;
+  font:500 20px/1.45 var(--font);
+  color:var(--text);
+  resize:none;
+  outline:none;
+  min-height:120px;
+  transition:border-color .2s;
+}
+.manual-textarea:focus {
+  border-color:var(--accent);
+}
+.manual-textarea::placeholder {
+  color:var(--text-tertiary);
+}
+
+.manual-speak-btn {
+  margin-top:12px; width:100%;
+  min-height:62px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-light));
+  color:white; font:800 18px var(--font);
+  border:none; border-radius:var(--radius);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 4px 20px rgba(91,106,240,0.3);
+  transition:transform .12s, box-shadow .15s;
+  flex-shrink:0;
+  margin-bottom:calc(var(--safe-bottom) + 4px);
+}
+.manual-speak-btn:active { transform:scale(0.97); box-shadow:0 2px 10px rgba(91,106,240,0.2); }
+.manual-speak-btn .btn-emoji { font-size:22px; }
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+   ═══════════════════════════════════════════ */
+
+.settings-header {
+  display:flex; align-items:center; gap:12px;
+  padding: calc(var(--safe-top) + 8px) 16px 12px;
+  background:rgba(245,246,250,0.92);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  flex-shrink:0; z-index:10;
+  border-bottom:1px solid var(--separator);
+}
+.settings-back-btn {
+  width:40px; height:40px; border-radius:50%;
+  border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.04); color:var(--text-secondary);
+}
+.settings-back-btn:active { background:rgba(0,0,0,0.08); }
+.settings-back-btn svg { width:22px; height:22px; fill:currentColor; }
+.settings-title { font:800 22px var(--font); color:var(--text); }
+
+.settings-scroll {
+  flex:1; overflow-y:auto; padding:16px 16px calc(var(--safe-bottom) + 24px);
+  -webkit-overflow-scrolling:touch;
+}
+.settings-section { margin-bottom:24px; }
+.settings-section-title {
+  font:700 13px var(--font); text-transform:uppercase;
+  letter-spacing:0.8px; color:var(--text-secondary);
+  margin-bottom:10px; padding-left:4px;
+}
+.settings-card {
+  background:var(--bg-card); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm); overflow:hidden;
+}
+.settings-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; gap:12px;
+  border-bottom:1px solid var(--separator);
+}
+.settings-row:last-child { border-bottom:none; }
+.settings-row .label {
+  display:flex; flex-direction:column; gap:2px; flex:1; min-width:0;
+}
+.settings-row .name { font:600 16px var(--font); color:var(--text); }
+.settings-row .desc { font:400 13px var(--font); color:var(--text-secondary); }
+
+/* Toggle */
+.toggle {
+  width:52px; height:32px; border-radius:16px;
+  background:#D1D5E0; border:none; cursor:pointer;
+  position:relative; transition:background .2s; flex-shrink:0;
+}
+.toggle::after {
+  content:''; position:absolute;
+  top:3px; left:3px; width:26px; height:26px;
+  border-radius:50%; background:white;
+  box-shadow:0 1px 4px rgba(0,0,0,0.15);
+  transition:transform .2s;
+}
+.toggle.active { background:var(--accent); }
+.toggle.active::after { transform:translateX(20px); }
+
+/* Settings inputs */
+.settings-input {
+  width:100%; padding:12px 14px;
+  background:var(--bg); border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  font:500 15px var(--font); color:var(--text);
+  outline:none; transition:border-color .2s;
+}
+.settings-input:focus { border-color:var(--accent); }
+.settings-textarea {
+  width:100%; padding:12px 14px; min-height:100px;
+  background:var(--bg); border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  font:500 14px var(--font); color:var(--text);
+  outline:none; resize:vertical; transition:border-color .2s;
+}
+.settings-textarea:focus { border-color:var(--accent); }
+
+.settings-row .api-input {
+  flex:1; padding:10px 12px;
+  background:var(--bg); border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  font:500 14px var(--font); color:var(--text);
+  outline:none; min-width:0;
+}
+.settings-row .api-input:focus { border-color:var(--accent); }
+.settings-row .toggle-btn {
+  padding:8px 12px; border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  background:var(--bg); font:600 13px var(--font);
+  color:var(--accent); cursor:pointer; flex-shrink:0;
+}
+
+.settings-action-btn {
+  width:100%; padding:14px;
+  background:var(--accent-soft); color:var(--accent);
+  font:700 15px var(--font);
+  border:none; border-radius:var(--radius-sm);
+  cursor:pointer; margin-top:10px;
+}
+.settings-action-btn:active { background:var(--accent-glow); }
+.settings-action-btn.danger {
+  background:rgba(239,68,68,0.08); color:var(--red);
+}
+
+/* Voice cloning */
+.sample-card {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px; border-bottom:1px solid var(--separator);
+}
+.sample-card:last-child { border-bottom:none; }
+.sample-play {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--accent-soft); border:none;
+  font-size:14px; cursor:pointer; flex-shrink:0;
+}
+.sample-info { flex:1; min-width:0; }
+.sample-name { font:600 14px var(--font); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sample-meta { font:400 12px var(--font); color:var(--text-tertiary); }
+.sample-delete {
+  width:32px; height:32px; border-radius:50%;
+  background:rgba(239,68,68,0.08); border:none;
+  color:var(--red); font-size:14px; cursor:pointer; flex-shrink:0;
+}
+.voice-badge {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+}
+.voice-badge .icon { font-size:20px; }
+.voice-badge .info { flex:1; min-width:0; }
+.voice-badge .title { font:700 15px var(--font); color:var(--text); }
+.voice-badge .sub { font:400 12px var(--font); color:var(--text-tertiary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.voice-badge .remove {
+  padding:6px 12px; border:1px solid rgba(239,68,68,0.3);
+  border-radius:8px; background:rgba(239,68,68,0.06);
+  color:var(--red); font:600 13px var(--font); cursor:pointer;
+}
+
+/* About */
+.about-box {
+  text-align:center; padding:20px;
+  font:500 13px var(--font); color:var(--text-tertiary);
+  line-height:1.6;
+}
+
+/* ─── Hidden inputs ─── */
+#fileInput { display:none; }
+</style>
+</head>
+<body>
+
+<!-- Splash -->
+<div id="splash">
+  <div class="splash-icon">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+  </div>
+  <div class="splash-title">Écho</div>
+  <div class="splash-sub">Communication assistée</div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<div id="app">
+
+  <!-- ═══ MAIN VIEW: SUGGESTIONS ═══ -->
+  <div id="view-suggestions" class="view active">
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <h1>Écho</h1>
+      </div>
+      <button class="settings-btn" id="settingsBtn">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+      </button>
+    </div>
+
+    <!-- Listening indicator -->
+    <div class="listening-bar inactive" id="listeningBar">
+      <div class="listening-dot"></div>
+      <div class="listening-waves"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="listening-text" id="listeningText">En pause</div>
+    </div>
+
+    <!-- Context zone -->
+    <div class="context-zone">
+      <div class="context-label">L'interlocuteur dit</div>
+      <div class="context-text empty" id="contextText">En attente de parole...</div>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="suggestions-zone" id="suggestionsZone">
+      <div class="suggestions-empty" id="suggestionsEmpty">
+        <div class="suggestions-empty-icon">💬</div>
+        <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-zone">
+      <button class="control-btn refresh" id="btnRefresh">
+        <span class="btn-emoji">🔄</span> Autres idées
+      </button>
+      <button class="control-btn keyboard" id="btnKeyboard">
+        <span class="btn-emoji">⌨️</span> Clavier
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ MANUAL MODE ═══ -->
+  <div id="view-manual" class="view">
+    <div class="manual-header">
+      <button class="manual-back-btn" id="btnBackToSuggestions">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        Retour
+      </button>
+      <div class="manual-title">Saisie libre</div>
+      <div style="width:70px"></div>
+    </div>
+    <div class="manual-input-wrap">
+      <textarea class="manual-textarea" id="manualInput" placeholder="Tapez votre message ici..."></textarea>
+    </div>
+    <button class="manual-speak-btn" id="btnSpeak">
+      <span class="btn-emoji">🗣️</span> PRONONCER
+    </button>
+  </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div id="view-settings" class="view">
+    <div class="settings-header">
+      <button class="settings-back-btn" id="backFromSettingsBtn">
+        <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+      </button>
+      <div class="settings-title">Réglages</div>
+    </div>
+    <div class="settings-scroll">
+
+      <!-- Assistant -->
+      <div class="settings-section">
+        <div class="settings-section-title">Assistant</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Suggestions IA</span>
+              <span class="desc">Proposer des réponses automatiques</span>
+            </div>
+            <button class="toggle active" id="llmToggle"></button>
+          </div>
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Voix locale</span>
+              <span class="desc">Utiliser la voix iOS au lieu d'ElevenLabs</span>
+            </div>
+            <button class="toggle active" id="localTTSToggle"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div class="settings-section">
+        <div class="settings-section-title">Profil</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+            <span class="name" style="margin-bottom:8px;">Nom</span>
+            <input class="settings-input" id="settingsName" type="text" placeholder="Votre nom" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <!-- Context -->
+      <div class="settings-section">
+        <div class="settings-section-title">Mémoire & Contexte</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+            <span class="name" style="margin-bottom:8px;">Prompt système</span>
+            <textarea class="settings-textarea" id="settingsPrompt" rows="5"></textarea>
+            <button class="settings-action-btn" id="resetPromptBtn" style="margin-top:8px;">Réinitialiser le prompt</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ElevenLabs -->
+      <div class="settings-section">
+        <div class="settings-section-title">ElevenLabs</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="toggle-btn" id="toggleEL">Afficher</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice cloning -->
+      <div class="settings-section">
+        <div class="settings-section-title">Empreinte vocale</div>
+        <div class="settings-card">
+          <div id="voiceActiveArea"></div>
+          <div id="samplesContainer"></div>
+          <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+            <button class="settings-action-btn" id="addSampleBtn">+ Ajouter un échantillon vocal</button>
+            <input class="settings-input" id="voiceNameInput" type="text" placeholder="Nom de la voix" style="display:none">
+            <button class="settings-action-btn" id="cloneBtn" style="display:none">Cloner la voix</button>
+            <button class="settings-action-btn" id="testVoiceBtn" style="display:none">Tester la voix</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-section">
+        <div class="about-box">
+          Écho — Communication assistée<br>
+          Conçu pour les personnes vivant avec la SLA
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden file input for voice samples -->
+<input type="file" id="fileInput" accept="audio/*" multiple>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════ -->
+<script>
+
+const DB_KEY = 'echo_v5';
+const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne atteinte de la maladie de Charcot (SLA) à communiquer.
+Tu proposes des réponses naturelles et chaleureuses en français.
+Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
+const EL_DEFAULT_KEY = '';
+const DEFAULT_VOICE_ID = '';
+const SILENCE_TIMEOUT = 1500;
+
+// ─── Splash ───
+setTimeout(() => {
+  document.getElementById('splash').classList.add('hidden');
+  document.getElementById('app').style.opacity = '1';
+  // Auto-start listening after splash
+  setTimeout(() => startListening(), 600);
+}, 1800);
+
+// ─── State ───
+let state = loadState();
+let currentAudio = null;
+let isListening = false;
+let recognition = null;
+let silenceTimer = null;
+let lastFinalText = '';
+let interimBuf = '';
+let lastInterlocutorText = '';
+let conversationHistory = [];
+let isSpeaking = false;
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(DB_KEY));
+    if (s && s.history !== undefined) {
+      if (!s.voiceId) s.voiceId = DEFAULT_VOICE_ID;
+      if (!s.elApiKey) s.elApiKey = EL_DEFAULT_KEY;
+      if (s.useLocalTTS === undefined) s.useLocalTTS = true;
+      return s;
+    }
+  } catch {}
+  // Migrate from v4
+  for (const k of ['echo_v4', 'echo_v3', 'echo_v2', 'echo_v1']) {
+    try {
+      const old = JSON.parse(localStorage.getItem(k));
+      if (old) {
+        return {
+          userName: old.userName || '',
+          systemPrompt: old.systemPrompt || DEFAULT_PROMPT,
+          elApiKey: old.elApiKey || EL_DEFAULT_KEY,
+          voiceId: old.voiceId || DEFAULT_VOICE_ID,
+          samples: old.samples || [],
+          llmEnabled: old.llmEnabled !== false,
+          useLocalTTS: old.useLocalTTS !== false,
+          history: [],
+        };
+      }
+    } catch {}
+  }
+  return {
+    userName: '', systemPrompt: DEFAULT_PROMPT,
+    elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
+    samples: [], llmEnabled: true, useLocalTTS: true,
+    history: [],
+  };
+}
+
+function save() {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch {}
+}
+
+function addToHistory(text, isUser) {
+  const entry = {
+    text: text.trim(), isUser,
+    time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+  };
+  state.history.push(entry);
+  if (state.history.length > 20) state.history = state.history.slice(-20);
+  conversationHistory = state.history;
+  save();
+}
+
+// ─── DOM Helpers ───
+const $ = id => document.getElementById(id);
+function showToast(msg, dur = 2500) {
+  $('toast').textContent = msg;
+  $('toast').classList.add('show');
+  setTimeout(() => $('toast').classList.remove('show'), dur);
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function resetNativeAudioSession() {
+  try { window.webkit?.messageHandlers?.resetAudioSession?.postMessage('reset'); } catch (_) {}
+}
+
+// ─── Navigation ───
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $('view-' + id).classList.add('active');
+}
+
+$('settingsBtn').onclick = () => { stopListening(); loadSettings(); showView('settings'); };
+$('backFromSettingsBtn').onclick = () => { showView('suggestions'); startListening(); };
+
+$('btnKeyboard').onclick = () => switchToManual();
+$('btnBackToSuggestions').onclick = () => switchToSuggestions();
+$('btnRefresh').onclick = () => refreshSuggestions();
+$('btnSpeak').onclick = () => speakManual();
+
+function switchToManual() {
+  stopListening();
+  showView('manual');
+  setTimeout(() => $('manualInput').focus(), 100);
+}
+
+function switchToSuggestions() {
+  $('manualInput').value = '';
+  showView('suggestions');
+  startListening();
+}
+
+function refreshSuggestions() {
+  if (lastInterlocutorText) fetchSuggestions(lastInterlocutorText);
+  else showToast('Pas encore de phrase à répondre');
+}
+
+// ─── Context zone ───
+function updateContextDisplay(text, isInterim) {
+  const el = $('contextText');
+  if (!text) {
+    el.textContent = 'En attente de parole...';
+    el.className = 'context-text empty';
+    return;
+  }
+  el.textContent = text;
+  el.className = isInterim ? 'context-text interim' : 'context-text';
+}
+
+// ─── Suggestions ───
+function renderSuggestionCards(suggestions) {
+  const zone = $('suggestionsZone');
+  zone.innerHTML = '';
+  $('suggestionsEmpty')?.remove();
+  suggestions.forEach((text, i) => {
+    const card = document.createElement('div');
+    card.className = 'suggestion-card';
+    card.id = 'suggestionCard' + i;
+    card.textContent = text;
+    card.onclick = () => speakSuggestion(text, i);
+    zone.appendChild(card);
+  });
+}
+
+function showSuggestionLoading() {
+  const zone = $('suggestionsZone');
+  zone.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const card = document.createElement('div');
+    card.className = 'suggestion-card loading';
+    card.textContent = ' ';
+    zone.appendChild(card);
+  }
+}
+
+function clearSuggestionCards() {
+  $('suggestionsZone').innerHTML = `
+    <div class="suggestions-empty" id="suggestionsEmpty">
+      <div class="suggestions-empty-icon">💬</div>
+      <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
+    </div>`;
+}
+
+// ─── TTS Overlay ───
+function showTTSOverlay() {
+  isSpeaking = true;
+  $('ttsOverlay').classList.add('active');
+}
+
+function hideTTSOverlay() {
+  isSpeaking = false;
+  $('ttsOverlay').classList.remove('active');
+  document.querySelectorAll('.suggestion-card.speaking').forEach(c => c.classList.remove('speaking'));
+}
+
+$('ttsOverlay').onclick = (e) => {
+  if (e.target.closest('.tts-stop-btn')) {
+    stopAudio();
+    hideTTSOverlay();
+    startListening();
+  }
+};
+
+// ─── Speak suggestion ───
+function speakSuggestion(text, cardIndex) {
+  if (isSpeaking) return;
+  const card = $('suggestionCard' + cardIndex);
+  if (card) card.classList.add('speaking');
+  stopListening();
+  showTTSOverlay();
+  addToHistory(text, true);
+  speakTextWithCallback(text, () => {
+    hideTTSOverlay();
+    startListening();
+  });
+}
+
+function speakManual() {
+  const text = $('manualInput').value.trim();
+  if (!text || isSpeaking) return;
+  addToHistory(text, true);
+  showTTSOverlay();
+  speakTextWithCallback(text, () => {
+    hideTTSOverlay();
+    $('manualInput').value = '';
+    switchToSuggestions();
+  });
+}
+
+// ─── TTS (bridge-compatible) ───
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => {
+      const s = String(r.result);
+      const i = s.indexOf(',');
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = () => reject(new Error('blob read'));
+    r.readAsDataURL(blob);
+  });
+}
+
+let _ttsCallback = null;
+
+function speakTextWithCallback(text, onDone) {
+  _ttsCallback = onDone;
+  if (state.useLocalTTS) {
+    speakLocal(text);
+  } else if (state.voiceId && state.elApiKey) {
+    playTTS(text);
+  } else {
+    speakLocal(text);
+  }
+}
+
+function _onTTSDone() {
+  const cb = _ttsCallback;
+  _ttsCallback = null;
+  resetNativeAudioSession();
+  if (cb) cb();
+}
+
+async function playElevenLabsBlobHTML5(blob) {
+  const audio = new Audio();
+  audio.playsInline = true;
+  audio.setAttribute('playsinline', '');
+  audio.preload = 'auto';
+  audio.src = URL.createObjectURL(blob);
+  currentAudio = audio;
+  audio.onended = () => {
+    currentAudio = null;
+    try { URL.revokeObjectURL(audio.src); } catch (_) {}
+    _onTTSDone();
+  };
+  audio.onerror = () => {
+    currentAudio = null;
+    try { URL.revokeObjectURL(audio.src); } catch (_) {}
+    _onTTSDone();
+  };
+  try { await audio.play(); } catch (_) { currentAudio = null; _onTTSDone(); }
+}
+
+async function playElevenLabsBlob(blob) {
+  const playbackId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+  if (window.webkit?.messageHandlers?.playTTSFromData) {
+    try {
+      const b64 = await blobToBase64(blob);
+      currentAudio = { isNativeTTS: true, playbackId };
+      window._nativeTTSPlayback = (rid, err) => {
+        if (rid !== playbackId) return;
+        window._nativeTTSPlayback = null;
+        window._nativeTTSProgress = null;
+        currentAudio = null;
+        if (err && err !== 'stopped') {
+          void playElevenLabsBlobHTML5(blob);
+        } else {
+          _onTTSDone();
+        }
+      };
+      window._nativeTTSProgress = (rid, cur, dur) => {
+        // Progress available if needed
+      };
+      window.webkit.messageHandlers.playTTSFromData.postMessage({ playbackId, base64: b64 });
+      return;
+    } catch (e) {
+      console.warn('[Echo] native TTS encode failed', e);
+    }
+  }
+  await playElevenLabsBlobHTML5(blob);
+}
+
+function speakLocal(text) {
+  stopAudio();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'fr-FR';
+  utterance.rate = 0.9;
+  utterance.pitch = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const frVoice = voices.find(v => v.lang.startsWith('fr') && v.name.includes('Thomas'))
+    || voices.find(v => v.lang.startsWith('fr') && !v.name.includes('Siri'))
+    || voices.find(v => v.lang.startsWith('fr'));
+  if (frVoice) utterance.voice = frVoice;
+  currentAudio = { isSpeechSynth: true, utterance };
+  utterance.onend = () => { currentAudio = null; _onTTSDone(); };
+  utterance.onerror = () => { currentAudio = null; _onTTSDone(); };
+  speechSynthesis.speak(utterance);
+}
+
+function stopAudio() {
+  try { window.webkit?.messageHandlers?.stopNativeTTS?.postMessage({}); } catch (_) {}
+  if (currentAudio) {
+    if (currentAudio.isSpeechSynth) {
+      speechSynthesis.cancel();
+    } else if (!currentAudio.isNativeTTS) {
+      try {
+        const u = currentAudio.src;
+        if (u && u.startsWith('blob:')) URL.revokeObjectURL(u);
+      } catch (_) {}
+      currentAudio.pause?.();
+    }
+    currentAudio = null;
+  }
+  _ttsCallback = null;
+}
+
+async function playTTS(text) {
+  try {
+    const blob = await fetchTTSAudio(text);
+    stopAudio();
+    await playElevenLabsBlob(blob);
+  } catch (e) {
+    console.warn('[Echo] playTTS fallback', e);
+    speakLocal(text);
+  }
+}
+
+async function fetchTTSAudio(text) {
+  const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${state.voiceId}`, {
+    method: 'POST',
+    headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    body: JSON.stringify({
+      text, model_id: 'eleven_multilingual_v2',
+      voice_settings: { stability: 0.6, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true }
+    })
+  });
+  if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
+  return await resp.blob();
+}
+
+// ─── Speech Recognition ───
+function setupRec() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.lang = 'fr-FR';
+  r.continuous = true;
+  r.interimResults = true;
+  return r;
+}
+
+let micSession = 0;
+
+function killRecognition() {
+  if (recognition) {
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try { recognition.abort(); } catch {}
+    recognition = null;
+  }
+}
+
+function beginRecognition(sess) {
+  if (micSession !== sess) return;
+  const rec = setupRec();
+  if (!rec) {
+    showToast('Micro non supporté');
+    isListening = false;
+    updateListeningUI(false);
+    return;
+  }
+  recognition = rec;
+
+  rec.onresult = (e) => {
+    if (micSession !== sess) return;
+    let final = '', interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t + ' '; else interim += t;
+    }
+    interimBuf = (final + interim).trim();
+    updateContextDisplay(interimBuf, true);
+
+    if (final.trim()) {
+      lastFinalText = final.trim();
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (micSession !== sess || !isListening) return;
+        // Finalize
+        updateContextDisplay(lastFinalText, false);
+        addToHistory(lastFinalText, false);
+        lastInterlocutorText = lastFinalText;
+        lastFinalText = ''; interimBuf = '';
+        // Fetch suggestions
+        if (state.llmEnabled) fetchSuggestions(lastInterlocutorText);
+        // Restart recognition
+        killRecognition();
+        setTimeout(() => {
+          if (micSession === sess && isListening) beginRecognition(sess);
+        }, 200);
+      }, SILENCE_TIMEOUT);
+    }
+  };
+
+  rec.onerror = (e) => {
+    if (micSession !== sess) return;
+    if (e.error === 'no-speech' || e.error === 'aborted') return;
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      showToast('Accès micro refusé');
+      stopListening();
+    }
+  };
+
+  rec.onend = () => {
+    if (micSession === sess && isListening) {
+      killRecognition();
+      setTimeout(() => {
+        if (micSession !== sess || !isListening) return;
+        beginRecognition(sess);
+      }, 300);
+    }
+  };
+
+  try { rec.start(); } catch(e) {
+    setTimeout(() => {
+      if (micSession !== sess || !isListening) return;
+      const rec2 = setupRec();
+      if (!rec2) { stopListening(); return; }
+      recognition = rec2;
+      rec2.onresult = rec.onresult;
+      rec2.onerror = rec.onerror;
+      rec2.onend = rec.onend;
+      try { rec2.start(); } catch { stopListening(); }
+    }, 500);
+  }
+}
+
+function startListening() {
+  if (isSpeaking) return;
+  stopAudio();
+  killRecognition();
+  clearTimeout(silenceTimer);
+  micSession++;
+  const sess = micSession;
+  interimBuf = '';
+  lastFinalText = '';
+  isListening = true;
+  updateListeningUI(true);
+  resetNativeAudioSession();
+
+  const run = () => {
+    if (micSession !== sess) return;
+    resetNativeAudioSession();
+    setTimeout(() => beginRecognition(sess), 0);
+  };
+
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        if (micSession !== sess) { stream.getTracks().forEach(t => t.stop()); return; }
+        stream.getTracks().forEach(t => t.stop());
+        run();
+      })
+      .catch(() => run());
+  } else {
+    setTimeout(run, 80);
+  }
+}
+
+function stopListening() {
+  micSession++;
+  isListening = false;
+  clearTimeout(silenceTimer);
+  killRecognition();
+  updateListeningUI(false);
+}
+
+function updateListeningUI(active) {
+  const bar = $('listeningBar');
+  const txt = $('listeningText');
+  if (active) {
+    bar.classList.remove('inactive');
+    txt.textContent = 'À l\'écoute...';
+  } else {
+    bar.classList.add('inactive');
+    txt.textContent = 'En pause';
+  }
+}
+
+// ─── LLM Suggestions ───
+const _llmCallbacks = {};
+window._llmCallback = function(rid, result, error) {
+  const cb = _llmCallbacks[rid];
+  if (cb) {
+    if (error) cb.reject(new Error(error));
+    else cb.resolve(result);
+    delete _llmCallbacks[rid];
+  }
+};
+
+function callNativeLLM(sys, prompt) {
+  return new Promise((resolve, reject) => {
+    const rid = 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+    _llmCallbacks[rid] = { resolve, reject };
+    if (window.webkit?.messageHandlers?.llmRequest) {
+      window.webkit.messageHandlers.llmRequest.postMessage({ requestId: rid, systemPrompt: sys, prompt });
+    } else {
+      reject(new Error('LLM non disponible'));
+    }
+    setTimeout(() => {
+      if (_llmCallbacks[rid]) { delete _llmCallbacks[rid]; reject(new Error('Timeout')); }
+    }, 30000);
+  });
+}
+
+async function fetchSuggestions(interlocutorText) {
+  showSuggestionLoading();
+
+  const ctx = state.history.slice(-8).map(m =>
+    `${m.isUser ? 'Moi' : 'Autre'}: ${m.text}`
+  ).join('\n');
+  const sys = `${state.systemPrompt}\n\nHistorique:\n${ctx}`;
+  const prompt = `L'interlocuteur dit: "${interlocutorText}"\n\nPropose EXACTEMENT 3 réponses naturelles que je pourrais dire. Courte, moyenne, détaillée. UNE PAR LIGNE. Pas de numéro, pas de tiret, pas de guillemets.`;
+
+  try {
+    const content = await callNativeLLM(sys, prompt);
+    const suggestions = content.split('\n')
+      .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
+      .filter(s => s.length > 2)
+      .slice(0, 3);
+    if (suggestions.length) renderSuggestionCards(suggestions);
+    else clearSuggestionCards();
+  } catch(e) {
+    console.error('LLM:', e);
+    clearSuggestionCards();
+    showToast('Suggestions indisponibles');
+  }
+}
+
+// ─── Voice Cloning ───
+function dataUrlToBlob(du) {
+  const p = du.split(','); const m = p[0].match(/:(.*?);/)[1];
+  const b = atob(p[1]); const a = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+  return new Blob([a], { type: m });
+}
+
+$('addSampleBtn').onclick = () => $('fileInput').click();
+$('fileInput').onchange = async (e) => {
+  for (const f of Array.from(e.target.files)) {
+    const reader = new FileReader();
+    const du = await new Promise(r => { reader.onload = () => r(reader.result); reader.readAsDataURL(f); });
+    const audio = new Audio(du);
+    const dur = await new Promise(r => {
+      audio.onloadedmetadata = () => r(audio.duration);
+      audio.onerror = () => r(0);
+      setTimeout(() => r(0), 3000);
+    });
+    state.samples.push({ id: Date.now()+Math.random(), name: f.name, duration: dur, dataUrl: du });
+  }
+  save(); renderSamples(); $('fileInput').value = '';
+};
+
+$('cloneBtn').onclick = async () => {
+  const name = $('voiceNameInput').value.trim() || 'Écho';
+  if (!state.samples.length || !state.elApiKey) return;
+  $('cloneBtn').disabled = true; $('cloneBtn').textContent = 'Clonage...';
+  try {
+    const fd = new FormData();
+    fd.append('name', name); fd.append('description', 'Écho voice');
+    for (const s of state.samples) fd.append('files', dataUrlToBlob(s.dataUrl), s.name);
+    const r = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+      method:'POST', headers:{'xi-api-key':state.elApiKey}, body:fd
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    state.voiceId = d.voice_id; save(); renderSamples();
+    showToast('Voix clonée !');
+  } catch(e) { showToast('Erreur: ' + e.message.substring(0,60)); }
+  finally { $('cloneBtn').disabled = false; $('cloneBtn').textContent = 'Cloner la voix'; }
+};
+$('testVoiceBtn').onclick = () => {
+  const t = prompt('Texte:', 'Bonjour, ceci est ma voix.');
+  if (t) speakTextWithCallback(t, () => {});
+};
+
+function renderSamples() {
+  const has = state.samples.length > 0;
+  $('voiceNameInput').style.display = has ? 'block' : 'none';
+  $('cloneBtn').style.display = has ? 'block' : 'none';
+  $('cloneBtn').disabled = !state.elApiKey;
+  $('testVoiceBtn').style.display = state.voiceId ? 'block' : 'none';
+  const area = $('voiceActiveArea');
+  if (state.voiceId) {
+    area.innerHTML = `<div class="voice-badge"><span class="icon">✅</span><div class="info"><div class="title">Voix active</div><div class="sub">${state.voiceId}</div></div><button class="remove" id="removeVoiceBtn">Supprimer</button></div>`;
+    $('removeVoiceBtn').onclick = () => { state.voiceId = ''; save(); renderSamples(); };
+  } else { area.innerHTML = ''; }
+  $('samplesContainer').innerHTML = '';
+  state.samples.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'sample-card';
+    const m = Math.floor(s.duration/60), sec = Math.floor(s.duration%60);
+    card.innerHTML = `<button class="sample-play">▶</button><div class="sample-info"><div class="sample-name">${esc(s.name)}</div><div class="sample-meta">${m}:${sec.toString().padStart(2,'0')}</div></div><button class="sample-delete">✕</button>`;
+    card.querySelector('.sample-play').onclick = () => { stopAudio(); currentAudio = new Audio(URL.createObjectURL(dataUrlToBlob(s.dataUrl))); currentAudio.play(); };
+    card.querySelector('.sample-delete').onclick = () => { state.samples = state.samples.filter(x => x.id !== s.id); save(); renderSamples(); };
+    $('samplesContainer').appendChild(card);
+  });
+}
+
+// ─── Settings ───
+function loadSettings() {
+  $('settingsName').value = state.userName;
+  $('settingsPrompt').value = state.systemPrompt;
+  $('settingsELKey').value = state.elApiKey;
+  $('llmToggle').classList.toggle('active', state.llmEnabled);
+  $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
+  renderSamples();
+}
+
+function saveSettings() {
+  state.userName = $('settingsName').value;
+  state.systemPrompt = $('settingsPrompt').value;
+  state.elApiKey = $('settingsELKey').value;
+  save();
+}
+
+[$('settingsName'), $('settingsPrompt'), $('settingsELKey')].forEach(el => {
+  el.oninput = saveSettings;
+  el.onchange = saveSettings;
+});
+
+$('llmToggle').onclick = () => {
+  state.llmEnabled = !state.llmEnabled;
+  $('llmToggle').classList.toggle('active', state.llmEnabled);
+  save();
+};
+$('localTTSToggle').onclick = () => {
+  state.useLocalTTS = !state.useLocalTTS;
+  $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
+  save();
+};
+$('toggleEL').onclick = () => {
+  const p = $('settingsELKey').type === 'password';
+  $('settingsELKey').type = p ? 'text' : 'password';
+  $('toggleEL').textContent = p ? 'Masquer' : 'Afficher';
+};
+$('resetPromptBtn').onclick = () => {
+  $('settingsPrompt').value = DEFAULT_PROMPT;
+  state.systemPrompt = DEFAULT_PROMPT;
+  save();
+};
+
+// ─── Init ───
+speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+conversationHistory = state.history || [];
+showView('suggestions');
+
+</script>
+
+<!-- TTS overlay (outside #app for z-index) -->
+<div id="ttsOverlay">
+  <div class="tts-overlay-content">
+    <div class="tts-overlay-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
+    </div>
+    <div class="tts-overlay-text">Lecture en cours...</div>
+    <button class="tts-stop-btn">Arrêter</button>
+  </div>
+</div>
+
+</body>
+</html>
