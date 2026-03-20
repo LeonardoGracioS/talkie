@@ -1,4 +1,4 @@
-# Écho
+# Echo
 
 Assistive communication app for people with ALS (Charcot disease) and speech impairments. Combines voice cloning, speech recognition, and AI-powered response suggestions to help users communicate naturally.
 
