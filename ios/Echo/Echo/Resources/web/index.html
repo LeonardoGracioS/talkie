@@ -189,6 +189,10 @@ html, body {
   padding:18px 20px;
   margin-bottom:12px; flex-shrink:0;
   min-height:60px;
+  max-height:min(38vh, 260px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
   transition:box-shadow .3s;
 }
 .context-label {
@@ -202,6 +206,7 @@ html, body {
   color:var(--text);
   min-height:27px;
   word-break:break-word;
+  overflow-wrap:anywhere;
 }
 .context-text.interim {
   color:var(--text-secondary);
@@ -238,15 +243,16 @@ html, body {
   gap:10px; min-height:0;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
-  padding:2px 0;
+  padding:2px 2px;
 }
 
 .suggestion-card {
   background:var(--bg-card);
   border-radius:var(--radius);
-  padding:20px 50px 20px 22px;
+  padding:20px 48px 20px 20px;
   min-height:90px;
   box-shadow:var(--shadow-card);
+  flex-shrink:0;
   cursor:pointer;
   display:flex; align-items:center;
   font:600 19px/1.4 var(--font);
@@ -887,6 +893,32 @@ html, body {
         </div>
       </div>
 
+      <!-- Memory -->
+      <div class="settings-section">
+        <div class="settings-section-title">Mémoire du patient</div>
+        <div class="settings-card">
+          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+            <span class="name" style="margin-bottom:4px;">Informations retenues</span>
+            <span class="desc" style="margin-bottom:8px;">Écho retient ces infos pour personnaliser les réponses. Vous pouvez les modifier.</span>
+            <textarea class="settings-textarea" id="settingsMemory" rows="4" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help -->
+      <div class="settings-section">
+        <div class="settings-section-title">Aide</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Revoir le tutoriel</span>
+              <span class="desc">Relancer l'écran de bienvenue</span>
+            </div>
+            <button class="toggle-btn" id="replayTutorialBtn">Revoir</button>
+          </div>
+        </div>
+      </div>
+
       <!-- About -->
       <div class="settings-section">
         <div class="about-box">
@@ -936,7 +968,8 @@ Tu proposes des réponses naturelles et chaleureuses en français.
 Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
-const SILENCE_TIMEOUT = 1500;
+/** Silence minimal après le dernier mot reconnu avant de valider la phrase (ms). Trop bas = coupe au milieu. */
+const PHRASE_END_MS = 1200;
 
 // ─── Splash ───
 let userHasInteracted = false;
@@ -967,8 +1000,7 @@ let state = loadState();
 let currentAudio = null;
 let isListening = false;
 let recognition = null;
-let silenceTimer = null;
-let lastFinalText = '';
+let phraseEndTimer = null;
 let interimBuf = '';
 let lastInterlocutorText = '';
 let conversationHistory = [];
@@ -981,6 +1013,7 @@ function loadState() {
       if (!s.voiceId) s.voiceId = DEFAULT_VOICE_ID;
       if (!s.elApiKey) s.elApiKey = EL_DEFAULT_KEY;
       if (s.useLocalTTS === undefined) s.useLocalTTS = true;
+      if (!s.memory) s.memory = '';
       return s;
     }
   } catch {}
@@ -1006,7 +1039,7 @@ function loadState() {
     userName: '', systemPrompt: DEFAULT_PROMPT,
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
     samples: [], llmEnabled: true, useLocalTTS: true,
-    history: [],
+    history: [], memory: '',
   };
 }
 
@@ -1023,6 +1056,35 @@ function addToHistory(text, isUser) {
   if (state.history.length > 20) state.history = state.history.slice(-20);
   conversationHistory = state.history;
   save();
+}
+
+// ─── Auto-memory extraction ───
+let _memoryExtractionPending = 0;
+async function maybeExtractMemory() {
+  // Only run every 5 exchanges to save resources
+  _memoryExtractionPending++;
+  if (_memoryExtractionPending < 5) return;
+  _memoryExtractionPending = 0;
+  if (!state.llmEnabled) return;
+
+  const recent = state.history.slice(-10).map(m =>
+    `${m.isUser ? 'Patient' : 'Interlocuteur'}: ${m.text}`
+  ).join('\n');
+  const currentMemory = state.memory || '';
+
+  const sys = 'Tu es un assistant qui extrait des informations personnelles à partir de conversations.';
+  const prompt = `Voici une conversation récente :\n${recent}\n\nMémoire actuelle :\n${currentMemory || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur le patient (goûts, famille, métier, habitudes, opinions). Ajoute-les à la mémoire existante. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`;
+
+  try {
+    const result = await callNativeLLM(sys, prompt);
+    if (result && !result.includes('RIEN') && result.trim().length > 5) {
+      state.memory = result.trim();
+      save();
+      console.log('[Echo] Memory updated:', state.memory);
+    }
+  } catch(e) {
+    console.warn('[Echo] Memory extraction failed:', e);
+  }
 }
 
 // ─── DOM Helpers ───
@@ -1082,9 +1144,14 @@ function switchToSuggestions() {
   startListening();
 }
 
+let refreshCount = 0;
 function refreshSuggestions() {
-  if (lastInterlocutorText) fetchSuggestions(lastInterlocutorText);
-  else showToast('Pas encore de phrase à répondre');
+  if (lastInterlocutorText) {
+    refreshCount++;
+    fetchSuggestions(lastInterlocutorText);
+  } else {
+    showToast('Pas encore de phrase à répondre');
+  }
 }
 
 // ─── Context zone ───
@@ -1161,6 +1228,7 @@ function speakSuggestion(text, cardIndex) {
   stopListening();
   showTTSOverlay();
   addToHistory(text, true);
+  maybeExtractMemory();
   speakTextWithCallback(text, () => {
     hideTTSOverlay();
     startListening();
@@ -1195,6 +1263,7 @@ function blobToBase64(blob) {
 
 let _ttsCallback = null;
 let _ttsSafetyTimer = null;
+let _nativeTTSNearEndTimer = null;
 
 function speakTextWithCallback(text, onDone) {
   _ttsCallback = onDone;
@@ -1207,7 +1276,7 @@ function speakTextWithCallback(text, onDone) {
       hideTTSOverlay();
       startListening();
     }
-  }, 30000);
+  }, 600000);
   if (state.useLocalTTS) {
     speakLocal(text);
   } else if (state.voiceId && state.elApiKey) {
@@ -1219,6 +1288,7 @@ function speakTextWithCallback(text, onDone) {
 
 function _onTTSDone() {
   clearTimeout(_ttsSafetyTimer);
+  clearTimeout(_nativeTTSNearEndTimer);
   const cb = _ttsCallback;
   _ttsCallback = null;
   resetNativeAudioSession();
@@ -1232,17 +1302,29 @@ async function playElevenLabsBlobHTML5(blob) {
   audio.preload = 'auto';
   audio.src = URL.createObjectURL(blob);
   currentAudio = audio;
-  audio.onended = () => {
+  let ended = false;
+  let fallbackTimer = null;
+  const fireEnd = () => {
+    if (ended) return;
+    ended = true;
+    clearTimeout(fallbackTimer);
     currentAudio = null;
     try { URL.revokeObjectURL(audio.src); } catch (_) {}
     _onTTSDone();
   };
-  audio.onerror = () => {
-    currentAudio = null;
-    try { URL.revokeObjectURL(audio.src); } catch (_) {}
-    _onTTSDone();
-  };
-  try { await audio.play(); } catch (_) { currentAudio = null; _onTTSDone(); }
+  audio.onended = fireEnd;
+  audio.onerror = fireEnd;
+  // Ne pas utiliser ontimeupdate pour finir avant la fin réelle du buffer (coupait la voix).
+  // Secours uniquement si onended ne part jamais (après durée + marge).
+  audio.addEventListener('loadedmetadata', () => {
+    const d = audio.duration;
+    if (!d || !isFinite(d)) return;
+    clearTimeout(fallbackTimer);
+    fallbackTimer = setTimeout(() => {
+      if (!ended && currentAudio === audio) fireEnd();
+    }, d * 1000 + 900);
+  }, { once: true });
+  try { await audio.play(); } catch (_) { clearTimeout(fallbackTimer); currentAudio = null; _onTTSDone(); }
 }
 
 async function playElevenLabsBlob(blob) {
@@ -1252,8 +1334,10 @@ async function playElevenLabsBlob(blob) {
     try {
       const b64 = await blobToBase64(blob);
       currentAudio = { isNativeTTS: true, playbackId };
+      clearTimeout(_nativeTTSNearEndTimer);
       window._nativeTTSPlayback = (rid, err) => {
         if (rid !== playbackId) return;
+        clearTimeout(_nativeTTSNearEndTimer);
         window._nativeTTSPlayback = null;
         window._nativeTTSProgress = null;
         currentAudio = null;
@@ -1263,9 +1347,8 @@ async function playElevenLabsBlob(blob) {
           _onTTSDone();
         }
       };
-      window._nativeTTSProgress = (rid, cur, dur) => {
-        // Progress available if needed
-      };
+      // Ne pas déduire la fin depuis la progression (durée / position imprécises → coupure trop tôt).
+      window._nativeTTSProgress = () => {};
       window.webkit.messageHandlers.playTTSFromData.postMessage({ playbackId, base64: b64 });
       return;
     } catch (e) {
@@ -1276,9 +1359,10 @@ async function playElevenLabsBlob(blob) {
 }
 
 let _speechPollTimer = null;
+let _speechSynthMaxTimer = null;
 
 function speakLocal(text) {
-  stopAudio();
+  stopPlaybackOnly();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'fr-FR';
   utterance.rate = 0.9;
@@ -1291,9 +1375,13 @@ function speakLocal(text) {
   currentAudio = { isSpeechSynth: true, utterance };
 
   let done = false;
+  const estMs = Math.min(300000, Math.max(8000, text.length * 85));
+  let silentStreak = 0;
   const finish = () => {
     if (done) return;
     done = true;
+    clearTimeout(_speechSynthMaxTimer);
+    _speechSynthMaxTimer = null;
     clearInterval(_speechPollTimer);
     currentAudio = null;
     _onTTSDone();
@@ -1302,19 +1390,34 @@ function speakLocal(text) {
   utterance.onend = finish;
   utterance.onerror = finish;
 
-  // iOS WKWebView often doesn't fire onend — poll as fallback
+  // iOS WKWebView : onend souvent absent — exiger plusieurs ticks sans parole pour éviter les faux positifs.
   clearInterval(_speechPollTimer);
   _speechPollTimer = setInterval(() => {
     if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+      silentStreak++;
+      if (silentStreak >= 4) finish();
+    } else {
+      silentStreak = 0;
+    }
+  }, 220);
+  clearTimeout(_speechSynthMaxTimer);
+  _speechSynthMaxTimer = setTimeout(() => {
+    if (!done) {
+      console.warn('[Echo] speakLocal duration fallback');
+      try { speechSynthesis.cancel(); } catch (_) {}
       finish();
     }
-  }, 300);
+  }, estMs);
 
   speechSynthesis.speak(utterance);
 }
 
-function stopAudio() {
+/** Arrête la lecture sans annuler le callback TTS en cours (utilisé au début de speakLocal/playTTS). */
+function stopPlaybackOnly() {
   clearInterval(_speechPollTimer);
+  clearTimeout(_speechSynthMaxTimer);
+  _speechSynthMaxTimer = null;
+  clearTimeout(_nativeTTSNearEndTimer);
   try { window.webkit?.messageHandlers?.stopNativeTTS?.postMessage({}); } catch (_) {}
   if (currentAudio) {
     if (currentAudio.isSpeechSynth) {
@@ -1328,13 +1431,18 @@ function stopAudio() {
     }
     currentAudio = null;
   }
-  _ttsCallback = null;
+}
+
+/** @param {boolean} clearTtsCallback - défaut true ; false si on enchaîne une nouvelle lecture avec le même onDone. */
+function stopAudio(clearTtsCallback = true) {
+  stopPlaybackOnly();
+  if (clearTtsCallback) _ttsCallback = null;
 }
 
 async function playTTS(text) {
   try {
     const blob = await fetchTTSAudio(text);
-    stopAudio();
+    stopPlaybackOnly();
     await playElevenLabsBlob(blob);
   } catch (e) {
     console.warn('[Echo] playTTS fallback', e);
@@ -1402,22 +1510,25 @@ function beginRecognition(sess) {
     interimBuf = (final + interim).trim();
     updateContextDisplay(interimBuf, true);
 
-    if (final.trim()) {
-      lastFinalText = final.trim();
-      clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(() => {
-        if (micSession !== sess || !isListening) return;
-        updateContextDisplay(lastFinalText, false);
-        addToHistory(lastFinalText, false);
-        lastInterlocutorText = lastFinalText;
-        lastFinalText = ''; interimBuf = '';
-        if (state.llmEnabled) fetchSuggestions(lastInterlocutorText);
-        killRecognition();
-        setTimeout(() => {
-          if (micSession === sess && isListening) beginRecognition(sess);
-        }, 200);
-      }, SILENCE_TIMEOUT);
-    }
+    // Dès qu’il n’y a plus de nouveau résultat pendant PHRASE_END_MS, on traite la phrase
+    // (ne pas attendre uniquement les segments « finaux » du moteur — grosse latence réelle).
+    clearTimeout(phraseEndTimer);
+    phraseEndTimer = setTimeout(() => {
+      phraseEndTimer = null;
+      if (micSession !== sess || !isListening || isSpeaking) return;
+      const text = interimBuf.trim();
+      if (text.length < 2) return;
+      updateContextDisplay(text, false);
+      addToHistory(text, false);
+      lastInterlocutorText = text;
+      refreshCount = 0;
+      interimBuf = '';
+      if (state.llmEnabled) fetchSuggestions(lastInterlocutorText);
+      killRecognition();
+      setTimeout(() => {
+        if (micSession === sess && isListening) beginRecognition(sess);
+      }, 50);
+    }, PHRASE_END_MS);
   };
 
   rec.onerror = (e) => {
@@ -1482,11 +1593,10 @@ function startListening() {
   if (isSpeaking) { console.log('[Echo] startListening blocked: isSpeaking'); return; }
   stopAudio();
   killRecognition();
-  clearTimeout(silenceTimer);
+  clearTimeout(phraseEndTimer);
   micSession++;
   const sess = micSession;
   interimBuf = '';
-  lastFinalText = '';
   isListening = true;
   updateListeningUI(true);
   resetNativeAudioSession();
@@ -1520,7 +1630,7 @@ function startListening() {
 function stopListening() {
   micSession++;
   isListening = false;
-  clearTimeout(silenceTimer);
+  clearTimeout(phraseEndTimer);
   killRecognition();
   updateListeningUI(false);
 }
@@ -1569,8 +1679,29 @@ async function fetchSuggestions(interlocutorText) {
   const ctx = state.history.slice(-8).map(m =>
     `${m.isUser ? 'Moi' : 'Autre'}: ${m.text}`
   ).join('\n');
-  const sys = `${state.systemPrompt}\n\nHistorique:\n${ctx}`;
-  const prompt = `L'interlocuteur dit: "${interlocutorText}"\n\nPropose EXACTEMENT 3 réponses naturelles que je pourrais dire. Courte, moyenne, détaillée. UNE PAR LIGNE. Pas de numéro, pas de tiret, pas de guillemets.`;
+
+  // Build system prompt with memory
+  let sys = state.systemPrompt;
+  if (state.memory && state.memory.trim()) {
+    sys += `\n\nInformations personnelles sur l'utilisateur (à utiliser pour personnaliser les réponses) :\n${state.memory.trim()}`;
+  }
+  if (state.userName) {
+    sys += `\nL'utilisateur s'appelle ${state.userName}.`;
+  }
+  sys += `\n\nHistorique récent :\n${ctx}`;
+
+  // Diversity instructions
+  const diversityHint = refreshCount > 0
+    ? `\nATTENTION : l'utilisateur a demandé ${refreshCount} fois des alternatives. Propose des réponses TRÈS DIFFÉRENTES des précédentes. Si les précédentes étaient positives, propose du négatif ou nuancé. Si elles étaient longues, propose du court. Varie le ton (humour, sérieux, tendre, direct).`
+    : '';
+
+  const prompt = `L'interlocuteur dit : "${interlocutorText}"${diversityHint}
+
+Propose EXACTEMENT 3 réponses que je pourrais dire. Règles :
+- Les 3 réponses doivent être VARIÉES en ton et en opinion (positive, nuancée, négative ou déclinante)
+- Longueurs variées : une courte (< 10 mots), une moyenne, une plus détaillée
+- Naturelles, humaines, pas robotiques
+- UNE PAR LIGNE, pas de numéro, pas de tiret, pas de guillemets`;
 
   try {
     const content = await callNativeLLM(sys, prompt);
@@ -1663,6 +1794,7 @@ function loadSettings() {
   $('settingsPrompt').value = state.systemPrompt;
   $('settingsELKey').value = state.elApiKey;
   $('settingsVoiceId').value = state.voiceId || '';
+  $('settingsMemory').value = state.memory || '';
   $('llmToggle').classList.toggle('active', state.llmEnabled);
   $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
   renderSamples();
@@ -1673,13 +1805,24 @@ function saveSettings() {
   state.systemPrompt = $('settingsPrompt').value;
   state.elApiKey = $('settingsELKey').value;
   state.voiceId = $('settingsVoiceId').value.trim();
+  state.memory = $('settingsMemory').value;
   save();
 }
 
-[$('settingsName'), $('settingsPrompt'), $('settingsELKey'), $('settingsVoiceId')].forEach(el => {
+[$('settingsName'), $('settingsPrompt'), $('settingsELKey'), $('settingsVoiceId'), $('settingsMemory')].forEach(el => {
   el.oninput = saveSettings;
   el.onchange = saveSettings;
 });
+
+// Replay tutorial
+$('replayTutorialBtn').onclick = () => {
+  localStorage.removeItem('echo_onboarded');
+  showView('suggestions');
+  onbPage = 0;
+  document.querySelectorAll('.onb-page').forEach(p => p.classList.remove('active'));
+  document.querySelector('.onb-page[data-page="0"]').classList.add('active');
+  $('onboarding').classList.remove('hidden');
+};
 
 $('llmToggle').onclick = () => {
   state.llmEnabled = !state.llmEnabled;
