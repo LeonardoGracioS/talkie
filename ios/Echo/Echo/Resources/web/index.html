@@ -166,7 +166,8 @@ html, body {
   background:var(--green);
   animation:waveBar 1.2s ease-in-out infinite;
 }
-.listening-bar.inactive .listening-waves i { background:var(--accent); animation:none; height:4px !important; }
+.listening-bar.inactive .listening-waves { display:none; }
+.listening-bar.inactive .listening-dot { animation:none; }
 .listening-waves i:nth-child(1){height:6px;animation-delay:0s}
 .listening-waves i:nth-child(2){height:12px;animation-delay:.1s}
 .listening-waves i:nth-child(3){height:18px;animation-delay:.2s}
@@ -183,18 +184,18 @@ html, body {
 
 /* ─── Context zone (top) ─── */
 .context-zone {
-  background:var(--bg-card);
+  background:linear-gradient(135deg, rgba(91,106,240,0.06) 0%, rgba(91,106,240,0.02) 100%);
   border-radius:var(--radius);
   padding:18px 20px;
-  box-shadow:var(--shadow-card);
+  border-left:4px solid var(--accent);
   margin-bottom:12px; flex-shrink:0;
   min-height:60px;
   transition:box-shadow .3s;
 }
 .context-label {
-  font:600 11px var(--font);
+  font:700 11px var(--font);
   text-transform:uppercase; letter-spacing:1px;
-  color:var(--text-tertiary);
+  color:var(--accent);
   margin-bottom:6px;
 }
 .context-text {
@@ -226,6 +227,13 @@ html, body {
 }
 
 /* ─── Suggestions zone (center) ─── */
+.suggestions-label {
+  font:700 11px var(--font);
+  text-transform:uppercase; letter-spacing:1px;
+  color:var(--green);
+  margin-bottom:8px; padding-left:4px;
+  flex-shrink:0;
+}
 .suggestions-zone {
   flex:1; display:flex; flex-direction:column;
   gap:10px; min-height:0;
@@ -237,7 +245,7 @@ html, body {
 .suggestion-card {
   background:var(--bg-card);
   border-radius:var(--radius);
-  padding:20px 22px;
+  padding:20px 50px 20px 22px;
   min-height:90px;
   box-shadow:var(--shadow-card);
   cursor:pointer;
@@ -248,6 +256,18 @@ html, body {
   position:relative;
   overflow:hidden;
   animation:cardFadeIn .4s ease both;
+  border-left:4px solid var(--green);
+}
+.suggestion-card::after {
+  content:'';
+  position:absolute; right:16px; top:50%; transform:translateY(-50%);
+  width:28px; height:28px;
+  border-radius:50%;
+  background:var(--green-soft);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2334C785'%3E%3Cpath d='M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5z'/%3E%3C/svg%3E");
+  background-size:16px; background-repeat:no-repeat; background-position:center;
+  flex-shrink:0;
+  transition:background .15s;
 }
 .suggestion-card:nth-child(1) { animation-delay:0s; }
 .suggestion-card:nth-child(2) { animation-delay:.08s; }
@@ -262,20 +282,19 @@ html, body {
   background:var(--bg-card-hover);
 }
 .suggestion-card.speaking {
-  background:var(--accent-soft);
-  box-shadow:0 0 0 2px var(--accent), var(--shadow-card);
+  background:var(--green-soft);
+  border-left-color:var(--green);
+  box-shadow:0 0 0 2px var(--green), var(--shadow-card);
   pointer-events:none;
 }
-.suggestion-card.speaking::before {
-  content:'';
-  position:absolute; top:0; left:0; right:0; bottom:0;
-  border-radius:var(--radius);
-  box-shadow:0 0 0 2px var(--accent);
-  animation:speakRing 1.5s ease-in-out infinite;
+.suggestion-card.speaking::after {
+  background:var(--green);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z'/%3E%3C/svg%3E");
+  animation:speakPulseSmall 1s ease-in-out infinite;
 }
-@keyframes speakRing {
-  0%,100% { opacity:1; }
-  50% { opacity:0.4; }
+@keyframes speakPulseSmall {
+  0%,100% { transform:translateY(-50%) scale(1); }
+  50% { transform:translateY(-50%) scale(1.15); }
 }
 
 .suggestion-card.empty {
@@ -333,46 +352,43 @@ html, body {
 .control-btn.keyboard:active { background:var(--bg-card-hover); }
 .control-btn svg { flex-shrink:0; }
 
-/* ─── TTS overlay ─── */
+/* ─── TTS overlay (subtle bottom bar, no full-screen block) ─── */
 #ttsOverlay {
-  position:fixed; top:0; left:0; right:0; bottom:0;
-  background:rgba(26,29,46,0.18);
-  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  position:fixed; left:0; right:0; bottom:0;
+  padding:14px 20px calc(var(--safe-bottom) + 14px);
+  background:var(--green);
   z-index:80;
-  display:flex; align-items:center; justify-content:center;
-  opacity:0; pointer-events:none;
-  transition:opacity .25s ease;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  transform:translateY(100%);
+  transition:transform .3s ease;
 }
-#ttsOverlay.active { opacity:1; pointer-events:auto; }
+#ttsOverlay.active { transform:translateY(0); }
 .tts-overlay-content {
-  display:flex; flex-direction:column; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:10px;
 }
 .tts-overlay-icon {
-  width:64px; height:64px; border-radius:50%;
-  background:var(--accent);
+  width:32px; height:32px; border-radius:50%;
+  background:rgba(255,255,255,0.25);
   display:flex; align-items:center; justify-content:center;
-  animation:speakPulse 1.2s ease-in-out infinite;
-  box-shadow:0 0 40px rgba(91,106,240,0.3);
+  animation:speakPulse 1s ease-in-out infinite;
 }
-.tts-overlay-icon svg { width:32px; height:32px; fill:white; }
+.tts-overlay-icon svg { width:18px; height:18px; fill:white; }
 @keyframes speakPulse {
-  0%,100% { transform:scale(1); box-shadow:0 0 40px rgba(91,106,240,0.3); }
-  50% { transform:scale(1.08); box-shadow:0 0 60px rgba(91,106,240,0.5); }
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(1.1); }
 }
 .tts-overlay-text {
-  font:600 15px var(--font); color:white;
-  text-shadow:0 1px 8px rgba(0,0,0,0.3);
+  font:700 15px var(--font); color:white;
 }
 .tts-stop-btn {
-  margin-top:8px; padding:12px 32px;
+  padding:8px 16px;
   border:2px solid rgba(255,255,255,0.5);
-  border-radius:var(--radius-sm);
+  border-radius:10px;
   background:rgba(255,255,255,0.15);
-  backdrop-filter:blur(8px);
-  color:white; font:700 15px var(--font);
-  cursor:pointer;
+  color:white; font:700 13px var(--font);
+  cursor:pointer; margin-left:auto;
 }
-.tts-stop-btn:active { background:rgba(255,255,255,0.25); }
+.tts-stop-btn:active { background:rgba(255,255,255,0.3); }
 
 /* ═══════════════════════════════════════════
    MANUAL MODE
@@ -438,11 +454,13 @@ html, body {
    SETTINGS
    ═══════════════════════════════════════════ */
 
+#view-settings {
+  background:var(--bg);
+}
 .settings-header {
   display:flex; align-items:center; gap:12px;
-  padding: calc(var(--safe-top) + 8px) 16px 12px;
-  background:rgba(245,246,250,0.92);
-  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  padding: calc(var(--safe-top) + 12px) 16px 14px;
+  background:var(--bg);
   flex-shrink:0; z-index:10;
   border-bottom:1px solid var(--separator);
 }
@@ -583,6 +601,79 @@ html, body {
   line-height:1.6;
 }
 
+/* ─── Onboarding ─── */
+#onboarding {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:var(--bg);
+  z-index:500;
+  display:flex; flex-direction:column;
+  transition:opacity .4s ease;
+}
+#onboarding.hidden { opacity:0; pointer-events:none; }
+.onb-page {
+  flex:1; display:none; flex-direction:column;
+  padding: calc(var(--safe-top) + 40px) 32px calc(var(--safe-bottom) + 24px);
+  align-items:center; justify-content:center; text-align:center;
+}
+.onb-page.active { display:flex; }
+.onb-icon {
+  width:80px; height:80px; border-radius:24px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:28px;
+}
+.onb-icon svg { width:40px; height:40px; }
+.onb-icon.accent { background:var(--accent-soft); }
+.onb-icon.accent svg { fill:var(--accent); }
+.onb-icon.green { background:var(--green-soft); }
+.onb-icon.green svg { fill:var(--green); }
+.onb-title {
+  font:800 26px var(--font); color:var(--text);
+  margin-bottom:12px; letter-spacing:-0.3px;
+}
+.onb-desc {
+  font:500 16px/1.6 var(--font); color:var(--text-secondary);
+  max-width:320px; margin-bottom:32px;
+}
+.onb-steps {
+  display:flex; flex-direction:column; gap:14px;
+  width:100%; max-width:320px; text-align:left;
+  margin-bottom:32px;
+}
+.onb-step {
+  display:flex; align-items:flex-start; gap:12px;
+  font:500 15px/1.45 var(--font); color:var(--text);
+}
+.onb-step-num {
+  width:28px; height:28px; border-radius:50%;
+  background:var(--accent); color:white;
+  font:800 14px var(--font);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:1px;
+}
+.onb-dots {
+  display:flex; gap:8px; margin-bottom:24px;
+}
+.onb-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--text-tertiary);
+  transition:background .2s, transform .2s;
+}
+.onb-dot.active { background:var(--accent); transform:scale(1.3); }
+.onb-btn {
+  width:100%; max-width:320px;
+  padding:18px; border:none; border-radius:var(--radius);
+  background:linear-gradient(135deg, var(--accent), var(--accent-light));
+  color:white; font:800 17px var(--font);
+  cursor:pointer;
+  box-shadow:0 4px 20px rgba(91,106,240,0.3);
+  transition:transform .12s;
+}
+.onb-btn:active { transform:scale(0.97); }
+.onb-btn.secondary {
+  background:var(--accent-soft); color:var(--accent);
+  box-shadow:none; margin-top:10px;
+}
+
 /* ─── Hidden inputs ─── */
 #fileInput { display:none; }
 </style>
@@ -596,6 +687,45 @@ html, body {
   </div>
   <div class="splash-title">Écho</div>
   <div class="splash-sub">Communication assistée</div>
+</div>
+
+<!-- Onboarding -->
+<div id="onboarding" class="hidden">
+  <!-- Page 1: Welcome -->
+  <div class="onb-page active" data-page="0">
+    <div class="onb-icon accent">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+    </div>
+    <div class="onb-title">Bienvenue sur Écho</div>
+    <div class="onb-desc">Une application de communication assistée, conçue pour les personnes vivant avec la SLA.</div>
+    <div class="onb-dots"><div class="onb-dot active"></div><div class="onb-dot"></div><div class="onb-dot"></div></div>
+    <button class="onb-btn" onclick="onbNext()">Continuer</button>
+  </div>
+  <!-- Page 2: How it works -->
+  <div class="onb-page" data-page="1">
+    <div class="onb-icon green">
+      <svg viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V6z"/><path d="M17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+    </div>
+    <div class="onb-title">Comment ça marche</div>
+    <div class="onb-steps">
+      <div class="onb-step"><div class="onb-step-num">1</div><div>L'interlocuteur parle. Appuyez sur la barre du haut pour activer l'écoute.</div></div>
+      <div class="onb-step"><div class="onb-step-num">2</div><div>Écho transcrit et propose 3 réponses adaptées.</div></div>
+      <div class="onb-step"><div class="onb-step-num">3</div><div>Appuyez sur une réponse pour la prononcer à voix haute.</div></div>
+    </div>
+    <div class="onb-dots"><div class="onb-dot"></div><div class="onb-dot active"></div><div class="onb-dot"></div></div>
+    <button class="onb-btn" onclick="onbNext()">Continuer</button>
+  </div>
+  <!-- Page 3: Setup -->
+  <div class="onb-page" data-page="2">
+    <div class="onb-icon accent">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+    </div>
+    <div class="onb-title">Personnalisez</div>
+    <div class="onb-desc">Dans les réglages, vous pouvez ajouter votre clé ElevenLabs pour une voix clonée, ou utiliser la voix iOS par défaut. Tout est sauvegardé sur votre appareil.</div>
+    <div class="onb-dots"><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot active"></div></div>
+    <button class="onb-btn" onclick="onbFinish()">Commencer</button>
+    <button class="onb-btn secondary" onclick="onbFinish(); loadSettings(); showView('settings');">Ouvrir les réglages</button>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -629,6 +759,7 @@ html, body {
     </div>
 
     <!-- Suggestions -->
+    <div class="suggestions-label" id="suggestionsLabel">Vos réponses</div>
     <div class="suggestions-zone" id="suggestionsZone">
       <div class="suggestions-empty" id="suggestionsEmpty">
         <div class="suggestions-empty-icon">💬</div>
@@ -764,12 +895,23 @@ html, body {
 <!-- Hidden file input for voice samples -->
 <input type="file" id="fileInput" accept="audio/*" multiple>
 
+<!-- TTS bar (outside #app for z-index) — must exist before <script> so init runs fully -->
+<div id="ttsOverlay">
+  <div class="tts-overlay-content">
+    <div class="tts-overlay-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
+    </div>
+    <div class="tts-overlay-text">En train de parler…</div>
+  </div>
+  <button class="tts-stop-btn">Stop</button>
+</div>
+
 <!-- ═══════════════════════════════════════════
      JAVASCRIPT
      ═══════════════════════════════════════════ -->
 <script>
 
-const BUILD_VERSION = 'v2.1';
+const BUILD_VERSION = 'v2.2';
 
 // Global error handler — shows errors visually
 window.onerror = function(msg, src, line) {
@@ -791,9 +933,25 @@ const SILENCE_TIMEOUT = 1500;
 // ─── Splash ───
 let userHasInteracted = false;
 
+let onbPage = 0;
+function onbNext() {
+  onbPage++;
+  document.querySelectorAll('.onb-page').forEach(p => p.classList.remove('active'));
+  const next = document.querySelector('.onb-page[data-page="' + onbPage + '"]');
+  if (next) next.classList.add('active');
+}
+function onbFinish() {
+  localStorage.setItem('echo_onboarded', '1');
+  $('onboarding').classList.add('hidden');
+}
+
 setTimeout(() => {
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('app').style.opacity = '1';
+  // Show onboarding for first-time users
+  if (!localStorage.getItem('echo_onboarded')) {
+    $('onboarding').classList.remove('hidden');
+  }
 }, 1800);
 
 // ─── State ───
@@ -979,13 +1137,12 @@ function hideTTSOverlay() {
   document.querySelectorAll('.suggestion-card.speaking').forEach(c => c.classList.remove('speaking'));
 }
 
-$('ttsOverlay').onclick = (e) => {
-  if (e.target.closest('.tts-stop-btn')) {
-    stopAudio();
-    hideTTSOverlay();
-    startListening();
-  }
-};
+// Stop button on TTS bar — manual interrupt
+document.querySelector('.tts-stop-btn').addEventListener('click', () => {
+  stopAudio();
+  hideTTSOverlay();
+  startListening();
+});
 
 // ─── Speak suggestion ───
 function speakSuggestion(text, cardIndex) {
@@ -1029,9 +1186,20 @@ function blobToBase64(blob) {
 }
 
 let _ttsCallback = null;
+let _ttsSafetyTimer = null;
 
 function speakTextWithCallback(text, onDone) {
   _ttsCallback = onDone;
+  // Safety: auto-dismiss after 30s max if callback never fires
+  clearTimeout(_ttsSafetyTimer);
+  _ttsSafetyTimer = setTimeout(() => {
+    if (isSpeaking) {
+      console.warn('[Echo] TTS safety timeout');
+      stopAudio();
+      hideTTSOverlay();
+      startListening();
+    }
+  }, 30000);
   if (state.useLocalTTS) {
     speakLocal(text);
   } else if (state.voiceId && state.elApiKey) {
@@ -1042,6 +1210,7 @@ function speakTextWithCallback(text, onDone) {
 }
 
 function _onTTSDone() {
+  clearTimeout(_ttsSafetyTimer);
   const cb = _ttsCallback;
   _ttsCallback = null;
   resetNativeAudioSession();
@@ -1510,17 +1679,6 @@ $('buildTag').textContent = BUILD_VERSION;
 console.log('[Echo] Initialized ' + BUILD_VERSION);
 
 </script>
-
-<!-- TTS overlay (outside #app for z-index) -->
-<div id="ttsOverlay">
-  <div class="tts-overlay-content">
-    <div class="tts-overlay-icon">
-      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
-    </div>
-    <div class="tts-overlay-text">Lecture en cours...</div>
-    <button class="tts-stop-btn">Arrêter</button>
-  </div>
-</div>
 
 </body>
 </html>
