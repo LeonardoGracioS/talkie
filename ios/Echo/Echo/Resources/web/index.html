@@ -90,16 +90,17 @@ html, body {
 
 /* ─── Toast ─── */
 #toast {
-  position:fixed; top:calc(var(--safe-top) + 60px); left:16px; right:16px;
-  transform:translateY(-120px);
+  position:fixed; bottom:calc(var(--safe-bottom) + 90px); left:20px; right:20px;
+  transform:translateY(30px); opacity:0;
   padding:14px 20px; border-radius:var(--radius-sm);
   background:var(--text); color:white;
   font:600 15px var(--font);
   text-align:center;
-  z-index:200; transition:transform .3s ease;
+  z-index:200; transition:transform .3s ease, opacity .3s ease;
   box-shadow:0 8px 32px rgba(0,0,0,0.2);
+  pointer-events:none;
 }
-#toast.show { transform:translateY(0); }
+#toast.show { transform:translateY(0); opacity:1; }
 
 /* ═══════════════════════════════════════════
    MAIN VIEW — SUGGESTIONS
@@ -1137,16 +1138,6 @@ async function fetchTTSAudio(text) {
 }
 
 // ─── Speech Recognition ───
-function setupRec() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return null;
-  const r = new SR();
-  r.lang = 'fr-FR';
-  r.continuous = true;
-  r.interimResults = true;
-  return r;
-}
-
 let micSession = 0;
 
 function killRecognition() {
@@ -1161,14 +1152,27 @@ function killRecognition() {
 
 function beginRecognition(sess) {
   if (micSession !== sess) return;
-  const rec = setupRec();
-  if (!rec) {
-    showToast('Micro non supporté');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    console.error('[Echo] SpeechRecognition API not available');
+    showToast('Reconnaissance vocale non disponible');
     isListening = false;
     updateListeningUI(false);
     return;
   }
+  const rec = new SR();
+  rec.lang = 'fr-FR';
+  rec.continuous = true;
+  rec.interimResults = true;
   recognition = rec;
+
+  rec.onstart = () => {
+    console.log('[Echo] Recognition started successfully');
+  };
+
+  rec.onaudiostart = () => {
+    console.log('[Echo] Audio capture started');
+  };
 
   rec.onresult = (e) => {
     if (micSession !== sess) return;
@@ -1185,14 +1189,11 @@ function beginRecognition(sess) {
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
         if (micSession !== sess || !isListening) return;
-        // Finalize
         updateContextDisplay(lastFinalText, false);
         addToHistory(lastFinalText, false);
         lastInterlocutorText = lastFinalText;
         lastFinalText = ''; interimBuf = '';
-        // Fetch suggestions
         if (state.llmEnabled) fetchSuggestions(lastInterlocutorText);
-        // Restart recognition
         killRecognition();
         setTimeout(() => {
           if (micSession === sess && isListening) beginRecognition(sess);
@@ -1202,15 +1203,23 @@ function beginRecognition(sess) {
   };
 
   rec.onerror = (e) => {
+    console.warn('[Echo] Recognition error:', e.error);
     if (micSession !== sess) return;
     if (e.error === 'no-speech' || e.error === 'aborted') return;
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      showToast('Accès micro refusé');
+      showToast('Accès micro refusé — vérifiez les réglages');
       stopListening();
+      return;
+    }
+    if (e.error === 'audio-capture') {
+      showToast('Micro inaccessible');
+      stopListening();
+      return;
     }
   };
 
   rec.onend = () => {
+    console.log('[Echo] Recognition ended');
     if (micSession === sess && isListening) {
       killRecognition();
       setTimeout(() => {
@@ -1220,22 +1229,39 @@ function beginRecognition(sess) {
     }
   };
 
-  try { rec.start(); } catch(e) {
+  try {
+    rec.start();
+    console.log('[Echo] rec.start() called');
+  } catch(e) {
+    console.warn('[Echo] rec.start() threw:', e);
+    // Retry once after a delay
     setTimeout(() => {
       if (micSession !== sess || !isListening) return;
-      const rec2 = setupRec();
-      if (!rec2) { stopListening(); return; }
-      recognition = rec2;
-      rec2.onresult = rec.onresult;
-      rec2.onerror = rec.onerror;
-      rec2.onend = rec.onend;
-      try { rec2.start(); } catch { stopListening(); }
-    }, 500);
+      killRecognition();
+      try {
+        const rec2 = new SR();
+        rec2.lang = 'fr-FR';
+        rec2.continuous = true;
+        rec2.interimResults = true;
+        recognition = rec2;
+        rec2.onstart = rec.onstart;
+        rec2.onaudiostart = rec.onaudiostart;
+        rec2.onresult = rec.onresult;
+        rec2.onerror = rec.onerror;
+        rec2.onend = rec.onend;
+        rec2.start();
+        console.log('[Echo] Retry rec.start() called');
+      } catch(e2) {
+        console.error('[Echo] Retry failed:', e2);
+        showToast('Impossible de démarrer le micro');
+        stopListening();
+      }
+    }, 600);
   }
 }
 
 function startListening() {
-  if (isSpeaking) return;
+  if (isSpeaking) { console.log('[Echo] startListening blocked: isSpeaking'); return; }
   stopAudio();
   killRecognition();
   clearTimeout(silenceTimer);
@@ -1250,18 +1276,25 @@ function startListening() {
   const run = () => {
     if (micSession !== sess) return;
     resetNativeAudioSession();
-    setTimeout(() => beginRecognition(sess), 0);
+    setTimeout(() => beginRecognition(sess), 150);
   };
 
+  // Request mic permission first (user gesture context)
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         if (micSession !== sess) { stream.getTracks().forEach(t => t.stop()); return; }
         stream.getTracks().forEach(t => t.stop());
+        console.log('[Echo] Mic permission granted');
         run();
       })
-      .catch(() => run());
+      .catch(err => {
+        console.warn('[Echo] getUserMedia failed:', err.name, err.message);
+        // Try anyway — SpeechRecognition might work without getUserMedia
+        run();
+      });
   } else {
+    console.log('[Echo] No getUserMedia, trying speech recognition directly');
     setTimeout(run, 80);
   }
 }
