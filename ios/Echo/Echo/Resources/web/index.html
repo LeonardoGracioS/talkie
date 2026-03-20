@@ -90,15 +90,16 @@ html, body {
 
 /* ─── Toast ─── */
 #toast {
-  position:fixed; top:calc(var(--safe-top) + 16px); left:50%;
-  transform:translateX(-50%) translateY(-80px);
-  padding:12px 24px; border-radius:var(--radius-sm);
+  position:fixed; top:calc(var(--safe-top) + 60px); left:16px; right:16px;
+  transform:translateY(-120px);
+  padding:14px 20px; border-radius:var(--radius-sm);
   background:var(--text); color:white;
   font:600 15px var(--font);
+  text-align:center;
   z-index:200; transition:transform .3s ease;
   box-shadow:0 8px 32px rgba(0,0,0,0.2);
 }
-#toast.show { transform:translateX(-50%) translateY(0); }
+#toast.show { transform:translateY(0); }
 
 /* ═══════════════════════════════════════════
    MAIN VIEW — SUGGESTIONS
@@ -133,17 +134,20 @@ html, body {
 /* ─── Listening indicator ─── */
 .listening-bar {
   display:flex; align-items:center; justify-content:center;
-  gap:10px; padding:10px 16px;
+  gap:10px; padding:14px 16px;
   background:var(--green-soft);
   border-radius:var(--radius-sm);
   margin-bottom:10px; flex-shrink:0;
   transition:background .3s, opacity .3s;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
+.listening-bar:active { opacity:0.8; }
 .listening-bar.inactive {
-  background:var(--separator);
+  background:var(--accent-soft);
 }
-.listening-bar.inactive .listening-dot { background:var(--text-tertiary); animation:none; }
-.listening-bar.inactive .listening-text { color:var(--text-tertiary); }
+.listening-bar.inactive .listening-dot { background:var(--accent); animation:none; }
+.listening-bar.inactive .listening-text { color:var(--accent); font-weight:700; }
 .listening-dot {
   width:10px; height:10px; border-radius:50%;
   background:var(--green); flex-shrink:0;
@@ -161,7 +165,7 @@ html, body {
   background:var(--green);
   animation:waveBar 1.2s ease-in-out infinite;
 }
-.listening-bar.inactive .listening-waves i { background:var(--text-tertiary); animation:none; height:4px !important; }
+.listening-bar.inactive .listening-waves i { background:var(--accent); animation:none; height:4px !important; }
 .listening-waves i:nth-child(1){height:6px;animation-delay:0s}
 .listening-waves i:nth-child(2){height:12px;animation-delay:.1s}
 .listening-waves i:nth-child(3){height:18px;animation-delay:.2s}
@@ -326,7 +330,7 @@ html, body {
   box-shadow:var(--shadow-sm);
 }
 .control-btn.keyboard:active { background:var(--bg-card-hover); }
-.control-btn .btn-emoji { font-size:20px; }
+.control-btn svg { flex-shrink:0; }
 
 /* ─── TTS overlay ─── */
 #ttsOverlay {
@@ -610,11 +614,11 @@ html, body {
       </button>
     </div>
 
-    <!-- Listening indicator -->
-    <div class="listening-bar inactive" id="listeningBar">
+    <!-- Listening indicator (tap to start/stop) -->
+    <div class="listening-bar inactive" id="listeningBar" role="button">
       <div class="listening-dot"></div>
       <div class="listening-waves"><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="listening-text" id="listeningText">En pause</div>
+      <div class="listening-text" id="listeningText">Appuyez pour écouter</div>
     </div>
 
     <!-- Context zone -->
@@ -634,10 +638,12 @@ html, body {
     <!-- Controls -->
     <div class="controls-zone">
       <button class="control-btn refresh" id="btnRefresh">
-        <span class="btn-emoji">🔄</span> Autres idées
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+        Relancer
       </button>
       <button class="control-btn keyboard" id="btnKeyboard">
-        <span class="btn-emoji">⌨️</span> Clavier
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"/></svg>
+        Écrire
       </button>
     </div>
   </div>
@@ -656,7 +662,8 @@ html, body {
       <textarea class="manual-textarea" id="manualInput" placeholder="Tapez votre message ici..."></textarea>
     </div>
     <button class="manual-speak-btn" id="btnSpeak">
-      <span class="btn-emoji">🗣️</span> PRONONCER
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
+      Prononcer
     </button>
   </div>
 
@@ -770,11 +777,11 @@ const DEFAULT_VOICE_ID = '';
 const SILENCE_TIMEOUT = 1500;
 
 // ─── Splash ───
+let userHasInteracted = false;
+
 setTimeout(() => {
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('app').style.opacity = '1';
-  // Auto-start listening after splash
-  setTimeout(() => startListening(), 600);
 }, 1800);
 
 // ─── State ───
@@ -860,12 +867,22 @@ function showView(id) {
 }
 
 $('settingsBtn').onclick = () => { stopListening(); loadSettings(); showView('settings'); };
-$('backFromSettingsBtn').onclick = () => { showView('suggestions'); startListening(); };
+$('backFromSettingsBtn').onclick = () => { showView('suggestions'); if (userHasInteracted) startListening(); };
 
 $('btnKeyboard').onclick = () => switchToManual();
 $('btnBackToSuggestions').onclick = () => switchToSuggestions();
 $('btnRefresh').onclick = () => refreshSuggestions();
 $('btnSpeak').onclick = () => speakManual();
+
+// Tap listening bar to start/stop
+$('listeningBar').onclick = () => {
+  userHasInteracted = true;
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+};
 
 function switchToManual() {
   stopListening();
@@ -953,6 +970,7 @@ $('ttsOverlay').onclick = (e) => {
 // ─── Speak suggestion ───
 function speakSuggestion(text, cardIndex) {
   if (isSpeaking) return;
+  userHasInteracted = true;
   const card = $('suggestionCard' + cardIndex);
   if (card) card.classList.add('speaking');
   stopListening();
@@ -1261,10 +1279,10 @@ function updateListeningUI(active) {
   const txt = $('listeningText');
   if (active) {
     bar.classList.remove('inactive');
-    txt.textContent = 'À l\'écoute...';
+    txt.textContent = 'À l\'écoute…';
   } else {
     bar.classList.add('inactive');
-    txt.textContent = 'En pause';
+    txt.textContent = userHasInteracted ? 'Appuyez pour reprendre' : 'Appuyez pour écouter';
   }
 }
 
