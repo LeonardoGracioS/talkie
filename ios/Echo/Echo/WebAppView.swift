@@ -40,6 +40,12 @@ struct WebAppView: UIViewRepresentable {
         // Without this, iOS switches to "playback" mode after TTS and blocks the mic
         configureAudioSession()
 
+        // Clear cached HTML/JS so fresh bundle files always load
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
+            modifiedSince: Date.distantPast
+        ) { }
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -162,7 +168,11 @@ struct WebAppView: UIViewRepresentable {
             nativePlaybackId = nil
             WebAppView.reassertPlayAndRecordSession()
             let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(playbackId)', '\(code)');"
-            webView?.evaluateJavaScript(js, completionHandler: nil)
+            DispatchQueue.main.async { [weak self] in
+                self?.webView?.evaluateJavaScript(js) { err, _ in
+                    if let err = err { print("[NativeTTS] JS fail callback error: \(err)") }
+                }
+            }
         }
 
         /// - Parameter notifyJS: When stopping from JS `stopAudio`, tell the page so it can clear UI.
@@ -176,7 +186,11 @@ struct WebAppView: UIViewRepresentable {
             WebAppView.reassertPlayAndRecordSession()
             if notifyJS, let id = id {
                 let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', 'stopped');"
-                webView?.evaluateJavaScript(js, completionHandler: nil)
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js) { err, _ in
+                        if let err = err { print("[NativeTTS] JS stop notify error: \(err)") }
+                    }
+                }
             }
         }
 
@@ -204,7 +218,11 @@ struct WebAppView: UIViewRepresentable {
             guard let id = id else { return }
             let errArg = flag ? "null" : "'playback_failed'"
             let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', \(errArg));"
-            webView?.evaluateJavaScript(js, completionHandler: nil)
+            DispatchQueue.main.async { [weak self] in
+                self?.webView?.evaluateJavaScript(js) { err, _ in
+                    if let err = err { print("[NativeTTS] JS done callback error: \(err)") }
+                }
+            }
         }
 
         func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
@@ -217,7 +235,11 @@ struct WebAppView: UIViewRepresentable {
             WebAppView.reassertPlayAndRecordSession()
             if !id.isEmpty {
                 let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', 'decode_failed');"
-                webView?.evaluateJavaScript(js, completionHandler: nil)
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js) { err, _ in
+                        if let err = err { print("[NativeTTS] JS decode callback error: \(err)") }
+                    }
+                }
             }
         }
 

@@ -20,9 +20,11 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "Resources/**"
-    resources:
-      - path: Echo/Resources
+      - path: Echo/Resources/web
+        buildPhase: resources
         type: folder
+      - path: Echo/Resources/Assets.xcassets
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.echo.app
