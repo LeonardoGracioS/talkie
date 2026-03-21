@@ -50,6 +50,7 @@ struct KeychainHelper {
 class MicState: ObservableObject {
     static let shared = MicState()
     @Published var isListening = false
+    @Published var showBar = false
 }
 
 // Custom WKWebView that hides the iOS input accessory bar (˄ ˅ ✓)
@@ -369,10 +370,16 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "openURL" {
                 if let urlString = message.body as? String,
-                   let url = URL(string: urlString),
-                   let vc = webView?.window?.rootViewController {
-                    let safari = SFSafariViewController(url: url)
-                    vc.present(safari, animated: true)
+                   let url = URL(string: urlString) {
+                    if url.scheme == "mailto" {
+                        // Open mailto: links with the system mail handler
+                        DispatchQueue.main.async {
+                            UIApplication.shared.open(url)
+                        }
+                    } else if let vc = webView?.window?.rootViewController {
+                        let safari = SFSafariViewController(url: url)
+                        vc.present(safari, animated: true)
+                    }
                 }
                 return
             }
@@ -381,6 +388,9 @@ struct WebAppView: UIViewRepresentable {
                    let listening = body["listening"] as? Bool {
                     DispatchQueue.main.async {
                         MicState.shared.isListening = listening
+                        if !MicState.shared.showBar {
+                            MicState.shared.showBar = true
+                        }
                     }
                 }
                 return
