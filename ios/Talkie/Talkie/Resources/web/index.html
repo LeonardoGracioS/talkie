@@ -1049,7 +1049,12 @@ function loadState() {
 }
 
 function save() {
-  try { localStorage.setItem(DB_KEY, JSON.stringify(state)); } catch {}
+  try {
+    // Save state without elApiKey (stored in Keychain)
+    const toSave = Object.assign({}, state);
+    delete toSave.elApiKey;
+    localStorage.setItem(DB_KEY, JSON.stringify(toSave));
+  } catch {}
 }
 
 function addToHistory(text, isUser) {
@@ -1103,6 +1108,38 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 
 function resetNativeAudioSession() {
   try { window.webkit?.messageHandlers?.resetAudioSession?.postMessage('reset'); } catch (_) {}
+}
+
+// ─── Keychain Bridge ───
+window._keychainCallback = function(action, key, value) {
+  console.log('[Talkie] Keychain', action, key, value !== null ? '(has value)' : '(null)');
+  if (action === 'load' && key === 'elApiKey' && value) {
+    state.elApiKey = value;
+    // Remove from localStorage if it was there (migration)
+    try {
+      const raw = localStorage.getItem(DB_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.elApiKey) {
+          delete parsed.elApiKey;
+          localStorage.setItem(DB_KEY, JSON.stringify(parsed));
+        }
+      }
+    } catch(_) {}
+    // Update settings UI if visible
+    const el = document.getElementById('settingsELKey');
+    if (el && !el.value) el.value = value;
+  }
+};
+
+function keychainSave(key, value) {
+  try { window.webkit?.messageHandlers?.keychainSave?.postMessage({ key, value }); } catch(_) {}
+}
+function keychainLoad(key) {
+  try { window.webkit?.messageHandlers?.keychainLoad?.postMessage({ key }); } catch(_) {}
+}
+function keychainDelete(key) {
+  try { window.webkit?.messageHandlers?.keychainDelete?.postMessage({ key }); } catch(_) {}
 }
 
 // ─── Debug ───
@@ -1812,7 +1849,12 @@ function loadSettings() {
 function saveSettings() {
   state.userName = $('settingsName').value;
   state.systemPrompt = $('settingsPrompt').value;
-  state.elApiKey = $('settingsELKey').value;
+  const newKey = $('settingsELKey').value;
+  if (newKey !== state.elApiKey) {
+    state.elApiKey = newKey;
+    if (newKey) keychainSave('elApiKey', newKey);
+    else keychainDelete('elApiKey');
+  }
   state.voiceId = $('settingsVoiceId').value.trim();
   state.memory = $('settingsMemory').value;
   save();
@@ -1890,6 +1932,7 @@ conversationHistory = state.history || [];
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
 checkLLMAvailability();
+keychainLoad('elApiKey');
 console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
 </script>

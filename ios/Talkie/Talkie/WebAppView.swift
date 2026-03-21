@@ -2,6 +2,47 @@ import SwiftUI
 import WebKit
 import AVFoundation
 import FoundationModels
+import Security
+
+// MARK: - Keychain Helper
+
+struct KeychainHelper {
+    static func save(key: String, value: String) -> Bool {
+        guard let data = value.data(using: .utf8) else { return false }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: "com.talkie.app"
+        ]
+        SecItemDelete(query as CFDictionary)
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
+    }
+
+    static func load(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: "com.talkie.app",
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func delete(key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: "com.talkie.app"
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+}
 
 // Custom WKWebView that hides the iOS input accessory bar (˄ ˅ ✓)
 class NoAccessoryWebView: WKWebView {
@@ -56,6 +97,9 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "playTTSFromData")
         config.userContentController.add(coordinator, name: "stopNativeTTS")
         config.userContentController.add(coordinator, name: "checkLLMAvailability")
+        config.userContentController.add(coordinator, name: "keychainSave")
+        config.userContentController.add(coordinator, name: "keychainLoad")
+        config.userContentController.add(coordinator, name: "keychainDelete")
 
         let webView = NoAccessoryWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -282,6 +326,42 @@ struct WebAppView: UIViewRepresentable {
                     available = false
                 }
                 let js = "window._llmAvailabilityCallback(\(available));"
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
+                return
+            }
+            if message.name == "keychainSave" {
+                guard let body = message.body as? [String: Any],
+                      let key = body["key"] as? String,
+                      let value = body["value"] as? String else { return }
+                let ok = KeychainHelper.save(key: key, value: value)
+                let js = "window._keychainCallback && window._keychainCallback('save', '\(key)', \(ok));"
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
+                return
+            }
+            if message.name == "keychainLoad" {
+                guard let body = message.body as? [String: Any],
+                      let key = body["key"] as? String else { return }
+                let val = KeychainHelper.load(key: key)
+                let escaped = (val ?? "")
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                let js = val != nil
+                    ? "window._keychainCallback && window._keychainCallback('load', '\(key)', '\(escaped)');"
+                    : "window._keychainCallback && window._keychainCallback('load', '\(key)', null);"
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
+                return
+            }
+            if message.name == "keychainDelete" {
+                guard let body = message.body as? [String: Any],
+                      let key = body["key"] as? String else { return }
+                KeychainHelper.delete(key: key)
+                let js = "window._keychainCallback && window._keychainCallback('delete', '\(key)', true);"
                 DispatchQueue.main.async { [weak self] in
                     self?.webView?.evaluateJavaScript(js, completionHandler: nil)
                 }
