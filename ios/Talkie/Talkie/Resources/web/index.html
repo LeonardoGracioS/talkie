@@ -1662,6 +1662,7 @@ function startListening() {
   interimBuf = '';
   isListening = true;
   updateListeningUI(true);
+  try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: true }); } catch(_) {}
   resetNativeAudioSession();
 
   const run = () => {
@@ -1696,6 +1697,7 @@ function stopListening() {
   clearTimeout(phraseEndTimer);
   killRecognition();
   updateListeningUI(false);
+  try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: false }); } catch(_) {}
 }
 
 function updateListeningUI(active) {

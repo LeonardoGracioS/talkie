@@ -35,6 +35,7 @@ targets:
         GENERATE_INFOPLIST_FILE: true
         INFOPLIST_KEY_CFBundleDisplayName: Talkie
         INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UILaunchScreen_BackgroundColor: AccentColor
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Talkie a besoin du micro pour écouter les conversations et transcrire la parole."
         INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Talkie utilise la reconnaissance vocale pour transcrire les conversations."

@@ -44,6 +44,13 @@ struct KeychainHelper {
     }
 }
 
+// MARK: - Shared Mic State
+
+class MicState: ObservableObject {
+    static let shared = MicState()
+    @Published var isListening = false
+}
+
 // Custom WKWebView that hides the iOS input accessory bar (˄ ˅ ✓)
 class NoAccessoryWebView: WKWebView {
     override func didMoveToSuperview() {
@@ -100,6 +107,7 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "keychainSave")
         config.userContentController.add(coordinator, name: "keychainLoad")
         config.userContentController.add(coordinator, name: "keychainDelete")
+        config.userContentController.add(coordinator, name: "micStatusUpdate")
 
         let webView = NoAccessoryWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -354,6 +362,15 @@ struct WebAppView: UIViewRepresentable {
                     : "window._keychainCallback && window._keychainCallback('load', '\(key)', null);"
                 DispatchQueue.main.async { [weak self] in
                     self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
+                return
+            }
+            if message.name == "micStatusUpdate" {
+                if let body = message.body as? [String: Any],
+                   let listening = body["listening"] as? Bool {
+                    DispatchQueue.main.async {
+                        MicState.shared.isListening = listening
+                    }
                 }
                 return
             }
