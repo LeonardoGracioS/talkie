@@ -507,19 +507,37 @@ html, body {
 
 /* Toggle */
 .toggle {
-  width:52px; height:32px; border-radius:16px;
-  background:#D1D5E0; border:none; cursor:pointer;
+  width:51px; height:31px; border-radius:15.5px;
+  background:#E5E5EA; border:none; cursor:pointer;
   position:relative; transition:background .2s; flex-shrink:0;
 }
 .toggle::after {
   content:''; position:absolute;
-  top:3px; left:3px; width:26px; height:26px;
+  top:2px; left:2px; width:27px; height:27px;
   border-radius:50%; background:white;
-  box-shadow:0 1px 4px rgba(0,0,0,0.15);
-  transition:transform .2s;
+  box-shadow:0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16), 0 3px 1px rgba(0,0,0,0.1);
+  transition:transform .2s cubic-bezier(0.3, 1.5, 0.6, 1);
 }
-.toggle.active { background:var(--accent); }
+.toggle.active { background:#34C759; }
 .toggle.active::after { transform:translateX(20px); }
+
+/* Settings custom elements */
+.settings-inline-input {
+  flex:1; text-align:right; border:none; background:transparent;
+  font:400 16px var(--font); color:var(--text-secondary);
+  outline:none; min-width: 0;
+}
+.settings-inline-input::placeholder { color:var(--text-tertiary); }
+.settings-inline-input:focus { color:var(--accent); }
+
+.settings-destructive-btn {
+  width:100%; display:flex; justify-content:center; align-items:center;
+  background:transparent; border:none; cursor:pointer;
+  font:600 16px var(--font); padding:14px 16px;
+  color:var(--red); transition:background .2s;
+}
+.settings-destructive-btn:active { background:rgba(239,68,68,0.08); }
+.settings-destructive-btn .name { color:var(--red); margin: 0 auto; text-align: center; }
 
 /* Settings inputs */
 .settings-input {
@@ -779,8 +797,8 @@ html, body {
 
 <!-- Splash -->
 <div id="splash">
-  <div class="splash-icon">
-    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+  <div class="splash-icon" style="background:transparent; animation:splashPulse 1.4s ease-in-out infinite alternate; backdrop-filter:none;">
+    <img src="logo_talkie.png" alt="Talkie Logo" style="width:120px; height:120px; border-radius:32px; object-fit:cover; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
   </div>
   <div class="splash-title">Talkie</div>
   <div class="splash-sub">Votre voix, préservée</div>
@@ -790,8 +808,8 @@ html, body {
 <div id="onboarding" class="hidden">
   <!-- Page 1: Welcome -->
   <div class="onb-page active" data-page="0">
-    <div class="onb-icon accent">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+    <div class="onb-icon accent" style="background:transparent;">
+      <img src="logo_talkie.png" alt="Talkie Logo" style="width:80px; height:80px; border-radius:20px; object-fit:cover; box-shadow:0 4px 16px rgba(0,0,0,0.15);">
     </div>
     <div class="onb-title">Bienvenue sur Talkie</div>
     <div class="onb-desc">Une application de communication assistée, conçue pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler.</div>
@@ -836,9 +854,7 @@ html, body {
     <div class="top-bar">
       <div class="top-bar-left">
         <div class="app-logo">
-          <div class="app-logo-icon">
-            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
-          </div>
+          <img src="logo_talkie.png" alt="Talkie Logo" style="width:36px; height:36px; border-radius:10px; object-fit:cover; box-shadow:0 2px 8px rgba(91,106,240,0.25);">
           <span class="app-logo-text">Talkie</span>
         </div>
       </div>
@@ -911,105 +927,60 @@ html, body {
     </div>
     <div class="settings-scroll">
 
-      <!-- Assistant -->
+      <!-- Apple Intelligence (expandable) -->
       <div class="settings-section">
-        <div class="settings-section-title">Assistant</div>
+        <div class="settings-section-title">Apple Intelligence</div>
         <div class="settings-card">
           <div class="settings-row">
             <div class="label">
-              <span class="name">Suggestions IA</span>
-              <span class="desc">Nécessite Apple Intelligence (iOS 26+). Propose des réponses automatiques basées sur la conversation.</span>
+              <span class="name">Utiliser Apple Intelligence</span>
+              <span class="desc">Nécessite iOS 26+ et un appareil compatible</span>
             </div>
-            <button class="toggle active" id="llmToggle"></button>
+            <button class="toggle" id="aiMasterToggle"></button>
           </div>
         </div>
-      </div>
-
-      <!-- Profile -->
-      <div class="settings-section">
-        <div class="settings-section-title">Profil</div>
-        <div class="settings-card">
-          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
-            <span class="name" style="margin-bottom:8px;">Nom</span>
-            <input class="settings-input" id="settingsName" type="text" placeholder="Votre nom" autocomplete="off">
-          </div>
-        </div>
-      </div>
-
-      <!-- Context -->
-      <div class="settings-section">
-        <div class="settings-section-title">Mémoire & Contexte</div>
-        <div class="settings-card">
-          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
-            <span class="name" style="margin-bottom:8px;">Prompt système</span>
-            <textarea class="settings-textarea" id="settingsPrompt" rows="5"></textarea>
-            <button class="settings-action-btn" id="resetPromptBtn" style="margin-top:8px;">Réinitialiser le prompt</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Informations retenues (collapsible, Apple Intelligence) -->
-      <div class="settings-section" id="memorySection">
-        <div class="settings-section-title">Informations retenues</div>
-        <div class="settings-card">
-          <div class="settings-row" style="cursor:pointer;" id="memoryDrawerToggle">
-            <div class="label">
-              <span class="name">Mémoire personnelle</span>
-              <span class="desc">Disponible avec Apple Intelligence. Talkie retient des informations pour personnaliser les réponses.</span>
+        <!-- Sub-options revealed when AI is enabled -->
+        <div id="aiSubOptions" style="display:none; margin-top:10px;">
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="label">
+                <span class="name">Suggestions de texte IA</span>
+                <span class="desc">Propose 3 réponses automatiques</span>
+              </div>
+              <button class="toggle active" id="llmToggle"></button>
             </div>
-            <svg class="drawer-arrow" id="memoryDrawerArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-          <div id="memoryDrawerContent" style="display:none;">
-            <div class="settings-row" style="flex-direction:column; align-items:stretch; border-top:1px solid var(--separator);">
-              <textarea class="settings-textarea" id="settingsMemory" rows="4" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+            <div class="settings-row" id="advancedPageBtn" style="cursor:pointer;">
+              <div class="label">
+                <span class="name">Prompt système</span>
+                <span class="desc">Modifier le comportement de l'assistant</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="settings-row" id="memoryPageBtn" style="cursor:pointer;">
+              <div class="label">
+                <span class="name">Mémoire IA</span>
+                <span class="desc">Informations retenues pour personnaliser les réponses</span>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="settings-row">
+              <div class="label">
+                <span class="name">Utiliser ma voix personnelle</span>
+                <span class="desc">Voix personnelle configurée dans Réglages iOS → Accessibilité</span>
+              </div>
+              <button class="toggle" id="appleVoiceToggleBtn"></button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Voix -->
-      <div class="settings-section">
-        <div class="settings-section-title">Voix</div>
-        <div class="settings-card">
-          <div class="settings-row">
-            <div class="label">
-              <span class="name">Personnaliser la voix</span>
-              <span class="desc">Utiliser une voix ElevenLabs au lieu de la voix intégrée iPhone</span>
-            </div>
-            <button class="toggle" id="customVoiceToggleBtn"></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Data Management -->
-      <div class="settings-section">
-        <div class="settings-section-title">Données personnelles</div>
-        <div class="settings-card">
-          <div class="settings-row">
-            <div class="label">
-              <span class="name">Effacer l'historique</span>
-              <span class="desc">Supprimer les conversations</span>
-            </div>
-            <button class="toggle-btn" id="clearHistoryBtn">Effacer</button>
-          </div>
-          <div class="settings-row">
-            <div class="label">
-              <span class="name">Supprimer toutes mes données</span>
-              <span class="desc">Nom, mémoire, voix, historique, clé API</span>
-            </div>
-            <button class="toggle-btn" id="deleteAllDataBtn" style="background:var(--red);color:white;">Supprimer</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- About -->
+      <!-- À propos -->
       <div class="settings-section">
         <div class="settings-section-title">À propos</div>
         <div class="settings-card">
           <div class="settings-row" id="tutorialBtn" style="cursor:pointer;">
             <div class="label">
               <span class="name">Tutoriel</span>
-              <span class="desc">Revoir l'écran de bienvenue</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
@@ -1028,46 +999,67 @@ html, body {
           <div class="settings-row" id="reportBtn" style="cursor:pointer;">
             <div class="label">
               <span class="name">Signaler un problème</span>
-              <span class="desc">Contenu inapproprié ou bug</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
         </div>
-        <div class="about-box" id="versionBox" style="margin-top:12px; cursor:pointer;">
-          Talkie <span id="buildTag"></span> — Communication assistée<br>
-          Conçu pour les personnes ayant des difficultés à parler
+      </div>
+
+      <!-- Réinitialiser -->
+      <div class="settings-section" style="margin-top:24px;">
+        <div class="settings-card" style="display:flex; flex-direction:column;">
+          <button class="settings-destructive-btn" id="deleteAllDataBtn">
+            <span class="name">Réinitialiser l'application</span>
+          </button>
         </div>
       </div>
 
+      <!-- Version + dev mode trigger -->
+      <div class="about-box" id="versionBox" style="margin-top:8px; cursor:pointer;">
+        Talkie <span id="buildTag"></span>
+      </div>
+
       <!-- Developer mode (hidden by default, tap version 5 times) -->
-      <div class="settings-section dev-section" id="devSection">
+      <div class="settings-section dev-section" id="devSection" style="margin-top:16px;">
         <div class="settings-section-title">Mode développeur</div>
         <div class="settings-card">
           <div class="settings-row">
-            <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
-            <button class="toggle-btn" id="toggleEL">Afficher</button>
-          </div>
-          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
-            <span class="name" style="margin-bottom:4px;">Voice ID</span>
-            <span class="desc" style="margin-bottom:8px;">ID d'une voix ElevenLabs existante</span>
-            <input class="settings-input" id="settingsVoiceId" type="text" placeholder="Ex: pNInz6obpgDQGcFmaJgB" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <div class="label">
+              <span class="name">Utiliser ElevenLabs</span>
+              <span class="desc">Utilise l'API ElevenLabs pour la synthèse vocale au lieu de la voix intégrée de l'iPhone</span>
+            </div>
+            <button class="toggle" id="useElevenLabsToggleBtn"></button>
           </div>
         </div>
-        <div class="settings-card" style="margin-top:10px;">
-          <div class="settings-section-title" style="padding:14px 16px 0;">Empreinte vocale</div>
-          <div id="voiceActiveArea"></div>
-          <div id="samplesContainer"></div>
-          <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-            <button class="settings-action-btn" id="addSampleBtn">+ Ajouter un échantillon vocal</button>
-            <input class="settings-input" id="voiceNameInput" type="text" placeholder="Nom de la voix" style="display:none">
-            <button class="settings-action-btn" id="cloneBtn" style="display:none">Cloner la voix</button>
-            <button class="settings-action-btn" id="testVoiceBtn" style="display:none">Tester la voix</button>
+        <div id="elevenLabsConfigArea" style="display:none;">
+          <div class="settings-card" style="margin-top:10px;">
+            <div class="settings-row">
+              <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button class="toggle-btn" id="toggleEL">Afficher</button>
+            </div>
+            <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+              <span class="name" style="margin-bottom:4px;">Voice ID</span>
+              <span class="desc" style="margin-bottom:8px;">ID d'une voix ElevenLabs existante</span>
+              <input class="settings-input" id="settingsVoiceId" type="text" placeholder="Ex: pNInz6obpgDQGcFmaJgB" autocomplete="off" autocapitalize="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="settings-card" style="margin-top:10px;">
+            <div class="settings-section-title" style="padding:14px 16px 0;">Cloner une voix</div>
+            <div id="voiceActiveArea"></div>
+            <div id="samplesContainer"></div>
+            <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+              <button class="settings-action-btn" id="addSampleBtn">+ Ajouter un audio pour cloner</button>
+              <input class="settings-input" id="voiceNameInput" type="text" placeholder="Nom de la voix" style="display:none">
+              <button class="settings-action-btn" id="cloneBtn" style="display:none">Cloner la voix</button>
+              <button class="settings-action-btn" id="testVoiceBtn" style="display:none">Tester la voix</button>
+            </div>
           </div>
         </div>
       </div>
 
     </div>
   </div>
+
 
 </div>
 
@@ -1126,7 +1118,7 @@ html, body {
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Pour toute question concernant la confidentialité :</p>
-      <p><strong>talkie-app@proton.me</strong></p>
+      <p><strong>samuelgracio@gmail.com</strong></p>
     </div>
   </div>
 </div>
@@ -1165,8 +1157,38 @@ html, body {
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Besoin d'aide supplémentaire ?</p>
-      <p><strong>talkie-app@proton.me</strong></p>
+      <p><strong>samuelgracio@gmail.com</strong></p>
     </div>
+  </div>
+</div>
+
+<!-- Mémoire IA -->
+<div class="inapp-page" id="page-memory">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('memory')">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title">Mémoire IA</div>
+  </div>
+  <div class="inapp-page-content">
+    <p>Disponible avec Apple Intelligence. Talkie retient des informations pour personnaliser les réponses.</p>
+    <textarea class="settings-textarea" id="settingsMemory" rows="8" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+  </div>
+</div>
+
+<!-- Avancé -->
+<div class="inapp-page" id="page-advanced">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('advanced')">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title">Avancé</div>
+  </div>
+  <div class="inapp-page-content">
+    <h2>Prompt système</h2>
+    <p>Ce prompt modifie le comportement global de l'assistant.</p>
+    <textarea class="settings-textarea" id="settingsPrompt" rows="8"></textarea>
+    <button class="settings-action-btn" id="resetPromptBtn" style="margin-top:16px;">Réinitialiser aux valeurs par défaut</button>
   </div>
 </div>
 
@@ -1258,8 +1280,13 @@ function loadState() {
     if (s && s.history !== undefined) {
       if (!s.voiceId) s.voiceId = DEFAULT_VOICE_ID;
       if (!s.elApiKey) s.elApiKey = EL_DEFAULT_KEY;
-      if (s.useLocalTTS === undefined) s.useLocalTTS = true;
       if (!s.memory) s.memory = '';
+      // Migrate old useLocalTTS to new fields
+      if (s.useApplePersonalVoice === undefined) s.useApplePersonalVoice = false;
+      if (s.useElevenLabs === undefined) {
+        s.useElevenLabs = (s.useLocalTTS === false && s.voiceId && s.elApiKey);
+      }
+      delete s.useLocalTTS;
       return s;
     }
   } catch {}
@@ -1275,7 +1302,8 @@ function loadState() {
           voiceId: old.voiceId || DEFAULT_VOICE_ID,
           samples: old.samples || [],
           llmEnabled: old.llmEnabled !== false,
-          useLocalTTS: old.useLocalTTS !== false,
+          useApplePersonalVoice: false,
+          useElevenLabs: (old.useLocalTTS === false && old.voiceId && old.elApiKey),
           history: [],
         };
       }
@@ -1284,7 +1312,7 @@ function loadState() {
   return {
     userName: '', systemPrompt: DEFAULT_PROMPT,
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
-    samples: [], llmEnabled: true, useLocalTTS: true,
+    samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '',
   };
 }
@@ -1560,11 +1588,13 @@ function speakTextWithCallback(text, onDone) {
       startListening();
     }
   }, 600000);
-  if (state.useLocalTTS) {
-    speakLocal(text);
-  } else if (state.voiceId && state.elApiKey) {
+  if (state.useElevenLabs && state.voiceId && state.elApiKey) {
     playTTS(text);
+  } else if (state.useApplePersonalVoice) {
+    // Attempt native speech with Apple Personal Voice fallback to iOS native standard voice
+    speakApplePersonalVoice(text);
   } else {
+    // Normal web SpeechSynthesis fallback
     speakLocal(text);
   }
 }
@@ -1643,6 +1673,34 @@ async function playElevenLabsBlob(blob) {
 
 let _speechPollTimer = null;
 let _speechSynthMaxTimer = null;
+
+function speakApplePersonalVoice(text) {
+  stopPlaybackOnly();
+  const rid = 'sv_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+  currentAudio = { isNativeTTS: true, playbackId: rid };
+  
+  window._nativeSpeechCallback = (cbRid, err) => {
+    if (cbRid !== rid) return;
+    window._nativeSpeechCallback = null;
+    currentAudio = null;
+    if (err) {
+      console.warn('[Talkie] Native speech error/cancelled:', err);
+      // fallback to normal speech if failed
+      if (err !== 'cancelled') {
+        speakLocal(text);
+        return;
+      }
+    }
+    _onTTSDone();
+  };
+  
+  try {
+    window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({ text, requestId: rid });
+  } catch(e) {
+    console.error('Failed native speech', e);
+    speakLocal(text);
+  }
+}
 
 function speakLocal(text) {
   stopPlaybackOnly();
@@ -1918,6 +1976,7 @@ function stopListening() {
   killRecognition();
   updateListeningUI(false);
   try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: false }); } catch(_) {}
+  try { window.webkit?.messageHandlers?.deactivateAudioSession?.postMessage('deactivate'); } catch(_) {}
 }
 
 function updateListeningUI(active) {
@@ -2094,19 +2153,22 @@ function renderSamples() {
 
 // ─── Settings ───
 function loadSettings() {
-  $('settingsName').value = state.userName;
   $('settingsPrompt').value = state.systemPrompt;
   $('settingsELKey').value = state.elApiKey;
   $('settingsVoiceId').value = state.voiceId || '';
   $('settingsMemory').value = state.memory || '';
+  // Apple Intelligence master + sub toggles
+  $('aiMasterToggle').classList.toggle('active', state.llmEnabled);
   $('llmToggle').classList.toggle('active', state.llmEnabled);
-  // customVoiceToggleBtn: active when NOT using local TTS
-  $('customVoiceToggleBtn').classList.toggle('active', !state.useLocalTTS);
+  $('aiSubOptions').style.display = state.llmEnabled ? 'block' : 'none';
+  $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
+  // Developer mode
+  $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
+  $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
   renderSamples();
 }
 
 function saveSettings() {
-  state.userName = $('settingsName').value;
   state.systemPrompt = $('settingsPrompt').value;
   const newKey = $('settingsELKey').value;
   if (newKey !== state.elApiKey) {
@@ -2119,7 +2181,7 @@ function saveSettings() {
   save();
 }
 
-[$('settingsName'), $('settingsPrompt'), $('settingsELKey'), $('settingsVoiceId'), $('settingsMemory')].forEach(el => {
+[$('settingsPrompt'), $('settingsELKey'), $('settingsVoiceId'), $('settingsMemory')].forEach(el => {
   el.oninput = saveSettings;
   el.onchange = saveSettings;
 });
@@ -2147,6 +2209,8 @@ function closeInAppPage(name) {
 $('privacyPolicyBtn').onclick = () => openInAppPage('privacy');
 $('supportBtn').onclick = () => openInAppPage('support');
 $('reportBtn').onclick = () => openInAppPage('report');
+$('memoryPageBtn').onclick = () => openInAppPage('memory');
+$('advancedPageBtn').onclick = () => openInAppPage('advanced');
 
 // Report form
 $('reportSendBtn').onclick = () => {
@@ -2154,21 +2218,13 @@ $('reportSendBtn').onclick = () => {
   if (!text) { showToast('Veuillez décrire le problème'); return; }
   const subject = encodeURIComponent('Talkie - Signalement');
   const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
-  const mailtoUrl = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
+  const mailtoUrl = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
   try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
   catch(_) { window.location.href = mailtoUrl; }
   showToast('Préparation de l\'e-mail…');
 };
 
 // Data management
-$('clearHistoryBtn').onclick = () => {
-  if (confirm('Effacer tout l\'historique des conversations ?')) {
-    state.history = [];
-    conversationHistory = [];
-    save();
-    showToast('Historique effacé');
-  }
-};
 $('deleteAllDataBtn').onclick = () => {
   if (confirm('Supprimer toutes vos données ? Cette action est irréversible.')) {
     keychainDelete('elApiKey');
@@ -2182,25 +2238,34 @@ $('deleteAllDataBtn').onclick = () => {
   }
 };
 
+// Apple Intelligence master toggle
+$('aiMasterToggle').onclick = () => {
+  state.llmEnabled = !state.llmEnabled;
+  $('aiMasterToggle').classList.toggle('active', state.llmEnabled);
+  $('llmToggle').classList.toggle('active', state.llmEnabled);
+  $('aiSubOptions').style.display = state.llmEnabled ? 'block' : 'none';
+  save();
+};
 $('llmToggle').onclick = () => {
   state.llmEnabled = !state.llmEnabled;
   $('llmToggle').classList.toggle('active', state.llmEnabled);
+  // If turning off suggestions, also turn off AI master
+  if (!state.llmEnabled) {
+    $('aiMasterToggle').classList.remove('active');
+    $('aiSubOptions').style.display = 'none';
+  }
   save();
 };
-$('customVoiceToggleBtn').onclick = () => {
-  state.useLocalTTS = !state.useLocalTTS;
-  // Toggle is inverted: "Personnaliser" ON = useLocalTTS OFF
-  $('customVoiceToggleBtn').classList.toggle('active', !state.useLocalTTS);
+$('appleVoiceToggleBtn').onclick = () => {
+  state.useApplePersonalVoice = !state.useApplePersonalVoice;
+  $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   save();
 };
-
-// Memory drawer toggle
-$('memoryDrawerToggle').onclick = () => {
-  const content = $('memoryDrawerContent');
-  const arrow = $('memoryDrawerArrow');
-  const isOpen = content.style.display !== 'none';
-  content.style.display = isOpen ? 'none' : 'block';
-  arrow.classList.toggle('open', !isOpen);
+$('useElevenLabsToggleBtn').onclick = () => {
+  state.useElevenLabs = !state.useElevenLabs;
+  $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
+  $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
+  save();
 };
 
 // Developer mode — tap version 5 times
@@ -2241,10 +2306,13 @@ window._llmAvailabilityCallback = function(available) {
     // Show info banner in context zone
     $('contextText').innerHTML = 'Les suggestions IA nécessitent iOS 26+.<br>Utilisez le clavier pour taper vos réponses.';
     $('contextText').className = 'context-text';
-    // Disable LLM toggle in settings
+    // Disable AI toggles in settings
     state.llmEnabled = false;
+    $('aiMasterToggle').classList.remove('active');
+    $('aiMasterToggle').disabled = true;
     $('llmToggle').classList.remove('active');
     $('llmToggle').disabled = true;
+    $('aiSubOptions').style.display = 'none';
   }
 };
 

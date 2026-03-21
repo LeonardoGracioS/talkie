@@ -50,7 +50,6 @@ struct KeychainHelper {
 class MicState: ObservableObject {
     static let shared = MicState()
     @Published var isListening = false
-    @Published var showBar = false
 }
 
 // Custom WKWebView that hides the iOS input accessory bar (˄ ˅ ✓)
@@ -111,6 +110,8 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "keychainDelete")
         config.userContentController.add(coordinator, name: "micStatusUpdate")
         config.userContentController.add(coordinator, name: "openURL")
+        config.userContentController.add(coordinator, name: "deactivateAudioSession")
+        config.userContentController.add(coordinator, name: "speakApplePersonalVoice")
 
         let webView = NoAccessoryWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -144,6 +145,15 @@ struct WebAppView: UIViewRepresentable {
     ///
     /// **Important:** Do *not* use `.voiceChat` here — its built-in voice processing / echo cancellation
     /// can leave the capture path gated after speaker playback, so Web Speech API gets no audio.
+    static func deactivateAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("[Audio] deactivate: \(error)")
+        }
+    }
+
     static func reassertPlayAndRecordSession() {
         let session = AVAudioSession.sharedInstance()
         do {
@@ -168,11 +178,20 @@ struct WebAppView: UIViewRepresentable {
     }
 
     private func configureAudioSession() {
-        Self.reassertPlayAndRecordSession()
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
+            )
+        } catch {
+            print("[Audio] init category failed: \(error)")
+        }
     }
 
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
-        AVAudioPlayerDelegate {
+        AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
         weak var webView: WKWebView?
         private var audioSessionObservers: [NSObjectProtocol] = []
 
@@ -180,6 +199,13 @@ struct WebAppView: UIViewRepresentable {
         private var nativeAudioPlayer: AVAudioPlayer?
         private var nativePlaybackId: String?
         private var nativeProgressTimer: Timer?
+        private var nativeSynthesizer = AVSpeechSynthesizer()
+        private var nativeSpeechCallbackId: String?
+
+        override init() {
+            super.init()
+            nativeSynthesizer.delegate = self
+        }
 
         deinit {
             nativeProgressTimer?.invalidate()
@@ -239,6 +265,11 @@ struct WebAppView: UIViewRepresentable {
             nativeAudioPlayer = nil
             let id = nativePlaybackId
             nativePlaybackId = nil
+            
+            if nativeSynthesizer.isSpeaking {
+                nativeSynthesizer.stopSpeaking(at: .immediate)
+            }
+            
             WebAppView.reassertPlayAndRecordSession()
             if notifyJS, let id = id {
                 let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', 'stopped');"
@@ -300,6 +331,26 @@ struct WebAppView: UIViewRepresentable {
         }
 
         /// WebKit / HTML5 audio can interrupt the shared session; re-sync when the interruption ends.
+
+        func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+            WebAppView.deactivateAudioSession()
+            guard let id = nativeSpeechCallbackId else { return }
+            nativeSpeechCallbackId = nil
+            let js = "window._nativeSpeechCallback && window._nativeSpeechCallback('\(id)', null);"
+            DispatchQueue.main.async { [weak self] in
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+        }
+        
+        func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+            WebAppView.deactivateAudioSession()
+            guard let id = nativeSpeechCallbackId else { return }
+            nativeSpeechCallbackId = nil
+            let js = "window._nativeSpeechCallback && window._nativeSpeechCallback('\(id)', 'cancelled');"
+            DispatchQueue.main.async { [weak self] in
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+        }
         func startObservingAudioSessionRecovery() {
             guard audioSessionObservers.isEmpty else { return }
             let nc = NotificationCenter.default
@@ -368,6 +419,37 @@ struct WebAppView: UIViewRepresentable {
                 }
                 return
             }
+            if message.name == "deactivateAudioSession" {
+                WebAppView.deactivateAudioSession()
+                return
+            }
+            if message.name == "speakApplePersonalVoice" {
+                guard let body = message.body as? [String: Any],
+                      let text = body["text"] as? String,
+                      let requestId = body["requestId"] as? String else { return }
+                
+                WebAppView.reassertPlayAndRecordSession()
+                nativeSpeechCallbackId = requestId
+                let utterance = AVSpeechUtterance(string: text)
+                utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+                
+                if #available(iOS 17.0, *) {
+                    AVSpeechSynthesizer.requestPersonalVoiceAuthorization { status in
+                        DispatchQueue.main.async {
+                            if status == .authorized, let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+                                utterance.voice = personalVoice
+                            } else {
+                                utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
+                            }
+                            self.nativeSynthesizer.speak(utterance)
+                        }
+                    }
+                } else {
+                    utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
+                    self.nativeSynthesizer.speak(utterance)
+                }
+                return
+            }
             if message.name == "openURL" {
                 if let urlString = message.body as? String,
                    let url = URL(string: urlString) {
@@ -388,9 +470,6 @@ struct WebAppView: UIViewRepresentable {
                    let listening = body["listening"] as? Bool {
                     DispatchQueue.main.async {
                         MicState.shared.isListening = listening
-                        if !MicState.shared.showBar {
-                            MicState.shared.showBar = true
-                        }
                     }
                 }
                 return
