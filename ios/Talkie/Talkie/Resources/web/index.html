@@ -1760,6 +1760,21 @@ function callNativeLLM(sys, prompt) {
   });
 }
 
+// ─── Content Filter (Guideline 4.7) ───
+const _blocklist = [
+  // Violence / harm
+  'tuer', 'suicide', 'suicider', 'arme', 'bombe', 'terroris', 'viol ',
+  // Hate speech
+  'nazi', 'nègre', 'pédé', 'tapette', 'salope', 'pute',
+  // Explicit
+  'pornograph', 'orgasm', 'masturb',
+];
+
+function isInappropriate(text) {
+  const lower = text.toLowerCase();
+  return _blocklist.some(term => lower.includes(term));
+}
+
 async function fetchSuggestions(interlocutorText) {
   if (!llmAvailable || !state.llmEnabled) {
     clearSuggestionCards();
@@ -1798,7 +1813,7 @@ Propose EXACTEMENT 3 réponses que je pourrais dire. Règles :
     const content = await callNativeLLM(sys, prompt);
     const suggestions = content.split('\n')
       .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
-      .filter(s => s.length > 2)
+      .filter(s => s.length > 2 && !isInappropriate(s))
       .slice(0, 3);
     if (suggestions.length) renderSuggestionCards(suggestions);
     else clearSuggestionCards();
