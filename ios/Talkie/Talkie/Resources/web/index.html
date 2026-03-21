@@ -919,6 +919,27 @@ html, body {
         </div>
       </div>
 
+      <!-- Data Management -->
+      <div class="settings-section">
+        <div class="settings-section-title">Données personnelles</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Effacer l'historique</span>
+              <span class="desc">Supprimer les conversations</span>
+            </div>
+            <button class="toggle-btn" id="clearHistoryBtn">Effacer</button>
+          </div>
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Supprimer toutes mes données</span>
+              <span class="desc">Nom, mémoire, voix, historique, clé API</span>
+            </div>
+            <button class="toggle-btn" id="deleteAllDataBtn" style="background:var(--red);color:white;">Supprimer</button>
+          </div>
+        </div>
+      </div>
+
       <!-- About -->
       <div class="settings-section">
         <div class="about-box">
@@ -1873,6 +1894,28 @@ $('replayTutorialBtn').onclick = () => {
   document.querySelectorAll('.onb-page').forEach(p => p.classList.remove('active'));
   document.querySelector('.onb-page[data-page="0"]').classList.add('active');
   $('onboarding').classList.remove('hidden');
+};
+
+// Data management
+$('clearHistoryBtn').onclick = () => {
+  if (confirm('Effacer tout l\'historique des conversations ?')) {
+    state.history = [];
+    conversationHistory = [];
+    save();
+    showToast('Historique effacé');
+  }
+};
+$('deleteAllDataBtn').onclick = () => {
+  if (confirm('Supprimer toutes vos données ? Cette action est irréversible.')) {
+    keychainDelete('elApiKey');
+    localStorage.removeItem(DB_KEY);
+    localStorage.removeItem('talkie_onboarded');
+    // Also clean up old keys
+    for (const k of ['echo_v5', 'echo_v4', 'echo_v3', 'echo_v2', 'echo_v1', 'echo_onboarded']) {
+      localStorage.removeItem(k);
+    }
+    location.reload();
+  }
 };
 
 $('llmToggle').onclick = () => {
