@@ -55,6 +55,7 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "resetAudioSession")
         config.userContentController.add(coordinator, name: "playTTSFromData")
         config.userContentController.add(coordinator, name: "stopNativeTTS")
+        config.userContentController.add(coordinator, name: "checkLLMAvailability")
 
         let webView = NoAccessoryWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -271,6 +272,19 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "stopNativeTTS" {
                 stopNativeTTSPlayback(notifyJS: true)
+                return
+            }
+            if message.name == "checkLLMAvailability" {
+                let available: Bool
+                if #available(iOS 26.0, *) {
+                    available = true
+                } else {
+                    available = false
+                }
+                let js = "window._llmAvailabilityCallback(\(available));"
+                DispatchQueue.main.async { [weak self] in
+                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
                 return
             }
 

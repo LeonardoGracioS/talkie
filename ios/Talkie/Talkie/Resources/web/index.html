@@ -1679,6 +1679,10 @@ function callNativeLLM(sys, prompt) {
 }
 
 async function fetchSuggestions(interlocutorText) {
+  if (!llmAvailable || !state.llmEnabled) {
+    clearSuggestionCards();
+    return;
+  }
   showSuggestionLoading();
 
   const ctx = state.history.slice(-8).map(m =>
@@ -1850,12 +1854,42 @@ $('resetPromptBtn').onclick = () => {
   save();
 };
 
+// ─── LLM Availability ───
+let llmAvailable = false;
+window._llmAvailabilityCallback = function(available) {
+  llmAvailable = available;
+  console.log('[Talkie] LLM available:', available);
+  if (!available) {
+    // Hide suggestion-specific UI, switch to manual-first mode
+    $('suggestionsLabel').style.display = 'none';
+    $('suggestionsZone').style.display = 'none';
+    $('btnRefresh').style.display = 'none';
+    // Show info banner in context zone
+    $('contextText').innerHTML = 'Les suggestions IA nécessitent iOS 26+.<br>Utilisez le clavier pour taper vos réponses.';
+    $('contextText').className = 'context-text';
+    // Disable LLM toggle in settings
+    state.llmEnabled = false;
+    $('llmToggle').classList.remove('active');
+    $('llmToggle').disabled = true;
+  }
+};
+
+function checkLLMAvailability() {
+  try {
+    window.webkit?.messageHandlers?.checkLLMAvailability?.postMessage('check');
+  } catch(_) {
+    // Not running in native container — assume no LLM
+    window._llmAvailabilityCallback(false);
+  }
+}
+
 // ─── Init ───
 speechSynthesis.getVoices();
 window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 conversationHistory = state.history || [];
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
+checkLLMAvailability();
 console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
 </script>
