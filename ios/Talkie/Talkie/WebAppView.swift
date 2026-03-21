@@ -324,7 +324,7 @@ struct WebAppView: UIViewRepresentable {
                      runJavaScriptAlertPanelWithMessage message: String,
                      initiatedByFrame frame: WKFrameInfo,
                      completionHandler: @escaping () -> Void) {
-            let alert = UIAlertController(title: "Écho", message: message, preferredStyle: .alert)
+            let alert = UIAlertController(title: "Talkie", message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler() })
             if let vc = webView.window?.rootViewController {
                 vc.present(alert, animated: true)
@@ -335,7 +335,7 @@ struct WebAppView: UIViewRepresentable {
                      runJavaScriptConfirmPanelWithMessage message: String,
                      initiatedByFrame frame: WKFrameInfo,
                      completionHandler: @escaping (Bool) -> Void) {
-            let alert = UIAlertController(title: "Écho", message: message, preferredStyle: .alert)
+            let alert = UIAlertController(title: "Talkie", message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Annuler", style: .cancel) { _ in completionHandler(false) })
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
             if let vc = webView.window?.rootViewController {
@@ -348,7 +348,7 @@ struct WebAppView: UIViewRepresentable {
                      defaultText: String?,
                      initiatedByFrame frame: WKFrameInfo,
                      completionHandler: @escaping (String?) -> Void) {
-            let alert = UIAlertController(title: "Écho", message: prompt, preferredStyle: .alert)
+            let alert = UIAlertController(title: "Talkie", message: prompt, preferredStyle: .alert)
             alert.addTextField { tf in tf.text = defaultText }
             alert.addAction(UIAlertAction(title: "Annuler", style: .cancel) { _ in completionHandler(nil) })
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in

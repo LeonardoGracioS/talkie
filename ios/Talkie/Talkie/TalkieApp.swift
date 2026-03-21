@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct EchoApp: App {
+struct TalkieApp: App {
     var body: some Scene {
         WindowGroup {
             WebAppView()

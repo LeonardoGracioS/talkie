@@ -1,16 +1,16 @@
-# Echo
+# Talkie
 
 Assistive communication app for people with ALS (Charcot disease) and speech impairments. Combines voice cloning, speech recognition, and AI-powered response suggestions to help users communicate naturally.
 
 ## Components
 
-### iOS App (`ios/Echo/`)
+### iOS App (`ios/Talkie/`)
 
 Native iOS app wrapping a web-based interface with:
 
 - **Voice cloning** via ElevenLabs API — clone any voice from short audio samples
 - **Speech-to-text** using Web Speech API for real-time transcription
-- **AI response suggestions** — context-aware quick replies powered by Apple Intelligence (on-device) or OpenAI
+- **AI response suggestions** — context-aware quick replies powered by Apple Intelligence (on-device)
 - **Text-to-speech** with the cloned voice for natural-sounding output
 - **Conversation management** — multiple threads with history
 
@@ -19,14 +19,13 @@ Built with SwiftUI + WKWebView. Requires iOS 17+. Uses [XcodeGen](https://github
 #### Setup
 
 ```bash
-cd ios/Echo
-xcodegen generate    # generates Echo.xcodeproj
-open Echo.xcodeproj
+cd ios/Talkie
+xcodegen generate    # generates Talkie.xcodeproj
+open Talkie.xcodeproj
 ```
 
 Configure API keys in the app's Settings screen:
 - **ElevenLabs** — for voice cloning and TTS
-- **OpenAI** (optional) — for AI response suggestions (falls back to Apple Intelligence on iOS 26+)
 
 ### Voice Cloner (`app.py`)
 

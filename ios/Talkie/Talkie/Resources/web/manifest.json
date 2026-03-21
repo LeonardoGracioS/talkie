@@ -1,0 +1,17 @@
+{
+  "name": "Talkie",
+  "short_name": "Talkie",
+  "description": "Votre voix, préservée.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#5B6AF0",
+  "theme_color": "#5B6AF0",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235B6AF0' width='100' height='100' rx='22'/><text x='50' y='62' text-anchor='middle' font-size='42' fill='white'>T</text><circle cx='50' cy='78' r='3' fill='white' opacity='.5'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
-name: Echo
+name: Talkie
 options:
-  bundleIdPrefix: com.echo
+  bundleIdPrefix: com.talkie
   deploymentTarget:
     iOS: "17.0"
   xcodeVersion: "16.0"
@@ -8,31 +8,33 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    DEVELOPMENT_TEAM: ""
+    # Replace XXXXXXXXXX with your Apple Developer Team ID
+    # Find it at: https://developer.apple.com/account → Membership → Team ID
+    DEVELOPMENT_TEAM: "XXXXXXXXXX"
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
 targets:
-  Echo:
+  Talkie:
     type: application
     platform: iOS
     sources:
-      - path: Echo
+      - path: Talkie
         excludes:
           - "**/.DS_Store"
           - "Resources/**"
-      - path: Echo/Resources/web
+      - path: Talkie/Resources/web
         buildPhase: resources
         type: folder
-      - path: Echo/Resources/Assets.xcassets
+      - path: Talkie/Resources/Assets.xcassets
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.echo.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.talkie.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: true
-        INFOPLIST_KEY_CFBundleDisplayName: Écho
+        INFOPLIST_KEY_CFBundleDisplayName: Talkie
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Écho a besoin du micro pour écouter les conversations et transcrire la parole."
-        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Écho utilise la reconnaissance vocale pour transcrire les conversations."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Talkie a besoin du micro pour écouter les conversations et transcrire la parole."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Talkie utilise la reconnaissance vocale pour transcrire les conversations."

@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F5F6FA">
-<title>Écho</title>
+<title>Talkie</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
 
@@ -694,7 +694,7 @@ html, body {
   <div class="splash-icon">
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
   </div>
-  <div class="splash-title">Écho</div>
+  <div class="splash-title">Talkie</div>
   <div class="splash-sub">Communication assistée</div>
 </div>
 
@@ -705,7 +705,7 @@ html, body {
     <div class="onb-icon accent">
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
     </div>
-    <div class="onb-title">Bienvenue sur Écho</div>
+    <div class="onb-title">Bienvenue sur Talkie</div>
     <div class="onb-desc">Une application de communication assistée, conçue pour les personnes vivant avec la SLA.</div>
     <div class="onb-dots"><div class="onb-dot active"></div><div class="onb-dot"></div><div class="onb-dot"></div></div>
     <button class="onb-btn" onclick="onbNext()">Continuer</button>
@@ -718,7 +718,7 @@ html, body {
     <div class="onb-title">Comment ça marche</div>
     <div class="onb-steps">
       <div class="onb-step"><div class="onb-step-num">1</div><div>L'interlocuteur parle. Appuyez sur la barre du haut pour activer l'écoute.</div></div>
-      <div class="onb-step"><div class="onb-step-num">2</div><div>Écho transcrit et propose 3 réponses adaptées.</div></div>
+      <div class="onb-step"><div class="onb-step-num">2</div><div>Talkie transcrit et propose 3 réponses adaptées.</div></div>
       <div class="onb-step"><div class="onb-step-num">3</div><div>Appuyez sur une réponse pour la prononcer à voix haute.</div></div>
     </div>
     <div class="onb-dots"><div class="onb-dot"></div><div class="onb-dot active"></div><div class="onb-dot"></div></div>
@@ -747,7 +747,7 @@ html, body {
     <!-- Top bar -->
     <div class="top-bar">
       <div class="top-bar-left">
-        <h1>Écho <span id="buildTag" style="font-size:11px;color:var(--text-tertiary);font-weight:500;"></span></h1>
+        <h1>Talkie <span id="buildTag" style="font-size:11px;color:var(--text-tertiary);font-weight:500;"></span></h1>
       </div>
       <button class="settings-btn" id="settingsBtn">
         <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
@@ -899,7 +899,7 @@ html, body {
         <div class="settings-card">
           <div class="settings-row" style="flex-direction:column; align-items:stretch;">
             <span class="name" style="margin-bottom:4px;">Informations retenues</span>
-            <span class="desc" style="margin-bottom:8px;">Écho retient ces infos pour personnaliser les réponses. Vous pouvez les modifier.</span>
+            <span class="desc" style="margin-bottom:8px;">Talkie retient ces infos pour personnaliser les réponses. Vous pouvez les modifier.</span>
             <textarea class="settings-textarea" id="settingsMemory" rows="4" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
           </div>
         </div>
@@ -922,7 +922,7 @@ html, body {
       <!-- About -->
       <div class="settings-section">
         <div class="about-box">
-          Écho — Communication assistée<br>
+          Talkie — Communication assistée<br>
           Conçu pour les personnes vivant avec la SLA
         </div>
       </div>
@@ -955,14 +955,14 @@ const BUILD_VERSION = 'v2.2';
 
 // Global error handler — shows errors visually
 window.onerror = function(msg, src, line) {
-  console.error('[Echo] JS Error:', msg, 'at line', line);
+  console.error('[Talkie] JS Error:', msg, 'at line', line);
   try {
     const t = document.getElementById('toast');
     if (t) { t.textContent = 'JS Error L' + line + ': ' + msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 5000); }
   } catch(_) {}
 };
 
-const DB_KEY = 'echo_v5';
+const DB_KEY = 'talkie_v1';
 const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne atteinte de la maladie de Charcot (SLA) à communiquer.
 Tu proposes des réponses naturelles et chaleureuses en français.
 Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
@@ -982,7 +982,7 @@ function onbNext() {
   if (next) next.classList.add('active');
 }
 function onbFinish() {
-  localStorage.setItem('echo_onboarded', '1');
+  localStorage.setItem('talkie_onboarded', '1');
   $('onboarding').classList.add('hidden');
 }
 
@@ -990,7 +990,12 @@ setTimeout(() => {
   document.getElementById('splash').classList.add('hidden');
   document.getElementById('app').style.opacity = '1';
   // Show onboarding for first-time users
-  if (!localStorage.getItem('echo_onboarded')) {
+  // Migrate old onboarding flag
+  if (localStorage.getItem('echo_onboarded')) {
+    localStorage.setItem('talkie_onboarded', '1');
+    localStorage.removeItem('echo_onboarded');
+  }
+  if (!localStorage.getItem('talkie_onboarded')) {
     $('onboarding').classList.remove('hidden');
   }
 }, 1800);
@@ -1017,8 +1022,8 @@ function loadState() {
       return s;
     }
   } catch {}
-  // Migrate from v4
-  for (const k of ['echo_v4', 'echo_v3', 'echo_v2', 'echo_v1']) {
+  // Migrate from old Echo versions
+  for (const k of ['echo_v5', 'echo_v4', 'echo_v3', 'echo_v2', 'echo_v1']) {
     try {
       const old = JSON.parse(localStorage.getItem(k));
       if (old) {
@@ -1080,10 +1085,10 @@ async function maybeExtractMemory() {
     if (result && !result.includes('RIEN') && result.trim().length > 5) {
       state.memory = result.trim();
       save();
-      console.log('[Echo] Memory updated:', state.memory);
+      console.log('[Talkie] Memory updated:', state.memory);
     }
   } catch(e) {
-    console.warn('[Echo] Memory extraction failed:', e);
+    console.warn('[Talkie] Memory extraction failed:', e);
   }
 }
 
@@ -1103,11 +1108,11 @@ function resetNativeAudioSession() {
 // ─── Debug ───
 function safeClick(id, fn) {
   const el = $(id);
-  if (!el) { console.error('[Echo] Element not found: ' + id); return; }
+  if (!el) { console.error('[Talkie] Element not found: ' + id); return; }
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     try { fn(); } catch(err) {
-      console.error('[Echo] Error in ' + id + ':', err);
+      console.error('[Talkie] Error in ' + id + ':', err);
       showToast('Erreur: ' + err.message);
     }
   });
@@ -1118,7 +1123,7 @@ function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const target = $('view-' + id);
   if (target) target.classList.add('active');
-  else console.error('[Echo] View not found: view-' + id);
+  else console.error('[Talkie] View not found: view-' + id);
 }
 
 safeClick('settingsBtn', () => { stopListening(); loadSettings(); showView('settings'); });
@@ -1271,7 +1276,7 @@ function speakTextWithCallback(text, onDone) {
   clearTimeout(_ttsSafetyTimer);
   _ttsSafetyTimer = setTimeout(() => {
     if (isSpeaking) {
-      console.warn('[Echo] TTS safety timeout');
+      console.warn('[Talkie] TTS safety timeout');
       stopAudio();
       hideTTSOverlay();
       startListening();
@@ -1352,7 +1357,7 @@ async function playElevenLabsBlob(blob) {
       window.webkit.messageHandlers.playTTSFromData.postMessage({ playbackId, base64: b64 });
       return;
     } catch (e) {
-      console.warn('[Echo] native TTS encode failed', e);
+      console.warn('[Talkie] native TTS encode failed', e);
     }
   }
   await playElevenLabsBlobHTML5(blob);
@@ -1403,7 +1408,7 @@ function speakLocal(text) {
   clearTimeout(_speechSynthMaxTimer);
   _speechSynthMaxTimer = setTimeout(() => {
     if (!done) {
-      console.warn('[Echo] speakLocal duration fallback');
+      console.warn('[Talkie] speakLocal duration fallback');
       try { speechSynthesis.cancel(); } catch (_) {}
       finish();
     }
@@ -1445,7 +1450,7 @@ async function playTTS(text) {
     stopPlaybackOnly();
     await playElevenLabsBlob(blob);
   } catch (e) {
-    console.warn('[Echo] playTTS fallback', e);
+    console.warn('[Talkie] playTTS fallback', e);
     speakLocal(text);
   }
 }
@@ -1480,7 +1485,7 @@ function beginRecognition(sess) {
   if (micSession !== sess) return;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    console.error('[Echo] SpeechRecognition API not available');
+    console.error('[Talkie] SpeechRecognition API not available');
     showToast('Reconnaissance vocale non disponible');
     isListening = false;
     updateListeningUI(false);
@@ -1493,11 +1498,11 @@ function beginRecognition(sess) {
   recognition = rec;
 
   rec.onstart = () => {
-    console.log('[Echo] Recognition started successfully');
+    console.log('[Talkie] Recognition started successfully');
   };
 
   rec.onaudiostart = () => {
-    console.log('[Echo] Audio capture started');
+    console.log('[Talkie] Audio capture started');
   };
 
   rec.onresult = (e) => {
@@ -1532,7 +1537,7 @@ function beginRecognition(sess) {
   };
 
   rec.onerror = (e) => {
-    console.warn('[Echo] Recognition error:', e.error);
+    console.warn('[Talkie] Recognition error:', e.error);
     if (micSession !== sess) return;
     if (e.error === 'no-speech' || e.error === 'aborted') return;
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -1548,7 +1553,7 @@ function beginRecognition(sess) {
   };
 
   rec.onend = () => {
-    console.log('[Echo] Recognition ended');
+    console.log('[Talkie] Recognition ended');
     if (micSession === sess && isListening) {
       killRecognition();
       setTimeout(() => {
@@ -1560,9 +1565,9 @@ function beginRecognition(sess) {
 
   try {
     rec.start();
-    console.log('[Echo] rec.start() called');
+    console.log('[Talkie] rec.start() called');
   } catch(e) {
-    console.warn('[Echo] rec.start() threw:', e);
+    console.warn('[Talkie] rec.start() threw:', e);
     // Retry once after a delay
     setTimeout(() => {
       if (micSession !== sess || !isListening) return;
@@ -1579,9 +1584,9 @@ function beginRecognition(sess) {
         rec2.onerror = rec.onerror;
         rec2.onend = rec.onend;
         rec2.start();
-        console.log('[Echo] Retry rec.start() called');
+        console.log('[Talkie] Retry rec.start() called');
       } catch(e2) {
-        console.error('[Echo] Retry failed:', e2);
+        console.error('[Talkie] Retry failed:', e2);
         showToast('Impossible de démarrer le micro');
         stopListening();
       }
@@ -1590,7 +1595,7 @@ function beginRecognition(sess) {
 }
 
 function startListening() {
-  if (isSpeaking) { console.log('[Echo] startListening blocked: isSpeaking'); return; }
+  if (isSpeaking) { console.log('[Talkie] startListening blocked: isSpeaking'); return; }
   stopAudio();
   killRecognition();
   clearTimeout(phraseEndTimer);
@@ -1613,16 +1618,16 @@ function startListening() {
       .then(stream => {
         if (micSession !== sess) { stream.getTracks().forEach(t => t.stop()); return; }
         stream.getTracks().forEach(t => t.stop());
-        console.log('[Echo] Mic permission granted');
+        console.log('[Talkie] Mic permission granted');
         run();
       })
       .catch(err => {
-        console.warn('[Echo] getUserMedia failed:', err.name, err.message);
+        console.warn('[Talkie] getUserMedia failed:', err.name, err.message);
         // Try anyway — SpeechRecognition might work without getUserMedia
         run();
       });
   } else {
-    console.log('[Echo] No getUserMedia, trying speech recognition directly');
+    console.log('[Talkie] No getUserMedia, trying speech recognition directly');
     setTimeout(run, 80);
   }
 }
@@ -1743,12 +1748,12 @@ $('fileInput').onchange = async (e) => {
 };
 
 $('cloneBtn').onclick = async () => {
-  const name = $('voiceNameInput').value.trim() || 'Écho';
+  const name = $('voiceNameInput').value.trim() || 'Talkie';
   if (!state.samples.length || !state.elApiKey) return;
   $('cloneBtn').disabled = true; $('cloneBtn').textContent = 'Clonage...';
   try {
     const fd = new FormData();
-    fd.append('name', name); fd.append('description', 'Écho voice');
+    fd.append('name', name); fd.append('description', 'Talkie voice');
     for (const s of state.samples) fd.append('files', dataUrlToBlob(s.dataUrl), s.name);
     const r = await fetch('https://api.elevenlabs.io/v1/voices/add', {
       method:'POST', headers:{'xi-api-key':state.elApiKey}, body:fd
@@ -1816,7 +1821,7 @@ function saveSettings() {
 
 // Replay tutorial
 $('replayTutorialBtn').onclick = () => {
-  localStorage.removeItem('echo_onboarded');
+  localStorage.removeItem('talkie_onboarded');
   showView('suggestions');
   onbPage = 0;
   document.querySelectorAll('.onb-page').forEach(p => p.classList.remove('active'));
@@ -1851,7 +1856,7 @@ window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 conversationHistory = state.history || [];
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
-console.log('[Echo] Initialized ' + BUILD_VERSION);
+console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
 </script>
 

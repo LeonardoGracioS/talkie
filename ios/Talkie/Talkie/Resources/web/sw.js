@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voxmea-v2';
+const CACHE_NAME = 'talkie-v1';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
