@@ -942,7 +942,29 @@ html, body {
 
       <!-- About -->
       <div class="settings-section">
-        <div class="about-box">
+        <div class="settings-section-title">À propos</div>
+        <div class="settings-card">
+          <div class="settings-row" id="privacyPolicyBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Politique de confidentialité</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" id="supportBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Support</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" id="reportBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Signaler un problème</span>
+              <span class="desc">Contenu inapproprié ou bug</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+        <div class="about-box" style="margin-top:12px;">
           Talkie — Communication assistée<br>
           Conçu pour les personnes vivant avec la SLA
         </div>
@@ -1897,6 +1919,19 @@ $('replayTutorialBtn').onclick = () => {
   document.querySelector('.onb-page[data-page="0"]').classList.add('active');
   $('onboarding').classList.remove('hidden');
 };
+
+// About links
+const PRIVACY_URL = 'https://leonardogracios.github.io/echo/privacy.html';
+const SUPPORT_URL = 'https://leonardogracios.github.io/echo/support.html';
+
+function openNativeURL(url) {
+  try { window.webkit?.messageHandlers?.openURL?.postMessage(url); }
+  catch(_) { window.open(url, '_blank'); }
+}
+
+$('privacyPolicyBtn').onclick = () => openNativeURL(PRIVACY_URL);
+$('supportBtn').onclick = () => openNativeURL(SUPPORT_URL);
+$('reportBtn').onclick = () => { window.location.href = 'mailto:talkie-app@proton.me?subject=Talkie%20-%20Signalement'; };
 
 // Data management
 $('clearHistoryBtn').onclick = () => {

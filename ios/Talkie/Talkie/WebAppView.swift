@@ -3,6 +3,7 @@ import WebKit
 import AVFoundation
 import FoundationModels
 import Security
+import SafariServices
 
 // MARK: - Keychain Helper
 
@@ -108,6 +109,7 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "keychainLoad")
         config.userContentController.add(coordinator, name: "keychainDelete")
         config.userContentController.add(coordinator, name: "micStatusUpdate")
+        config.userContentController.add(coordinator, name: "openURL")
 
         let webView = NoAccessoryWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -362,6 +364,15 @@ struct WebAppView: UIViewRepresentable {
                     : "window._keychainCallback && window._keychainCallback('load', '\(key)', null);"
                 DispatchQueue.main.async { [weak self] in
                     self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                }
+                return
+            }
+            if message.name == "openURL" {
+                if let urlString = message.body as? String,
+                   let url = URL(string: urlString),
+                   let vc = webView?.window?.rootViewController {
+                    let safari = SFSafariViewController(url: url)
+                    vc.present(safari, animated: true)
                 }
                 return
             }
