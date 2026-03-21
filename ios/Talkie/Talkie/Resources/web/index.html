@@ -118,10 +118,6 @@ html, body {
   flex-shrink:0;
 }
 .top-bar-left { display:flex; align-items:center; gap:10px; }
-.top-bar h1 {
-  font:800 22px var(--font); color:var(--text);
-  letter-spacing:-0.3px;
-}
 .settings-btn {
   width:42px; height:42px; border-radius:50%;
   border:none; cursor:pointer;
@@ -610,6 +606,98 @@ html, body {
   line-height:1.6;
 }
 
+/* ─── App Logo ─── */
+.app-logo {
+  display:flex; align-items:center; gap:10px;
+}
+.app-logo-icon {
+  width:36px; height:36px; border-radius:11px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-light));
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(91,106,240,0.25);
+}
+.app-logo-icon svg { width:20px; height:20px; fill:white; }
+.app-logo-text {
+  font:800 24px var(--font);
+  background:linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:-0.5px;
+}
+
+/* ─── In-app pages ─── */
+.inapp-page {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:var(--bg);
+  z-index:60;
+  display:none; flex-direction:column;
+}
+.inapp-page.active { display:flex; }
+.inapp-page-header {
+  display:flex; align-items:center; gap:12px;
+  padding: calc(var(--safe-top) + 12px) 16px 14px;
+  background:var(--bg);
+  flex-shrink:0; z-index:10;
+  border-bottom:1px solid var(--separator);
+}
+.inapp-page-back {
+  width:40px; height:40px; border-radius:50%;
+  border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.04); color:var(--text-secondary);
+}
+.inapp-page-back:active { background:rgba(0,0,0,0.08); }
+.inapp-page-back svg { width:22px; height:22px; fill:currentColor; }
+.inapp-page-title { font:800 22px var(--font); color:var(--text); }
+.inapp-page-content {
+  flex:1; overflow-y:auto; padding:24px 20px calc(var(--safe-bottom) + 24px);
+  -webkit-overflow-scrolling:touch;
+}
+.inapp-page-content h2 {
+  font:700 18px var(--font); color:var(--text); margin:20px 0 8px;
+}
+.inapp-page-content h2:first-child { margin-top:0; }
+.inapp-page-content p {
+  font:400 15px/1.7 var(--font); color:var(--text-secondary); margin-bottom:12px;
+}
+.inapp-page-content ul {
+  padding-left:20px; margin-bottom:12px;
+}
+.inapp-page-content li {
+  font:400 15px/1.7 var(--font); color:var(--text-secondary); margin-bottom:4px;
+}
+.inapp-page-content .contact-box {
+  background:var(--bg-card); border-radius:var(--radius-sm);
+  padding:16px; margin-top:16px; box-shadow:var(--shadow-sm);
+}
+.inapp-page-content .contact-box p { margin-bottom:4px; }
+
+/* ─── Developer section ─── */
+.dev-section { display:none; }
+.dev-section.visible { display:block; }
+
+/* ─── Memory drawer ─── */
+.drawer-arrow { transition:transform .2s; }
+.drawer-arrow.open { transform:rotate(180deg); }
+
+/* ─── Report form ─── */
+.report-textarea {
+  width:100%; min-height:120px; padding:14px;
+  background:var(--bg-card); border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  font:400 15px/1.5 var(--font); color:var(--text);
+  outline:none; resize:vertical; margin-bottom:12px;
+}
+.report-textarea:focus { border-color:var(--accent); }
+.report-send-btn {
+  width:100%; padding:14px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-light));
+  color:white; font:700 15px var(--font);
+  border:none; border-radius:var(--radius-sm);
+  cursor:pointer;
+}
+.report-send-btn:active { transform:scale(0.98); }
+
 /* ─── Onboarding ─── */
 #onboarding {
   position:fixed; top:0; left:0; right:0; bottom:0;
@@ -695,7 +783,7 @@ html, body {
     <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
   </div>
   <div class="splash-title">Talkie</div>
-  <div class="splash-sub">Communication assistée</div>
+  <div class="splash-sub">Votre voix, préservée</div>
 </div>
 
 <!-- Onboarding -->
@@ -706,7 +794,7 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
     </div>
     <div class="onb-title">Bienvenue sur Talkie</div>
-    <div class="onb-desc">Une application de communication assistée, conçue pour les personnes vivant avec la SLA.</div>
+    <div class="onb-desc">Une application de communication assistée, conçue pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler.</div>
     <div class="onb-dots"><div class="onb-dot active"></div><div class="onb-dot"></div><div class="onb-dot"></div></div>
     <button class="onb-btn" onclick="onbNext()">Continuer</button>
   </div>
@@ -730,7 +818,7 @@ html, body {
       <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
     </div>
     <div class="onb-title">Personnalisez</div>
-    <div class="onb-desc">Dans les réglages, vous pouvez ajouter votre clé ElevenLabs pour une voix clonée, ou utiliser la voix iOS par défaut. Tout est sauvegardé sur votre appareil.</div>
+    <div class="onb-desc">Vous pouvez personnaliser la voix, activer les suggestions IA avec Apple Intelligence, et bien plus dans les réglages. Tout est sauvegardé sur votre appareil.</div>
     <div class="onb-dots"><div class="onb-dot"></div><div class="onb-dot"></div><div class="onb-dot active"></div></div>
     <button class="onb-btn" onclick="onbFinish()">Commencer</button>
     <button class="onb-btn secondary" onclick="onbFinish(); loadSettings(); showView('settings');">Ouvrir les réglages</button>
@@ -747,7 +835,12 @@ html, body {
     <!-- Top bar -->
     <div class="top-bar">
       <div class="top-bar-left">
-        <h1>Talkie <span id="buildTag" style="font-size:11px;color:var(--text-tertiary);font-weight:500;"></span></h1>
+        <div class="app-logo">
+          <div class="app-logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+          </div>
+          <span class="app-logo-text">Talkie</span>
+        </div>
       </div>
       <button class="settings-btn" id="settingsBtn">
         <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
@@ -825,16 +918,9 @@ html, body {
           <div class="settings-row">
             <div class="label">
               <span class="name">Suggestions IA</span>
-              <span class="desc">Proposer des réponses automatiques</span>
+              <span class="desc">Nécessite Apple Intelligence (iOS 26+). Propose des réponses automatiques basées sur la conversation.</span>
             </div>
             <button class="toggle active" id="llmToggle"></button>
-          </div>
-          <div class="settings-row">
-            <div class="label">
-              <span class="name">Voix locale</span>
-              <span class="desc">Utiliser la voix iOS au lieu d'ElevenLabs</span>
-            </div>
-            <button class="toggle active" id="localTTSToggle"></button>
           </div>
         </div>
       </div>
@@ -862,59 +948,35 @@ html, body {
         </div>
       </div>
 
-      <!-- ElevenLabs -->
-      <div class="settings-section">
-        <div class="settings-section-title">ElevenLabs</div>
+      <!-- Informations retenues (collapsible, Apple Intelligence) -->
+      <div class="settings-section" id="memorySection">
+        <div class="settings-section-title">Informations retenues</div>
         <div class="settings-card">
-          <div class="settings-row">
-            <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
-            <button class="toggle-btn" id="toggleEL">Afficher</button>
+          <div class="settings-row" style="cursor:pointer;" id="memoryDrawerToggle">
+            <div class="label">
+              <span class="name">Mémoire personnelle</span>
+              <span class="desc">Disponible avec Apple Intelligence. Talkie retient des informations pour personnaliser les réponses.</span>
+            </div>
+            <svg class="drawer-arrow" id="memoryDrawerArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
           </div>
-          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
-            <span class="name" style="margin-bottom:4px;">Voice ID</span>
-            <span class="desc" style="margin-bottom:8px;">ID d'une voix existante (évite de re-cloner)</span>
-            <input class="settings-input" id="settingsVoiceId" type="text" placeholder="Ex: pNInz6obpgDQGcFmaJgB" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div id="memoryDrawerContent" style="display:none;">
+            <div class="settings-row" style="flex-direction:column; align-items:stretch; border-top:1px solid var(--separator);">
+              <textarea class="settings-textarea" id="settingsMemory" rows="4" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Voice cloning -->
+      <!-- Voix -->
       <div class="settings-section">
-        <div class="settings-section-title">Empreinte vocale</div>
-        <div class="settings-card">
-          <div id="voiceActiveArea"></div>
-          <div id="samplesContainer"></div>
-          <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;">
-            <button class="settings-action-btn" id="addSampleBtn">+ Ajouter un échantillon vocal</button>
-            <input class="settings-input" id="voiceNameInput" type="text" placeholder="Nom de la voix" style="display:none">
-            <button class="settings-action-btn" id="cloneBtn" style="display:none">Cloner la voix</button>
-            <button class="settings-action-btn" id="testVoiceBtn" style="display:none">Tester la voix</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Memory -->
-      <div class="settings-section">
-        <div class="settings-section-title">Mémoire du patient</div>
-        <div class="settings-card">
-          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
-            <span class="name" style="margin-bottom:4px;">Informations retenues</span>
-            <span class="desc" style="margin-bottom:8px;">Talkie retient ces infos pour personnaliser les réponses. Vous pouvez les modifier.</span>
-            <textarea class="settings-textarea" id="settingsMemory" rows="4" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- Help -->
-      <div class="settings-section">
-        <div class="settings-section-title">Aide</div>
+        <div class="settings-section-title">Voix</div>
         <div class="settings-card">
           <div class="settings-row">
             <div class="label">
-              <span class="name">Revoir le tutoriel</span>
-              <span class="desc">Relancer l'écran de bienvenue</span>
+              <span class="name">Personnaliser la voix</span>
+              <span class="desc">Utiliser une voix ElevenLabs au lieu de la voix intégrée iPhone</span>
             </div>
-            <button class="toggle-btn" id="replayTutorialBtn">Revoir</button>
+            <button class="toggle" id="customVoiceToggleBtn"></button>
           </div>
         </div>
       </div>
@@ -944,6 +1006,13 @@ html, body {
       <div class="settings-section">
         <div class="settings-section-title">À propos</div>
         <div class="settings-card">
+          <div class="settings-row" id="tutorialBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Tutoriel</span>
+              <span class="desc">Revoir l'écran de bienvenue</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
           <div class="settings-row" id="privacyPolicyBtn" style="cursor:pointer;">
             <div class="label">
               <span class="name">Politique de confidentialité</span>
@@ -964,9 +1033,36 @@ html, body {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
         </div>
-        <div class="about-box" style="margin-top:12px;">
-          Talkie — Communication assistée<br>
-          Conçu pour les personnes vivant avec la SLA
+        <div class="about-box" id="versionBox" style="margin-top:12px; cursor:pointer;">
+          Talkie <span id="buildTag"></span> — Communication assistée<br>
+          Conçu pour les personnes ayant des difficultés à parler
+        </div>
+      </div>
+
+      <!-- Developer mode (hidden by default, tap version 5 times) -->
+      <div class="settings-section dev-section" id="devSection">
+        <div class="settings-section-title">Mode développeur</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <input class="api-input" id="settingsELKey" type="password" placeholder="Clé API ElevenLabs" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="toggle-btn" id="toggleEL">Afficher</button>
+          </div>
+          <div class="settings-row" style="flex-direction:column; align-items:stretch;">
+            <span class="name" style="margin-bottom:4px;">Voice ID</span>
+            <span class="desc" style="margin-bottom:8px;">ID d'une voix ElevenLabs existante</span>
+            <input class="settings-input" id="settingsVoiceId" type="text" placeholder="Ex: pNInz6obpgDQGcFmaJgB" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="settings-card" style="margin-top:10px;">
+          <div class="settings-section-title" style="padding:14px 16px 0;">Empreinte vocale</div>
+          <div id="voiceActiveArea"></div>
+          <div id="samplesContainer"></div>
+          <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:8px;">
+            <button class="settings-action-btn" id="addSampleBtn">+ Ajouter un échantillon vocal</button>
+            <input class="settings-input" id="voiceNameInput" type="text" placeholder="Nom de la voix" style="display:none">
+            <button class="settings-action-btn" id="cloneBtn" style="display:none">Cloner la voix</button>
+            <button class="settings-action-btn" id="testVoiceBtn" style="display:none">Tester la voix</button>
+          </div>
         </div>
       </div>
 
@@ -989,6 +1085,108 @@ html, body {
   <button class="tts-stop-btn">Stop</button>
 </div>
 
+<!-- ═══ IN-APP PAGES ═══ -->
+
+<!-- Privacy Policy -->
+<div class="inapp-page" id="page-privacy">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('privacy')">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title">Politique de confidentialité</div>
+  </div>
+  <div class="inapp-page-content">
+    <p><strong>Dernière mise à jour :</strong> Mars 2026</p>
+
+    <h2>Résumé</h2>
+    <p>Talkie respecte votre vie privée. Toutes vos données restent sur votre appareil. Aucune donnée personnelle n'est collectée ni transmise à nos serveurs.</p>
+
+    <h2>Données stockées localement</h2>
+    <p>Les informations suivantes sont stockées uniquement sur votre iPhone :</p>
+    <ul>
+      <li>Votre nom (si renseigné)</li>
+      <li>L'historique des conversations (les 20 derniers échanges)</li>
+      <li>Les informations retenues par la mémoire IA</li>
+      <li>Le prompt système personnalisé</li>
+      <li>Les échantillons vocaux (si fournis)</li>
+    </ul>
+
+    <h2>Clé API ElevenLabs</h2>
+    <p>Si vous utilisez la fonctionnalité de voix personnalisée, votre clé API est stockée de manière sécurisée dans le Keychain iOS, le système de stockage chiffré d'Apple. Elle n'est jamais transmise ailleurs qu'aux serveurs d'ElevenLabs pour la synthèse vocale.</p>
+
+    <h2>Apple Intelligence</h2>
+    <p>Les suggestions IA sont générées localement via Apple Intelligence sur votre appareil. Aucune donnée de conversation n'est envoyée à des serveurs tiers pour cette fonctionnalité.</p>
+
+    <h2>Reconnaissance vocale</h2>
+    <p>La reconnaissance vocale utilise l'API Web Speech de votre navigateur intégré. Le traitement peut impliquer les serveurs d'Apple conformément à leur politique de confidentialité.</p>
+
+    <h2>Suppression des données</h2>
+    <p>Vous pouvez supprimer toutes vos données à tout moment dans Réglages → Données personnelles → Supprimer toutes mes données.</p>
+
+    <h2>Contact</h2>
+    <div class="contact-box">
+      <p>Pour toute question concernant la confidentialité :</p>
+      <p><strong>talkie-app@proton.me</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- Support -->
+<div class="inapp-page" id="page-support">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('support')">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title">Support</div>
+  </div>
+  <div class="inapp-page-content">
+    <h2>Comment utiliser Talkie</h2>
+    <p>Talkie est une application de communication assistée conçue pour les personnes vivant avec la SLA (maladie de Charcot), les personnes muettes ou ayant des difficultés à parler.</p>
+
+    <h2>Fonctionnement</h2>
+    <ul>
+      <li><strong>Écoute :</strong> Appuyez sur la barre d'écoute pour activer le micro. Talkie transcrit ce que dit votre interlocuteur.</li>
+      <li><strong>Suggestions :</strong> Si Apple Intelligence est activé, 3 réponses sont proposées automatiquement.</li>
+      <li><strong>Parler :</strong> Appuyez sur une suggestion pour la prononcer à voix haute.</li>
+      <li><strong>Saisie libre :</strong> Utilisez le bouton « Écrire » pour taper manuellement votre message.</li>
+    </ul>
+
+    <h2>Suggestions IA</h2>
+    <p>Les suggestions nécessitent Apple Intelligence (iOS 26+). Si votre appareil n'est pas compatible, vous pouvez toujours utiliser Talkie en mode saisie libre.</p>
+
+    <h2>Personnaliser la voix</h2>
+    <p>Par défaut, Talkie utilise la voix intégrée de votre iPhone. Vous pouvez activer une voix personnalisée via ElevenLabs dans les réglages pour une expérience plus naturelle.</p>
+
+    <h2>Questions fréquentes</h2>
+    <p><strong>Le micro ne fonctionne pas ?</strong><br>Vérifiez que Talkie a l'autorisation d'accéder au microphone dans Réglages iOS → Talkie.</p>
+    <p><strong>Les suggestions n'apparaissent pas ?</strong><br>Assurez-vous qu'Apple Intelligence est activé sur votre appareil et que l'option est activée dans les réglages de Talkie.</p>
+    <p><strong>Comment supprimer mes données ?</strong><br>Allez dans Réglages → Données personnelles → Supprimer toutes mes données.</p>
+
+    <h2>Contact</h2>
+    <div class="contact-box">
+      <p>Besoin d'aide supplémentaire ?</p>
+      <p><strong>talkie-app@proton.me</strong></p>
+    </div>
+  </div>
+</div>
+
+<!-- Signaler un problème -->
+<div class="inapp-page" id="page-report">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('report')">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title">Signaler un problème</div>
+  </div>
+  <div class="inapp-page-content">
+    <h2>Décrivez le problème</h2>
+    <p>Bug, contenu inapproprié, ou suggestion d'amélioration — décrivez-nous le problème rencontré.</p>
+    <textarea class="report-textarea" id="reportTextarea" placeholder="Décrivez le problème ici..."></textarea>
+    <button class="report-send-btn" id="reportSendBtn">Envoyer par e-mail</button>
+    <p style="margin-top:16px; font-size:13px; color:var(--text-tertiary);">Un e-mail sera préparé avec votre description. Vous pourrez le vérifier avant envoi.</p>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════
      JAVASCRIPT
      ═══════════════════════════════════════════ -->
@@ -1006,7 +1204,7 @@ window.onerror = function(msg, src, line) {
 };
 
 const DB_KEY = 'talkie_v1';
-const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne atteinte de la maladie de Charcot (SLA) à communiquer.
+const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne ayant des difficultés à parler (SLA, mutisme ou autre) à communiquer.
 Tu proposes des réponses naturelles et chaleureuses en français.
 Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
 const EL_DEFAULT_KEY = '';
@@ -1902,7 +2100,8 @@ function loadSettings() {
   $('settingsVoiceId').value = state.voiceId || '';
   $('settingsMemory').value = state.memory || '';
   $('llmToggle').classList.toggle('active', state.llmEnabled);
-  $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
+  // customVoiceToggleBtn: active when NOT using local TTS
+  $('customVoiceToggleBtn').classList.toggle('active', !state.useLocalTTS);
   renderSamples();
 }
 
@@ -1925,8 +2124,8 @@ function saveSettings() {
   el.onchange = saveSettings;
 });
 
-// Replay tutorial
-$('replayTutorialBtn').onclick = () => {
+// Replay tutorial (moved to À Propos)
+$('tutorialBtn').onclick = () => {
   localStorage.removeItem('talkie_onboarded');
   showView('suggestions');
   onbPage = 0;
@@ -1935,18 +2134,31 @@ $('replayTutorialBtn').onclick = () => {
   $('onboarding').classList.remove('hidden');
 };
 
-// About links
-const PRIVACY_URL = 'https://leonardogracios.github.io/talkie/privacy.html';
-const SUPPORT_URL = 'https://leonardogracios.github.io/talkie/support.html';
-
-function openNativeURL(url) {
-  try { window.webkit?.messageHandlers?.openURL?.postMessage(url); }
-  catch(_) { window.open(url, '_blank'); }
+// In-app pages
+function openInAppPage(name) {
+  const page = $('page-' + name);
+  if (page) page.classList.add('active');
+}
+function closeInAppPage(name) {
+  const page = $('page-' + name);
+  if (page) page.classList.remove('active');
 }
 
-$('privacyPolicyBtn').onclick = () => openNativeURL(PRIVACY_URL);
-$('supportBtn').onclick = () => openNativeURL(SUPPORT_URL);
-$('reportBtn').onclick = () => { window.location.href = 'mailto:talkie-app@proton.me?subject=Talkie%20-%20Signalement'; };
+$('privacyPolicyBtn').onclick = () => openInAppPage('privacy');
+$('supportBtn').onclick = () => openInAppPage('support');
+$('reportBtn').onclick = () => openInAppPage('report');
+
+// Report form
+$('reportSendBtn').onclick = () => {
+  const text = $('reportTextarea').value.trim();
+  if (!text) { showToast('Veuillez décrire le problème'); return; }
+  const subject = encodeURIComponent('Talkie - Signalement');
+  const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
+  const mailtoUrl = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
+  try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
+  catch(_) { window.location.href = mailtoUrl; }
+  showToast('Préparation de l\'e-mail…');
+};
 
 // Data management
 $('clearHistoryBtn').onclick = () => {
@@ -1975,10 +2187,35 @@ $('llmToggle').onclick = () => {
   $('llmToggle').classList.toggle('active', state.llmEnabled);
   save();
 };
-$('localTTSToggle').onclick = () => {
+$('customVoiceToggleBtn').onclick = () => {
   state.useLocalTTS = !state.useLocalTTS;
-  $('localTTSToggle').classList.toggle('active', state.useLocalTTS);
+  // Toggle is inverted: "Personnaliser" ON = useLocalTTS OFF
+  $('customVoiceToggleBtn').classList.toggle('active', !state.useLocalTTS);
   save();
+};
+
+// Memory drawer toggle
+$('memoryDrawerToggle').onclick = () => {
+  const content = $('memoryDrawerContent');
+  const arrow = $('memoryDrawerArrow');
+  const isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  arrow.classList.toggle('open', !isOpen);
+};
+
+// Developer mode — tap version 5 times
+let _devTapCount = 0;
+let _devTapTimer = null;
+$('versionBox').onclick = () => {
+  _devTapCount++;
+  clearTimeout(_devTapTimer);
+  _devTapTimer = setTimeout(() => { _devTapCount = 0; }, 2000);
+  if (_devTapCount >= 5) {
+    _devTapCount = 0;
+    const dev = $('devSection');
+    dev.classList.toggle('visible');
+    showToast(dev.classList.contains('visible') ? 'Mode développeur activé' : 'Mode développeur désactivé');
+  }
 };
 $('toggleEL').onclick = () => {
   const p = $('settingsELKey').type === 'password';
@@ -2026,6 +2263,7 @@ window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 conversationHistory = state.history || [];
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
+// Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
 keychainLoad('elApiKey');
 console.log('[Talkie] Initialized ' + BUILD_VERSION);

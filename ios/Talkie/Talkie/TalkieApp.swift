@@ -10,8 +10,12 @@ struct TalkieApp: App {
                 WebAppView()
                     .ignoresSafeArea(.all)
 
-                // Native mic status indicator
-                MicStatusBar(isListening: micState.isListening)
+                // Native mic status indicator — hidden until user starts listening
+                if micState.showBar {
+                    MicStatusBar(isListening: micState.isListening)
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: micState.showBar)
+                }
             }
             .preferredColorScheme(.light)
             .statusBarHidden(false)
