@@ -1215,14 +1215,20 @@ html, body {
 <!-- Mémoire IA -->
 <div class="inapp-page" id="page-memory">
   <div class="inapp-page-header">
-    <button class="inapp-page-back" onclick="closeInAppPage('memory')">
+    <button class="inapp-page-back" onclick="closeInAppPage('memory')" aria-label="Retour">
       <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
     <div class="inapp-page-title">Mémoire IA</div>
   </div>
   <div class="inapp-page-content">
-    <p>Disponible avec Apple Intelligence. Talkie retient des informations pour personnaliser les réponses.</p>
-    <textarea class="settings-textarea" id="settingsMemory" rows="8" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+    <h2 style="font-size:16px; margin:0 0 6px;">Mes informations</h2>
+    <p style="margin:0 0 10px; font-size:13px; color:var(--text-secondary);">Écrivez ici ce que l'assistant doit savoir sur vous.</p>
+    <textarea class="settings-textarea" id="settingsMemory" rows="5" aria-label="Mémoire personnelle" placeholder="Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..."></textarea>
+
+    <h2 style="font-size:16px; margin:24px 0 6px;">Appris des conversations</h2>
+    <p style="margin:0 0 10px; font-size:13px; color:var(--text-secondary);">Talkie apprend automatiquement des détails à partir de vos échanges.</p>
+    <div id="learnedMemoryDisplay" style="background:var(--card-bg); border-radius:12px; padding:14px; font-size:14px; color:var(--text-primary); min-height:40px; white-space:pre-wrap;"></div>
+    <button class="settings-action-btn" id="clearLearnedMemoryBtn" style="margin-top:12px;">Effacer la mémoire apprise</button>
   </div>
 </div>
 
@@ -1276,10 +1282,17 @@ window.onerror = function(msg, src, line) {
 };
 
 const DB_KEY = 'talkie_v1';
-const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne ayant des difficultés à parler (SLA, mutisme ou autre) à communiquer.
-Tu proposes des réponses naturelles et chaleureuses en français.
-Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
-// Safety is enforced on the native side (always prepended in Swift) — no need to duplicate here.
+const DEFAULT_PROMPT = `Tu es l'expression directe de l'utilisateur (ton "Moi" numérique). Ton but est de proposer 3 options de réponses authentiques.
+DIRECTIVES :
+1. ADAPTABILITÉ : Calque la complexité de tes réponses sur l'interlocuteur. S'il pose une question simple, réponds court. S'il engage une discussion profonde ou technique, propose des phrases construites et nuancées.
+2. DIVERSITÉ DE TON :
+   - Option 1 : Directe / Pragmatique (Oui, non, d'accord).
+   - Option 2 : Sociale / Émotive (Humour, empathie, enthousiasme).
+   - Option 3 : Relance / Nuance (Une question en retour ou une réflexion plus longue).
+3. PARLER HUMAIN : Utilise un ton naturel. Évite les formulations d'assistant type "Comment puis-je vous aider ?".
+4. MÉMOIRE : Utilise les infos de la "Mémoire IA" pour personnaliser (goûts, prénom, proches).
+FORMAT :
+3 suggestions uniquement, séparées par un saut de ligne. Pas d'introduction.`;
 const SAFETY_PREFIX = "";
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
@@ -1333,6 +1346,7 @@ function loadState() {
       if (!s.voiceId) s.voiceId = DEFAULT_VOICE_ID;
       if (!s.elApiKey) s.elApiKey = EL_DEFAULT_KEY;
       if (!s.memory) s.memory = '';
+      if (!s.learnedMemory) s.learnedMemory = '';
       // Migrate old useLocalTTS to new fields
       if (s.useApplePersonalVoice === undefined) s.useApplePersonalVoice = false;
       if (s.useElevenLabs === undefined) {
@@ -1365,7 +1379,7 @@ function loadState() {
     userName: '', systemPrompt: DEFAULT_PROMPT,
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
-    history: [], memory: '',
+    history: [], memory: '', learnedMemory: '',
   };
 }
 
@@ -1401,17 +1415,16 @@ async function maybeExtractMemory() {
   const recent = state.history.slice(-10).map(m =>
     `${m.isUser ? 'Patient' : 'Interlocuteur'}: ${m.text}`
   ).join('\n');
-  const currentMemory = state.memory || '';
+  const currentLearned = state.learnedMemory || '';
 
   const sys = 'Tu es un assistant qui extrait des informations personnelles à partir de conversations.';
-  const prompt = `Voici une conversation récente :\n${recent}\n\nMémoire actuelle :\n${currentMemory || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur le patient (goûts, famille, métier, habitudes, opinions). Ajoute-les à la mémoire existante. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`;
+  const prompt = `Voici une conversation récente :\n${recent}\n\nMémoire apprise actuelle :\n${currentLearned || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur l'utilisateur (goûts, famille, métier, habitudes, opinions, lieux, prénoms de proches). Ajoute-les à la mémoire existante sans doublons. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`;
 
   try {
     const result = await callNativeLLM(sys, prompt);
     if (result && !result.includes('RIEN') && result.trim().length > 5) {
-      state.memory = result.trim();
+      state.learnedMemory = result.trim();
       save();
-      console.log('[Talkie] Memory updated:', state.memory);
     }
   } catch(e) {
     console.warn('[Talkie] Memory extraction failed:', e);
@@ -2148,10 +2161,13 @@ async function fetchSuggestions(interlocutorText) {
     return;
   }
 
-  // Build system prompt with safety prefix always prepended
   let sys = SAFETY_PREFIX + state.systemPrompt;
-  if (state.memory && state.memory.trim()) {
-    sys += `\n\nInformations personnelles sur l'utilisateur (à utiliser pour personnaliser les réponses) :\n${state.memory.trim()}`;
+  // Combine manual + learned memory
+  const memParts = [];
+  if (state.memory && state.memory.trim()) memParts.push(state.memory.trim());
+  if (state.learnedMemory && state.learnedMemory.trim()) memParts.push(state.learnedMemory.trim());
+  if (memParts.length) {
+    sys += `\n\nInformations personnelles sur l'utilisateur (à utiliser pour personnaliser les réponses) :\n${memParts.join('\n')}`;
   }
   if (state.userName) {
     sys += `\nL'utilisateur s'appelle ${state.userName}.`;
@@ -2268,6 +2284,7 @@ function loadSettings() {
   $('settingsELKey').value = state.elApiKey;
   $('settingsVoiceId').value = state.voiceId || '';
   $('settingsMemory').value = state.memory || '';
+  $('learnedMemoryDisplay').textContent = state.learnedMemory || 'Rien appris pour le moment.';
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   // Developer mode
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
@@ -2388,6 +2405,14 @@ $('resetPromptBtn').onclick = () => {
   $('settingsPrompt').value = DEFAULT_PROMPT;
   state.systemPrompt = DEFAULT_PROMPT;
   save();
+};
+$('clearLearnedMemoryBtn').onclick = () => {
+  if (confirm('Effacer tout ce que Talkie a appris de vos conversations ?')) {
+    state.learnedMemory = '';
+    save();
+    $('learnedMemoryDisplay').textContent = 'Rien appris pour le moment.';
+    showToast('Mémoire apprise effacée');
+  }
 };
 
 // ─── LLM Availability ───
