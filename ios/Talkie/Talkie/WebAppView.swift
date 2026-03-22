@@ -4,6 +4,7 @@ import AVFoundation
 import FoundationModels
 import Security
 import SafariServices
+import UIKit
 
 // MARK: - Keychain Helper
 
@@ -54,11 +55,12 @@ class MicState: ObservableObject {
 
 
 struct WebAppView: UIViewRepresentable {
+    @Environment(\.colorScheme) private var colorScheme
 
     func makeUIView(context: Context) -> WKWebView {
         // CRITICAL: Configure audio session for simultaneous playback + recording
         // Without this, iOS switches to "playback" mode after TTS and blocks the mic
-        configureAudioSession()
+        Self.configureAudioSession()
 
         // Clear cached HTML/JS so fresh bundle files always load
         WKWebsiteDataStore.default().removeData(
@@ -69,6 +71,19 @@ struct WebAppView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+
+        // WKWebView suit le schéma système (`prefers-color-scheme`), pas `preferredColorScheme` SwiftUI.
+        // On injecte le thème effectif pour que le CSS corresponde (ex. mode sombre dans Talkie + système clair).
+        let theme = context.environment.colorScheme == .dark ? "dark" : "light"
+        let themeScript = WKUserScript(
+            source: """
+            document.documentElement.setAttribute('data-app-theme', '\(theme)');
+            (function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.content='\(theme == "dark" ? "#1C1C1E" : "#F5F6FA")';})();
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        )
+        config.userContentController.addUserScript(themeScript)
 
         let coordinator = context.coordinator
         config.userContentController.add(coordinator, name: "llmRequest")
@@ -100,38 +115,64 @@ struct WebAppView: UIViewRepresentable {
         coordinator.startObservingAudioSessionRecovery()
 
         if let htmlURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "web") {
-            webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
+            // Grant read access to the entire bundle to avoid sandbox extension errors
+            webView.loadFileURL(htmlURL, allowingReadAccessTo: Bundle.main.bundleURL)
         }
 
         return webView
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        let theme = colorScheme == .dark ? "dark" : "light"
+        let bgColor: UIColor = colorScheme == .dark ? .secondarySystemGroupedBackground : .systemGroupedBackground
+        uiView.backgroundColor = bgColor
+        uiView.scrollView.backgroundColor = bgColor
+        let meta = theme == "dark" ? "#1C1C1E" : "#F5F6FA"
+        let js = """
+        document.documentElement.setAttribute('data-app-theme', '\(theme)');
+        (function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.content='\(meta)';})();
+        """
+        Task { @MainActor in
+            do {
+                _ = try await uiView.evaluateJavaScript(js)
+            } catch {
+                // Thème best-effort ; échec JS rare (webview pas prête)
+            }
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
-    /// WebKit leaves the session in playback mode after HTML5 audio (e.g. ElevenLabs MP3).
-    /// Full deactivate → category → activate is required before SpeechRecognition can start again.
-    ///
-    /// **Important:** Do *not* use `.voiceChat` here — its built-in voice processing / echo cancellation
-    /// can leave the capture path gated after speaker playback, so Web Speech API gets no audio.
+    // MARK: - Audio Session Management (with state tracking to avoid cascading interruptions)
+
+    /// Whether the audio session is currently active (avoids redundant activate/deactivate cycles
+    /// that cause "AudioSession::beginInterruption but session is already interrupted!" spam).
+    private static var sessionActive = false
+
     static func deactivateAudioSession() {
+        guard sessionActive else { return }
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
+            sessionActive = false
         } catch {
-            // Silently ignore — session may already be inactive
+            // Session may already be inactive
+            sessionActive = false
         }
     }
 
     static func reassertPlayAndRecordSession() {
         let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setActive(false, options: .notifyOthersOnDeactivation)
-        } catch {
-            // Silently ignore — session may already be inactive
+        // Only deactivate if currently active — avoids triggering extra interruption notifications
+        if sessionActive {
+            do {
+                try session.setActive(false, options: .notifyOthersOnDeactivation)
+                sessionActive = false
+            } catch {
+                sessionActive = false
+            }
         }
         do {
             try session.setCategory(
@@ -141,12 +182,14 @@ struct WebAppView: UIViewRepresentable {
             )
             try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
             try session.setActive(true)
+            sessionActive = true
         } catch {
             print("[Audio] activate failed: \(error)")
         }
     }
 
-    private func configureAudioSession() {
+    /// Initial audio session setup — category only, no activate (avoids empty buffer issues at startup).
+    static func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(
@@ -154,6 +197,7 @@ struct WebAppView: UIViewRepresentable {
                 mode: .default,
                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
+            try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
         } catch {
             print("[Audio] init category failed: \(error)")
         }
@@ -176,6 +220,19 @@ struct WebAppView: UIViewRepresentable {
             nativeSynthesizer.delegate = self
         }
 
+        /// Préfère l'API `async` de WKWebView (évite l'avertissement « asynchronous alternative »).
+        @MainActor
+        private func runJavaScript(_ script: String) {
+            Task { @MainActor [weak self] in
+                guard let self, let webView = self.webView else { return }
+                do {
+                    _ = try await webView.evaluateJavaScript(script)
+                } catch {
+                    // Best-effort JS execution
+                }
+            }
+        }
+
         deinit {
             nativeProgressTimer?.invalidate()
             nativeAudioPlayer?.stop()
@@ -187,11 +244,11 @@ struct WebAppView: UIViewRepresentable {
             guard let body = message.body as? [String: Any],
                   let playbackId = body["playbackId"] as? String,
                   let base64 = body["base64"] as? String,
-                  let data = Data(base64Encoded: base64) else {
-                print("[NativeTTS] invalid payload")
+                  let data = Data(base64Encoded: base64),
+                  !data.isEmpty else {
+                print("[NativeTTS] invalid or empty payload")
                 return
             }
-            print("[NativeTTS] start playbackId=\(playbackId) bytes=\(data.count)")
             stopNativeTTSPlayback(notifyJS: false)
             WebAppView.reassertPlayAndRecordSession()
             do {
@@ -220,9 +277,7 @@ struct WebAppView: UIViewRepresentable {
             WebAppView.reassertPlayAndRecordSession()
             let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(playbackId)', '\(code)');"
             DispatchQueue.main.async { [weak self] in
-                self?.webView?.evaluateJavaScript(js) { err, _ in
-                    if let err = err { print("[NativeTTS] JS fail callback error: \(err)") }
-                }
+                self?.runJavaScript(js)
             }
         }
 
@@ -234,18 +289,16 @@ struct WebAppView: UIViewRepresentable {
             nativeAudioPlayer = nil
             let id = nativePlaybackId
             nativePlaybackId = nil
-            
+
             if nativeSynthesizer.isSpeaking {
                 nativeSynthesizer.stopSpeaking(at: .immediate)
             }
-            
+
             WebAppView.reassertPlayAndRecordSession()
             if notifyJS, let id = id {
                 let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', 'stopped');"
                 DispatchQueue.main.async { [weak self] in
-                    self?.webView?.evaluateJavaScript(js) { err, _ in
-                        if let err = err { print("[NativeTTS] JS stop notify error: \(err)") }
-                    }
+                    self?.runJavaScript(js)
                 }
             }
         }
@@ -253,18 +306,17 @@ struct WebAppView: UIViewRepresentable {
         private func startNativeProgressTimer(playbackId: String) {
             nativeProgressTimer?.invalidate()
             let t = Timer(timeInterval: 0.12, repeats: true) { [weak self] _ in
-                guard let self = self, let p = self.nativeAudioPlayer else { return }
+                guard let self, let p = self.nativeAudioPlayer else { return }
                 let cur = p.currentTime
                 let dur = max(p.duration, 0.001)
                 let js = "window._nativeTTSProgress && window._nativeTTSProgress('\(playbackId)', \(cur), \(dur))"
-                self.webView?.evaluateJavaScript(js, completionHandler: nil)
+                DispatchQueue.main.async { self.runJavaScript(js) }
             }
             RunLoop.main.add(t, forMode: .common)
             nativeProgressTimer = t
         }
 
         func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-            print("[NativeTTS] finished success=\(flag)")
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
             nativeAudioPlayer = nil
@@ -275,9 +327,7 @@ struct WebAppView: UIViewRepresentable {
             let errArg = flag ? "null" : "'playback_failed'"
             let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', \(errArg));"
             DispatchQueue.main.async { [weak self] in
-                self?.webView?.evaluateJavaScript(js) { err, _ in
-                    if let err = err { print("[NativeTTS] JS done callback error: \(err)") }
-                }
+                self?.runJavaScript(js)
             }
         }
 
@@ -292,14 +342,10 @@ struct WebAppView: UIViewRepresentable {
             if !id.isEmpty {
                 let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(id)', 'decode_failed');"
                 DispatchQueue.main.async { [weak self] in
-                    self?.webView?.evaluateJavaScript(js) { err, _ in
-                        if let err = err { print("[NativeTTS] JS decode callback error: \(err)") }
-                    }
+                    self?.runJavaScript(js)
                 }
             }
         }
-
-        /// WebKit / HTML5 audio can interrupt the shared session; re-sync when the interruption ends.
 
         func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
             WebAppView.deactivateAudioSession()
@@ -307,19 +353,20 @@ struct WebAppView: UIViewRepresentable {
             nativeSpeechCallbackId = nil
             let js = "window._nativeSpeechCallback && window._nativeSpeechCallback('\(id)', null);"
             DispatchQueue.main.async { [weak self] in
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                self?.runJavaScript(js)
             }
         }
-        
+
         func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
             WebAppView.deactivateAudioSession()
             guard let id = nativeSpeechCallbackId else { return }
             nativeSpeechCallbackId = nil
             let js = "window._nativeSpeechCallback && window._nativeSpeechCallback('\(id)', 'cancelled');"
             DispatchQueue.main.async { [weak self] in
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                self?.runJavaScript(js)
             }
         }
+
         func startObservingAudioSessionRecovery() {
             guard audioSessionObservers.isEmpty else { return }
             let nc = NotificationCenter.default
@@ -327,10 +374,12 @@ struct WebAppView: UIViewRepresentable {
                 forName: AVAudioSession.interruptionNotification,
                 object: AVAudioSession.sharedInstance(),
                 queue: .main
-            ) { note in
+            ) { [weak self] note in
                 guard let info = note.userInfo,
                       let type = info[AVAudioSessionInterruptionTypeKey] as? UInt,
                       type == AVAudioSession.InterruptionType.ended.rawValue else { return }
+                // Don't reassert while actively playing — the player manages the session
+                guard self?.nativeAudioPlayer == nil, self?.nativeSynthesizer.isSpeaking != true else { return }
                 WebAppView.reassertPlayAndRecordSession()
             })
         }
@@ -351,17 +400,10 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "checkLLMAvailability" {
                 Task { @MainActor [weak self] in
-                    // Try to create a session — if FoundationModels is available, this succeeds
-                    var available = true
-                    do {
-                        let session = LanguageModelSession()
-                        // Session created successfully — Apple Intelligence is available
-                        _ = session
-                    } catch {
-                        available = false
-                    }
+                    // `LanguageModelSession` n'a pas d'init throwing dans le SDK actuel — la dispo réelle se joue à `respond`.
+                    let available = true
                     let js = "window._llmAvailabilityCallback(\(available));"
-                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                    self?.runJavaScript(js)
                 }
                 return
             }
@@ -372,7 +414,7 @@ struct WebAppView: UIViewRepresentable {
                 let ok = KeychainHelper.save(key: key, value: value)
                 let js = "window._keychainCallback && window._keychainCallback('save', '\(key)', \(ok));"
                 DispatchQueue.main.async { [weak self] in
-                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                    self?.runJavaScript(js)
                 }
                 return
             }
@@ -387,7 +429,7 @@ struct WebAppView: UIViewRepresentable {
                     ? "window._keychainCallback && window._keychainCallback('load', '\(key)', '\(escaped)');"
                     : "window._keychainCallback && window._keychainCallback('load', '\(key)', null);"
                 DispatchQueue.main.async { [weak self] in
-                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                    self?.runJavaScript(js)
                 }
                 return
             }
@@ -399,15 +441,23 @@ struct WebAppView: UIViewRepresentable {
                 guard let body = message.body as? [String: Any],
                       let text = body["text"] as? String,
                       let requestId = body["requestId"] as? String else { return }
-                
+
                 WebAppView.reassertPlayAndRecordSession()
                 nativeSpeechCallbackId = requestId
-                let utterance = AVSpeechUtterance(string: text)
+                // Sanitize text to prevent AVSpeechSynthesizer from attempting SSML parsing.
+                // Characters like <, >, & cause "Could not parse SSML" errors.
+                let sanitized = text
+                    .replacingOccurrences(of: "&", with: " et ")
+                    .replacingOccurrences(of: "<", with: "")
+                    .replacingOccurrences(of: ">", with: "")
+                let utterance = AVSpeechUtterance(string: sanitized)
                 utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-                
+
                 AVSpeechSynthesizer.requestPersonalVoiceAuthorization { status in
-                    DispatchQueue.main.async {
-                        if status == .authorized, let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        if status == .authorized,
+                           let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
                             utterance.voice = personalVoice
                         } else {
                             utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
@@ -421,9 +471,8 @@ struct WebAppView: UIViewRepresentable {
                 if let urlString = message.body as? String,
                    let url = URL(string: urlString) {
                     if url.scheme == "mailto" {
-                        // Open mailto: links with the system mail handler
-                        DispatchQueue.main.async {
-                            UIApplication.shared.open(url)
+                        Task { @MainActor in
+                            _ = await UIApplication.shared.open(url)
                         }
                     } else if let vc = webView?.window?.rootViewController {
                         let safari = SFSafariViewController(url: url)
@@ -447,7 +496,7 @@ struct WebAppView: UIViewRepresentable {
                 KeychainHelper.delete(key: key)
                 let js = "window._keychainCallback && window._keychainCallback('delete', '\(key)', true);"
                 DispatchQueue.main.async { [weak self] in
-                    self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                    self?.runJavaScript(js)
                 }
                 return
             }
@@ -474,9 +523,27 @@ struct WebAppView: UIViewRepresentable {
 
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
+            guard let webView else { return }
+            let safetyPrefix = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
+            /// - Extraction mémoire : courte consigne, préfixée par la règle de sécurité.
+            /// - Suggestions : chaîne complète construite dans le Web (mémoire + historique) ; le cœur doit rester le prompt Talkie fixe.
+            let instructions: String
+            if systemPrompt.hasPrefix("Tu es un assistant qui extrait") {
+                instructions = safetyPrefix + systemPrompt
+            } else {
+                guard systemPrompt.contains(TalkieSystemPrompt.integrityMarker) else {
+                    let js = "window._llmCallback('\(requestId)', null, 'Configuration assistant invalide');"
+                    do {
+                        _ = try await webView.evaluateJavaScript(js)
+                    } catch {
+                        print("[LLM] JS erreur (config invalide): \(error)")
+                    }
+                    return
+                }
+                instructions = systemPrompt
+            }
             do {
-                let safetyPrefix = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
-                let session = LanguageModelSession(instructions: safetyPrefix + systemPrompt)
+                let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
                 let text = response.content
                     .replacingOccurrences(of: "\\", with: "\\\\")
@@ -484,12 +551,20 @@ struct WebAppView: UIViewRepresentable {
                     .replacingOccurrences(of: "\n", with: "\\n")
                     .replacingOccurrences(of: "\r", with: "")
                 let js = "window._llmCallback('\(requestId)', '\(text)', null);"
-                try? await webView?.evaluateJavaScript(js)
+                do {
+                    _ = try await webView.evaluateJavaScript(js)
+                } catch {
+                    print("[LLM] Échec envoi résultat au Web: \(error)")
+                }
             } catch {
                 let errMsg = error.localizedDescription
                     .replacingOccurrences(of: "'", with: "\\'")
                 let js = "window._llmCallback('\(requestId)', null, '\(errMsg)');"
-                try? await webView?.evaluateJavaScript(js)
+                do {
+                    _ = try await webView.evaluateJavaScript(js)
+                } catch {
+                    print("[LLM] Échec envoi erreur au Web: \(error)")
+                }
             }
         }
 
@@ -500,7 +575,6 @@ struct WebAppView: UIViewRepresentable {
             guard let webView = self.webView else { return }
             let js = """
             JSON.stringify({
-                systemPrompt: state.systemPrompt,
                 memory: state.memory || '',
                 useApplePersonalVoice: state.useApplePersonalVoice,
                 useElevenLabs: state.useElevenLabs,
@@ -509,25 +583,30 @@ struct WebAppView: UIViewRepresentable {
                 hasELConsent: !!localStorage.getItem('talkie_el_consent')
             })
             """
-            webView.evaluateJavaScript(js) { [weak self] result, _ in
-                guard let jsonStr = result as? String,
-                      let data = jsonStr.data(using: .utf8),
-                      let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    // Fallback: open settings anyway with defaults
-                    self?.presentNativeSettings()
-                    return
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                do {
+                    let result = try await webView.evaluateJavaScript(js)
+                    guard let jsonStr = result as? String,
+                          let data = jsonStr.data(using: .utf8),
+                          let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                        self.presentNativeSettings()
+                        return
+                    }
+                    let vm = SettingsViewModel.shared
+                    vm.memory = dict["memory"] as? String ?? ""
+                    vm.useApplePersonalVoice = dict["useApplePersonalVoice"] as? Bool ?? false
+                    vm.useElevenLabs = dict["useElevenLabs"] as? Bool ?? false
+                    vm.elApiKey = dict["elApiKey"] as? String ?? ""
+                    if vm.elApiKey.isEmpty, let k = KeychainHelper.load(key: "elApiKey"), !k.isEmpty {
+                        vm.elApiKey = k
+                    }
+                    vm.voiceId = dict["voiceId"] as? String ?? ""
+                    vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
+                    self.presentNativeSettings()
+                } catch {
+                    self.presentNativeSettings()
                 }
-
-                let vm = SettingsViewModel.shared
-                vm.systemPrompt = dict["systemPrompt"] as? String ?? ""
-                vm.memory = dict["memory"] as? String ?? ""
-                vm.useApplePersonalVoice = dict["useApplePersonalVoice"] as? Bool ?? false
-                vm.useElevenLabs = dict["useElevenLabs"] as? Bool ?? false
-                vm.elApiKey = dict["elApiKey"] as? String ?? ""
-                vm.voiceId = dict["voiceId"] as? String ?? ""
-                vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
-
-                self?.presentNativeSettings()
             }
         }
 
@@ -537,8 +616,9 @@ struct WebAppView: UIViewRepresentable {
 
             vm.onDismiss = { [weak self] in
                 self?.syncSettingsToJS()
+                self?.runJavaScript("loadSettings();")
                 let restartJs = "if (userHasInteracted) startListening();"
-                self?.webView?.evaluateJavaScript(restartJs, completionHandler: nil)
+                self?.runJavaScript(restartJs)
             }
 
             vm.onReplayTutorial = { [weak self] in
@@ -550,7 +630,7 @@ struct WebAppView: UIViewRepresentable {
                 document.querySelector('.onb-page[data-page="0"]').classList.add('active');
                 $('onboarding').classList.remove('hidden');
                 """
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                self?.runJavaScript(js)
             }
 
             vm.onResetAll = { [weak self] in
@@ -561,19 +641,18 @@ struct WebAppView: UIViewRepresentable {
                 ['echo_v5','echo_v4','echo_v3','echo_v2','echo_v1','echo_onboarded'].forEach(k => localStorage.removeItem(k));
                 location.reload();
                 """
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                self?.runJavaScript(js)
             }
 
             vm.onOpenVoiceCloning = { [weak self] in
                 self?.syncSettingsToJS()
                 let js = "loadSettings(); showView('settings'); $('devSection').classList.add('visible');"
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                self?.runJavaScript(js)
             }
 
             vm.onTextSizeChanged = { [weak self] pct in
-                let fontSize = 16.0 * pct / 100.0
-                let js = "window._setTextSize && window._setTextSize(\(fontSize));"
-                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+                let js = "window._setTextSize && window._setTextSize(\(pct));"
+                self?.runJavaScript(js)
             }
 
             AppState.shared.showSettings = true
@@ -581,50 +660,48 @@ struct WebAppView: UIViewRepresentable {
 
         private func syncSettingsToJS() {
             let vm = SettingsViewModel.shared
-            let prompt = vm.systemPrompt
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-                .replacingOccurrences(of: "\n", with: "\\n")
-                .replacingOccurrences(of: "\r", with: "")
-            let memory = vm.memory
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "'", with: "\\'")
-                .replacingOccurrences(of: "\n", with: "\\n")
-                .replacingOccurrences(of: "\r", with: "")
-            let voiceId = vm.voiceId
-                .replacingOccurrences(of: "'", with: "\\'")
+            // Keychain côté natif : fiable même si le `keychainSave` via JS est retardé ou asynchrone.
+            if vm.elApiKey.isEmpty {
+                KeychainHelper.delete(key: "elApiKey")
+            } else {
+                _ = KeychainHelper.save(key: "elApiKey", value: vm.elApiKey)
+            }
 
-            let js = """
-            state.systemPrompt = '\(prompt)';
+            let memory = Self.escapeForJavaScript(vm.memory)
+            let voiceId = Self.escapeForJavaScript(vm.voiceId)
+            let elKey = Self.escapeForJavaScript(vm.elApiKey)
+
+            var js = """
+            state.elApiKey = '\(elKey)';
             state.memory = '\(memory)';
             state.useApplePersonalVoice = \(vm.useApplePersonalVoice);
             state.useElevenLabs = \(vm.useElevenLabs);
             state.voiceId = '\(voiceId)';
             save();
             """
-            webView?.evaluateJavaScript(js, completionHandler: nil)
-
-            // Save API key to keychain if present
-            if !vm.elApiKey.isEmpty {
-                let escapedKey = vm.elApiKey.replacingOccurrences(of: "'", with: "\\'")
-                let keyJs = "keychainSave('elApiKey', '\(escapedKey)');"
-                webView?.evaluateJavaScript(keyJs, completionHandler: nil)
-            }
-
-            // Sync ElevenLabs consent
             if vm.hasELConsent {
-                let consentJs = "localStorage.setItem('talkie_el_consent', '1');"
-                webView?.evaluateJavaScript(consentJs, completionHandler: nil)
+                js += "\nlocalStorage.setItem('talkie_el_consent', '1');"
             }
+            runJavaScript(js)
+        }
+
+        /// Chaîne injectée dans une apostrophe simple côté JS.
+        private static func escapeForJavaScript(_ s: String) -> String {
+            s.replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\n", with: "\\n")
+                .replacingOccurrences(of: "\r", with: "")
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Apply saved text size after page loads
             let pct = AppState.shared.textSizePercent
-            if pct != 100 {
-                let fontSize = 16.0 * pct / 100.0
-                let js = "document.documentElement.style.fontSize = '\(fontSize)px';"
-                webView.evaluateJavaScript(js, completionHandler: nil)
+            let js = "window._setTextSize && window._setTextSize(\(pct));"
+            Task { @MainActor in
+                do {
+                    _ = try await webView.evaluateJavaScript(js)
+                } catch {
+                    // Best-effort text scale
+                }
             }
         }
 
