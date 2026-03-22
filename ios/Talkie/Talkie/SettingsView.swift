@@ -83,17 +83,15 @@ struct SettingsView: View {
                 }
 
                 Section("Accessibilité") {
-                    Picker(selection: $appState.appearanceMode) {
+                    Picker("Apparence", selection: $appState.appearanceMode) {
                         Text("Système").tag(0)
                         Text("Clair").tag(1)
                         Text("Sombre").tag(2)
-                    } label: {
-                        Label("Apparence", systemImage: "circle.lefthalf.filled")
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Label("Taille du texte", systemImage: "textformat.size")
+                            Text("Taille du texte")
                             Spacer()
                             Text("\(Int(appState.textSizePercent))%")
                                 .foregroundStyle(.secondary)
@@ -101,8 +99,8 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
                             Text("A").font(.caption)
                             Slider(value: $appState.textSizePercent, in: 80...150, step: 5)
-                                .onChange(of: appState.textSizePercent) { _ in
-                                    vm.onTextSizeChanged?(appState.textSizePercent)
+                                .onChange(of: appState.textSizePercent) { newValue in
+                                    vm.onTextSizeChanged?(newValue)
                                 }
                             Text("A").font(.title3)
                         }
