@@ -1227,7 +1227,7 @@ html, body {
 
     <h2 style="font-size:16px; margin:24px 0 6px;">Appris des conversations</h2>
     <p style="margin:0 0 10px; font-size:13px; color:var(--text-secondary);">Talkie apprend automatiquement des détails à partir de vos échanges.</p>
-    <div id="learnedMemoryDisplay" style="background:var(--card-bg); border-radius:12px; padding:14px; font-size:14px; color:var(--text-primary); min-height:40px; white-space:pre-wrap;"></div>
+    <div id="learnedMemoryDisplay" style="background:var(--bg-card-hover); border:1px solid var(--separator); border-radius:12px; padding:14px; font-size:14px; color:var(--text); min-height:40px; white-space:pre-wrap; line-height:1.5;"></div>
     <button class="settings-action-btn" id="clearLearnedMemoryBtn" style="margin-top:12px;">Effacer la mémoire apprise</button>
   </div>
 </div>
@@ -1401,6 +1401,7 @@ function addToHistory(text, isUser) {
   if (state.history.length > 20) state.history = state.history.slice(-20);
   conversationHistory = state.history;
   save();
+  maybeExtractMemory();
 }
 
 // ─── Auto-memory extraction ───
