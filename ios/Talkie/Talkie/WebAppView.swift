@@ -502,9 +502,7 @@ struct WebAppView: UIViewRepresentable {
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
             guard let webView else { return }
-            // Safety rule always prepended on the native side — the web prompt may or may not include it.
-            let safetyRule = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
-            let instructions = safetyRule + systemPrompt
+            let instructions = systemPrompt
             do {
                 let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
