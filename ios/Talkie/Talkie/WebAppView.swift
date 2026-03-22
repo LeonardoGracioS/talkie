@@ -499,22 +499,9 @@ struct WebAppView: UIViewRepresentable {
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
             guard let webView else { return }
-            // Validate the system prompt contains the Talkie integrity marker (prevents prompt injection
-            // from the web side), OR is a known internal prompt (memory extraction).
-            let instructions: String
-            if systemPrompt.hasPrefix("Tu es un assistant qui extrait") {
-                instructions = systemPrompt
-            } else if systemPrompt.contains(TalkieSystemPrompt.integrityMarker) {
-                instructions = systemPrompt
-            } else {
-                let js = "window._llmCallback('\(requestId)', null, 'Configuration assistant invalide');"
-                do {
-                    _ = try await webView.evaluateJavaScript(js)
-                } catch {
-                    print("[LLM] JS erreur (config invalide): \(error)")
-                }
-                return
-            }
+            // Safety rule always prepended on the native side — the web prompt may or may not include it.
+            let safetyRule = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
+            let instructions = safetyRule + systemPrompt
             do {
                 let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
