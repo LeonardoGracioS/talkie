@@ -62,12 +62,6 @@ struct WebAppView: UIViewRepresentable {
         // Without this, iOS switches to "playback" mode after TTS and blocks the mic
         Self.configureAudioSession()
 
-        // Clear cached HTML/JS so fresh bundle files always load
-        WKWebsiteDataStore.default().removeData(
-            ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache],
-            modifiedSince: Date.distantPast
-        ) { }
-
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -145,35 +139,27 @@ struct WebAppView: UIViewRepresentable {
         Coordinator()
     }
 
-    // MARK: - Audio Session Management (with state tracking to avoid cascading interruptions)
+    // MARK: - Audio Session Management
+    //
+    // Key insight: do NOT cycle deactivate→activate — that sends interruption notifications
+    // to WebKit's internal audio session, causing "beginInterruption but already interrupted" spam.
+    // Instead: just set category + activate (idempotent). Only deactivate when truly going silent
+    // (before speech recognition needs the mic).
 
-    /// Whether the audio session is currently active (avoids redundant activate/deactivate cycles
-    /// that cause "AudioSession::beginInterruption but session is already interrupted!" spam).
-    private static var sessionActive = false
-
+    /// Deactivate the session — only call before speech recognition needs a clean mic path.
     static func deactivateAudioSession() {
-        guard sessionActive else { return }
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
-            sessionActive = false
         } catch {
-            // Session may already be inactive
-            sessionActive = false
+            // Already inactive — fine
         }
     }
 
+    /// Ensure playAndRecord category is set and session is active.
+    /// Safe to call repeatedly — no deactivate step, so no interruption cascade.
     static func reassertPlayAndRecordSession() {
         let session = AVAudioSession.sharedInstance()
-        // Only deactivate if currently active — avoids triggering extra interruption notifications
-        if sessionActive {
-            do {
-                try session.setActive(false, options: .notifyOthersOnDeactivation)
-                sessionActive = false
-            } catch {
-                sessionActive = false
-            }
-        }
         do {
             try session.setCategory(
                 .playAndRecord,
@@ -182,25 +168,14 @@ struct WebAppView: UIViewRepresentable {
             )
             try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
             try session.setActive(true)
-            sessionActive = true
         } catch {
-            print("[Audio] activate failed: \(error)")
+            // Already active with this category — fine
         }
     }
 
-    /// Initial audio session setup — category only, no activate (avoids empty buffer issues at startup).
+    /// Initial audio session setup at app launch.
     static func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(
-                .playAndRecord,
-                mode: .default,
-                options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
-            )
-            try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
-        } catch {
-            print("[Audio] init category failed: \(error)")
-        }
+        reassertPlayAndRecordSession()
     }
 
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
@@ -524,23 +499,21 @@ struct WebAppView: UIViewRepresentable {
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
             guard let webView else { return }
-            let safetyPrefix = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
-            /// - Extraction mémoire : courte consigne, préfixée par la règle de sécurité.
-            /// - Suggestions : chaîne complète construite dans le Web (mémoire + historique) ; le cœur doit rester le prompt Talkie fixe.
+            // Validate the system prompt contains the Talkie integrity marker (prevents prompt injection
+            // from the web side), OR is a known internal prompt (memory extraction).
             let instructions: String
             if systemPrompt.hasPrefix("Tu es un assistant qui extrait") {
-                instructions = safetyPrefix + systemPrompt
-            } else {
-                guard systemPrompt.contains(TalkieSystemPrompt.integrityMarker) else {
-                    let js = "window._llmCallback('\(requestId)', null, 'Configuration assistant invalide');"
-                    do {
-                        _ = try await webView.evaluateJavaScript(js)
-                    } catch {
-                        print("[LLM] JS erreur (config invalide): \(error)")
-                    }
-                    return
-                }
                 instructions = systemPrompt
+            } else if systemPrompt.contains(TalkieSystemPrompt.integrityMarker) {
+                instructions = systemPrompt
+            } else {
+                let js = "window._llmCallback('\(requestId)', null, 'Configuration assistant invalide');"
+                do {
+                    _ = try await webView.evaluateJavaScript(js)
+                } catch {
+                    print("[LLM] JS erreur (config invalide): \(error)")
+                }
+                return
             }
             do {
                 let session = LanguageModelSession(instructions: instructions)
