@@ -1024,6 +1024,23 @@ html, body {
         </div>
       </div>
 
+      <!-- Langue -->
+      <div class="settings-section">
+        <div class="settings-section-title" id="langSectionTitle">Langue</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="label">
+              <span class="name" id="langLabel">Langue</span>
+              <span class="desc" id="langDesc">Langue de l'interface et des réponses</span>
+            </div>
+            <select id="langSelect" style="background:var(--bg-card-hover); color:var(--text); border:1px solid var(--separator); border-radius:8px; padding:6px 10px; font-size:14px; font-family:var(--font);">
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- À propos -->
       <div class="settings-section">
         <div class="settings-section-title">À propos</div>
@@ -1272,17 +1289,96 @@ html, body {
 
 const BUILD_VERSION = 'v2.2.0';
 
-// Global error handler — shows errors visually
-window.onerror = function(msg, src, line) {
-  console.error('[Talkie] JS Error:', msg, 'at line', line);
-  try {
-    const t = document.getElementById('toast');
-    if (t) { t.textContent = 'Une erreur est survenue'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 5000); }
-  } catch(_) {}
-};
-
-const DB_KEY = 'talkie_v1';
-const DEFAULT_PROMPT = `Tu es l'expression directe de l'utilisateur (ton "Moi" numérique). Ton but est de proposer 3 options de réponses authentiques.
+// ─── i18n ───
+const I18N = {
+  fr: {
+    // Splash & onboarding
+    splashSub: 'Votre voix, préservée',
+    onbWelcome: 'Bienvenue sur Talkie',
+    onbDesc: 'Une application de communication assistée, conçue pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler.',
+    onbContinue: 'Continuer',
+    onbHowTitle: 'Comment ça marche',
+    onbStep1: "L'interlocuteur parle. Appuyez sur la barre du haut pour activer l'écoute.",
+    onbStep2: 'Talkie transcrit et propose 3 réponses adaptées.',
+    onbStep3: 'Appuyez sur une réponse pour la prononcer à voix haute.',
+    onbTip: 'Pour profiter au maximum de Talkie, assurez-vous qu\'Apple Intelligence est activé dans vos Réglages iOS. Vous bénéficierez ainsi de la suggestion automatique de réponses, générées directement sur votre appareil.',
+    onbCustomize: 'Personnalisez',
+    onbCustomizeDesc: 'Vous pouvez personnaliser la voix, activer les suggestions IA avec Apple Intelligence, et bien plus dans les réglages. Tout est sauvegardé sur votre appareil.',
+    onbStart: 'Commencer',
+    onbOpenSettings: 'Ouvrir les réglages',
+    // Main UI
+    tapToListen: 'Appuyez pour écouter',
+    listening: 'Écoute en cours…',
+    contextLabel: "L'interlocuteur dit",
+    contextEmpty: 'En attente de parole...',
+    refresh: 'Relancer',
+    write: 'Écrire',
+    manualBack: 'Retour',
+    manualTitle: 'Saisie libre',
+    manualPlaceholder: 'Tapez votre message ici...',
+    speak: 'Prononcer',
+    aiAttribution: 'Suggestions générées par Apple Intelligence',
+    ttsSpeaking: 'En train de parler…',
+    ttsStop: 'Stop',
+    // Settings
+    settings: 'Réglages',
+    sectionAI: 'Apple Intelligence',
+    systemPrompt: 'Prompt système',
+    systemPromptDesc: 'Modifier le comportement de l\'assistant',
+    memoryAI: 'Mémoire IA',
+    memoryAIDesc: 'Informations retenues pour personnaliser les réponses',
+    usePersonalVoice: 'Utiliser ma voix personnelle',
+    personalVoiceDesc: 'Voix personnelle configurée dans Réglages iOS → Accessibilité',
+    sectionAbout: 'À propos',
+    tutorial: 'Tutoriel',
+    privacyPolicy: 'Politique de confidentialité',
+    support: 'Support',
+    reportProblem: 'Signaler un problème',
+    resetApp: "Réinitialiser l'application",
+    sectionDev: 'Mode développeur',
+    useElevenLabs: 'Utiliser ElevenLabs',
+    elevenLabsDesc: "Utilise l'API ElevenLabs pour la synthèse vocale au lieu de la voix intégrée de l'iPhone",
+    elApiKeyPlaceholder: 'Clé API ElevenLabs',
+    show: 'Afficher',
+    hide: 'Masquer',
+    voiceIdLabel: 'Voice ID',
+    voiceIdDesc: "ID d'une voix ElevenLabs existante",
+    cloneVoice: 'Cloner une voix',
+    addSample: '+ Ajouter un audio pour cloner',
+    voiceNamePlaceholder: 'Nom de la voix',
+    cloneBtn: 'Cloner la voix',
+    testVoice: 'Tester la voix',
+    language: 'Langue',
+    languageDesc: 'Langue de l\'interface et des réponses',
+    // Memory page
+    myInfo: 'Mes informations',
+    myInfoDesc: "Écrivez ici ce que l'assistant doit savoir sur vous.",
+    myInfoPlaceholder: "Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur...",
+    learnedTitle: 'Appris des conversations',
+    learnedDesc: 'Talkie apprend automatiquement des détails à partir de vos échanges.',
+    learnedEmpty: 'Rien appris pour le moment.',
+    clearLearned: 'Effacer la mémoire apprise',
+    clearLearnedConfirm: 'Effacer tout ce que Talkie a appris de vos conversations ?',
+    learnedCleared: 'Mémoire apprise effacée',
+    // Advanced page
+    advanced: 'Avancé',
+    promptTitle: 'Prompt système',
+    promptDesc: 'Ce prompt modifie le comportement global de l\'assistant.',
+    resetPrompt: 'Réinitialiser aux valeurs par défaut',
+    // Toasts & messages
+    errorGeneric: 'Une erreur est survenue',
+    suggestionsUnavailable: 'Suggestions indisponibles',
+    speechUnavailable: 'Reconnaissance vocale non disponible',
+    micDenied: 'Accès micro refusé',
+    reportReady: 'Signalement préparé',
+    emailReady: "Préparation de l'e-mail…",
+    deleteConfirm: 'Supprimer toutes vos données ? Cette action est irréversible.',
+    dataDeleted: 'Données supprimées',
+    fileTooLarge: 'Fichier trop volumineux (max 5 Mo)',
+    elConsentMsg: "En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie. Acceptez-vous ?",
+    voiceCloneConsent: "Le clonage vocal envoie vos échantillons audio à ElevenLabs. Ces données biométriques sont traitées selon leur politique de confidentialité. Acceptez-vous ?",
+    // LLM prompts
+    defaultPrompt: `Tu es l'expression directe de l'utilisateur (ton "Moi" numérique). Ton but est de proposer 3 options de réponses authentiques.
 DIRECTIVES :
 1. ADAPTABILITÉ : Calque la complexité de tes réponses sur l'interlocuteur. S'il pose une question simple, réponds court. S'il engage une discussion profonde ou technique, propose des phrases construites et nuancées.
 2. DIVERSITÉ DE TON :
@@ -1292,7 +1388,251 @@ DIRECTIVES :
 3. PARLER HUMAIN : Utilise un ton naturel. Évite les formulations d'assistant type "Comment puis-je vous aider ?".
 4. MÉMOIRE : Utilise les infos de la "Mémoire IA" pour personnaliser (goûts, prénom, proches).
 FORMAT :
-3 suggestions uniquement, séparées par un saut de ligne. Pas d'introduction.`;
+3 suggestions uniquement, séparées par un saut de ligne. Pas d'introduction.`,
+    memoryContext: 'Informations personnelles sur l\'utilisateur (à utiliser pour personnaliser les réponses) :',
+    userNameCtx: "L'utilisateur s'appelle",
+    recentHistory: 'Historique récent :',
+    historyMe: 'Moi',
+    historyOther: 'Autre',
+    diversityHint: (n) => `\nATTENTION : l'utilisateur a demandé ${n} fois des alternatives. Propose des réponses TRÈS DIFFÉRENTES des précédentes. Si les précédentes étaient positives, propose du négatif ou nuancé. Si elles étaient longues, propose du court. Varie le ton (humour, sérieux, tendre, direct).`,
+    llmPrompt: (text, hint) => `L'interlocuteur dit : "${text}"${hint}\n\nPropose EXACTEMENT 3 réponses que je pourrais dire. Règles :\n- Les 3 réponses doivent être VARIÉES en ton et en opinion (positive, nuancée, négative ou déclinante)\n- Longueurs variées : une courte (< 10 mots), une moyenne, une plus détaillée\n- Naturelles, humaines, pas robotiques\n- UNE PAR LIGNE, pas de numéro, pas de tiret, pas de guillemets`,
+    memoryExtractSys: "Tu es un assistant qui extrait des informations personnelles à partir de conversations.",
+    memoryExtractPrompt: (recent, current) => `Voici une conversation récente :\n${recent}\n\nMémoire apprise actuelle :\n${current || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur l'utilisateur (goûts, famille, métier, habitudes, opinions, lieux, prénoms de proches). Ajoute-les à la mémoire existante sans doublons. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`,
+    memoryHistoryMe: 'Patient',
+    memoryHistoryOther: 'Interlocuteur',
+    suggestionAriaLabel: (i, text) => 'Suggestion ' + i + ' : ' + text,
+    flagAriaLabel: 'Signaler cette suggestion',
+    voiceActive: 'Voix active',
+    removeVoice: 'Supprimer',
+    noPhrase: 'Pas encore de phrase à répondre',
+    micDeniedDetail: 'Accès micro refusé — vérifiez les réglages',
+    micUnavailable: 'Micro inaccessible',
+    micStartFailed: 'Impossible de démarrer le micro',
+    voiceCloned: 'Voix clonée !',
+    describeProblem: 'Veuillez décrire le problème',
+    llmUnavailable: 'Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.',
+  },
+  en: {
+    splashSub: 'Your voice, preserved',
+    onbWelcome: 'Welcome to Talkie',
+    onbDesc: 'An assisted communication app, designed for people living with ALS, mute individuals, or those with speech difficulties.',
+    onbContinue: 'Continue',
+    onbHowTitle: 'How it works',
+    onbStep1: 'The other person speaks. Tap the top bar to start listening.',
+    onbStep2: 'Talkie transcribes and suggests 3 adapted responses.',
+    onbStep3: 'Tap a response to speak it out loud.',
+    onbTip: 'To get the most out of Talkie, make sure Apple Intelligence is enabled in your iOS Settings. You\'ll benefit from automatic response suggestions, generated directly on your device.',
+    onbCustomize: 'Customize',
+    onbCustomizeDesc: 'You can customize the voice, enable AI suggestions with Apple Intelligence, and more in settings. Everything is saved on your device.',
+    onbStart: 'Get started',
+    onbOpenSettings: 'Open settings',
+    tapToListen: 'Tap to listen',
+    listening: 'Listening…',
+    contextLabel: 'The other person says',
+    contextEmpty: 'Waiting for speech...',
+    refresh: 'Refresh',
+    write: 'Write',
+    manualBack: 'Back',
+    manualTitle: 'Free input',
+    manualPlaceholder: 'Type your message here...',
+    speak: 'Speak',
+    aiAttribution: 'Suggestions generated by Apple Intelligence',
+    ttsSpeaking: 'Speaking…',
+    ttsStop: 'Stop',
+    settings: 'Settings',
+    sectionAI: 'Apple Intelligence',
+    systemPrompt: 'System prompt',
+    systemPromptDesc: 'Modify the assistant\'s behavior',
+    memoryAI: 'AI Memory',
+    memoryAIDesc: 'Information retained to personalize responses',
+    usePersonalVoice: 'Use my personal voice',
+    personalVoiceDesc: 'Personal voice configured in iOS Settings → Accessibility',
+    sectionAbout: 'About',
+    tutorial: 'Tutorial',
+    privacyPolicy: 'Privacy policy',
+    support: 'Support',
+    reportProblem: 'Report a problem',
+    resetApp: 'Reset application',
+    sectionDev: 'Developer mode',
+    useElevenLabs: 'Use ElevenLabs',
+    elevenLabsDesc: 'Use the ElevenLabs API for text-to-speech instead of the built-in iPhone voice',
+    elApiKeyPlaceholder: 'ElevenLabs API Key',
+    show: 'Show',
+    hide: 'Hide',
+    voiceIdLabel: 'Voice ID',
+    voiceIdDesc: 'ID of an existing ElevenLabs voice',
+    cloneVoice: 'Clone a voice',
+    addSample: '+ Add audio to clone',
+    voiceNamePlaceholder: 'Voice name',
+    cloneBtn: 'Clone voice',
+    testVoice: 'Test voice',
+    language: 'Language',
+    languageDesc: 'Interface and response language',
+    myInfo: 'My information',
+    myInfoDesc: 'Write here what the assistant should know about you.',
+    myInfoPlaceholder: 'Ex: I like football, I have 2 kids, I\'m an engineer...',
+    learnedTitle: 'Learned from conversations',
+    learnedDesc: 'Talkie automatically learns details from your exchanges.',
+    learnedEmpty: 'Nothing learned yet.',
+    clearLearned: 'Clear learned memory',
+    clearLearnedConfirm: 'Clear everything Talkie has learned from your conversations?',
+    learnedCleared: 'Learned memory cleared',
+    advanced: 'Advanced',
+    promptTitle: 'System prompt',
+    promptDesc: 'This prompt changes the overall behavior of the assistant.',
+    resetPrompt: 'Reset to defaults',
+    errorGeneric: 'An error occurred',
+    suggestionsUnavailable: 'Suggestions unavailable',
+    speechUnavailable: 'Speech recognition unavailable',
+    micDenied: 'Microphone access denied',
+    reportReady: 'Report prepared',
+    emailReady: 'Preparing email…',
+    deleteConfirm: 'Delete all your data? This action is irreversible.',
+    dataDeleted: 'Data deleted',
+    fileTooLarge: 'File too large (max 5 MB)',
+    elConsentMsg: 'By enabling ElevenLabs, your texts will be sent to ElevenLabs servers for speech synthesis. No data is stored by Talkie. Do you accept?',
+    voiceCloneConsent: 'Voice cloning sends your audio samples to ElevenLabs. This biometric data is processed according to their privacy policy. Do you accept?',
+    defaultPrompt: `You are the direct expression of the user (their digital "Self"). Your goal is to propose 3 authentic response options.
+DIRECTIVES:
+1. ADAPTABILITY: Match the complexity of your responses to the speaker. If they ask a simple question, respond briefly. If they engage in a deep or technical discussion, offer constructed and nuanced sentences.
+2. TONE DIVERSITY:
+   - Option 1: Direct / Pragmatic (Yes, no, okay).
+   - Option 2: Social / Emotive (Humor, empathy, enthusiasm).
+   - Option 3: Follow-up / Nuance (A question back or a longer reflection).
+3. SPEAK HUMAN: Use a natural tone. Avoid assistant-like phrasing such as "How can I help you?".
+4. MEMORY: Use information from "AI Memory" to personalize (interests, name, loved ones).
+FORMAT:
+3 suggestions only, separated by a line break. No introduction.`,
+    memoryContext: 'Personal information about the user (use to personalize responses):',
+    userNameCtx: 'The user\'s name is',
+    recentHistory: 'Recent history:',
+    historyMe: 'Me',
+    historyOther: 'Other',
+    diversityHint: (n) => `\nATTENTION: the user has asked ${n} times for alternatives. Propose VERY DIFFERENT responses from the previous ones. If the previous ones were positive, propose negative or nuanced ones. If they were long, propose short ones. Vary the tone (humor, serious, tender, direct).`,
+    llmPrompt: (text, hint) => `The other person says: "${text}"${hint}\n\nPropose EXACTLY 3 responses I could say. Rules:\n- The 3 responses must be VARIED in tone and opinion (positive, nuanced, negative or declining)\n- Varied lengths: one short (< 10 words), one medium, one more detailed\n- Natural, human, not robotic\n- ONE PER LINE, no numbers, no dashes, no quotes`,
+    memoryExtractSys: 'You are an assistant that extracts personal information from conversations.',
+    memoryExtractPrompt: (recent, current) => `Here is a recent conversation:\n${recent}\n\nCurrent learned memory:\n${current || '(empty)'}\n\nExtract NEW personal information about the user (interests, family, job, habits, opinions, places, names of loved ones). Add them to the existing memory without duplicates. If nothing new, respond exactly "NOTHING". Otherwise, respond ONLY with the updated memory (short text, bullet points).`,
+    memoryHistoryMe: 'Patient',
+    memoryHistoryOther: 'Speaker',
+    suggestionAriaLabel: (i, text) => 'Suggestion ' + i + ': ' + text,
+    flagAriaLabel: 'Report this suggestion',
+    voiceActive: 'Active voice',
+    removeVoice: 'Remove',
+    noPhrase: 'No phrase to respond to yet',
+    micDeniedDetail: 'Microphone access denied — check settings',
+    micUnavailable: 'Microphone unavailable',
+    micStartFailed: 'Could not start microphone',
+    voiceCloned: 'Voice cloned!',
+    describeProblem: 'Please describe the problem',
+    llmUnavailable: 'Apple Intelligence unavailable. Enable it in Settings → Apple Intelligence.',
+  }
+};
+
+function detectLanguage() {
+  const saved = localStorage.getItem('talkie_lang');
+  if (saved && I18N[saved]) return saved;
+  const nav = (navigator.language || navigator.userLanguage || 'fr').toLowerCase();
+  return nav.startsWith('fr') ? 'fr' : 'en';
+}
+
+let currentLang = detectLanguage();
+function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || I18N.fr[key] || key; }
+function getLangCode() { return currentLang === 'fr' ? 'fr-FR' : 'en-US'; }
+
+function applyStaticTranslations() {
+  document.documentElement.lang = currentLang;
+  // Splash
+  const splashSub = document.querySelector('.splash-sub');
+  if (splashSub) splashSub.textContent = t('splashSub');
+  // Onboarding
+  const onbTitles = document.querySelectorAll('.onb-title');
+  if (onbTitles[0]) onbTitles[0].textContent = t('onbWelcome');
+  if (onbTitles[1]) onbTitles[1].textContent = t('onbHowTitle');
+  if (onbTitles[2]) onbTitles[2].textContent = t('onbCustomize');
+  const onbDescs = document.querySelectorAll('.onb-desc');
+  if (onbDescs[0]) onbDescs[0].textContent = t('onbDesc');
+  if (onbDescs[1]) onbDescs[1].textContent = t('onbCustomizeDesc');
+  const onbBtns = document.querySelectorAll('.onb-btn:not(.secondary)');
+  onbBtns.forEach((btn, i) => {
+    if (i < 2) btn.textContent = t('onbContinue');
+    else if (i === 2) btn.textContent = t('onbStart');
+  });
+  const onbSecBtn = document.querySelector('.onb-btn.secondary');
+  if (onbSecBtn) onbSecBtn.textContent = t('onbOpenSettings');
+  const steps = document.querySelectorAll('.onb-step');
+  if (steps[0]) steps[0].querySelector('div:last-child').textContent = t('onbStep1');
+  if (steps[1]) steps[1].querySelector('div:last-child').textContent = t('onbStep2');
+  if (steps[2]) steps[2].querySelector('div:last-child').textContent = t('onbStep3');
+  const tipEl = document.querySelector('.onb-tip');
+  if (tipEl) tipEl.innerHTML = '💡 <strong>' + (currentLang === 'fr' ? 'Conseil :' : 'Tip:') + '</strong> ' + t('onbTip');
+  // Main UI
+  document.getElementById('listeningText').textContent = t('tapToListen');
+  document.querySelector('.context-label').textContent = t('contextLabel');
+  document.getElementById('contextText').textContent = t('contextEmpty');
+  document.getElementById('btnRefresh').innerHTML = document.getElementById('btnRefresh').querySelector('svg').outerHTML + ' ' + t('refresh');
+  document.getElementById('btnKeyboard').innerHTML = document.getElementById('btnKeyboard').querySelector('svg').outerHTML + ' ' + t('write');
+  document.querySelector('.manual-title').textContent = t('manualTitle');
+  document.getElementById('manualInput').placeholder = t('manualPlaceholder');
+  document.getElementById('btnSpeak').innerHTML = document.getElementById('btnSpeak').querySelector('svg').outerHTML + ' ' + t('speak');
+  document.getElementById('btnBackToSuggestions').innerHTML = document.getElementById('btnBackToSuggestions').querySelector('svg').outerHTML + ' ' + t('manualBack');
+  document.getElementById('aiAttribution').textContent = t('aiAttribution');
+  document.querySelector('.tts-overlay-text').textContent = t('ttsSpeaking');
+  document.querySelector('.tts-stop-btn').textContent = t('ttsStop');
+  // Settings
+  document.querySelector('.settings-title').textContent = t('settings');
+  document.querySelectorAll('.settings-section-title')[0].textContent = t('sectionAI');
+  document.querySelector('#advancedPageBtn .name').textContent = t('systemPrompt');
+  document.querySelector('#advancedPageBtn .desc').textContent = t('systemPromptDesc');
+  document.querySelector('#memoryPageBtn .name').textContent = t('memoryAI');
+  document.querySelector('#memoryPageBtn .desc').textContent = t('memoryAIDesc');
+  const pvRow = document.getElementById('appleVoiceToggleBtn').closest('.settings-row');
+  pvRow.querySelector('.name').textContent = t('usePersonalVoice');
+  pvRow.querySelector('.desc').textContent = t('personalVoiceDesc');
+  document.querySelectorAll('.settings-section-title')[1].textContent = t('sectionAbout');
+  document.querySelector('#tutorialBtn .name').textContent = t('tutorial');
+  document.querySelector('#privacyPolicyBtn .name').textContent = t('privacyPolicy');
+  document.querySelector('#supportBtn .name').textContent = t('support');
+  document.querySelector('#reportBtn .name').textContent = t('reportProblem');
+  document.querySelector('#deleteAllDataBtn .name').textContent = t('resetApp');
+  // Dev section
+  const devTitle = document.querySelectorAll('.settings-section-title')[2];
+  if (devTitle) devTitle.textContent = t('sectionDev');
+  const elRow = document.getElementById('useElevenLabsToggleBtn').closest('.settings-row');
+  elRow.querySelector('.name').textContent = t('useElevenLabs');
+  elRow.querySelector('.desc').textContent = t('elevenLabsDesc');
+  document.getElementById('settingsELKey').placeholder = t('elApiKeyPlaceholder');
+  document.getElementById('addSampleBtn').textContent = t('addSample');
+  document.getElementById('voiceNameInput').placeholder = t('voiceNamePlaceholder');
+  document.getElementById('cloneBtn').textContent = t('cloneBtn');
+  document.getElementById('testVoiceBtn').textContent = t('testVoice');
+  // Memory page
+  const memPage = document.getElementById('page-memory');
+  memPage.querySelectorAll('h2')[0].textContent = t('myInfo');
+  memPage.querySelectorAll('p')[0].textContent = t('myInfoDesc');
+  document.getElementById('settingsMemory').placeholder = t('myInfoPlaceholder');
+  memPage.querySelectorAll('h2')[1].textContent = t('learnedTitle');
+  memPage.querySelectorAll('p')[1].textContent = t('learnedDesc');
+  document.getElementById('clearLearnedMemoryBtn').textContent = t('clearLearned');
+  // Advanced page
+  const advPage = document.getElementById('page-advanced');
+  advPage.querySelector('.inapp-page-title').textContent = t('advanced');
+  advPage.querySelector('h2').textContent = t('promptTitle');
+  advPage.querySelector('p').textContent = t('promptDesc');
+  document.getElementById('resetPromptBtn').textContent = t('resetPrompt');
+}
+
+// Global error handler — shows errors visually
+window.onerror = function(msg, src, line) {
+  console.error('[Talkie] JS Error:', msg, 'at line', line);
+  try {
+    const t = document.getElementById('toast');
+    if (t) { t.textContent = (typeof I18N !== 'undefined' ? I18N[currentLang || 'fr'].errorGeneric : 'An error occurred'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 5000); }
+  } catch(_) {}
+};
+
+const DB_KEY = 'talkie_v1';
+function getDefaultPrompt() { return t('defaultPrompt'); }
+const DEFAULT_PROMPT = getDefaultPrompt();
 const SAFETY_PREFIX = "";
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
@@ -1330,6 +1670,8 @@ setTimeout(() => {
 
 // ─── State ───
 let state = loadState();
+currentLang = state.lang || detectLanguage();
+applyStaticTranslations();
 let currentAudio = null;
 let isListening = false;
 let recognition = null;
@@ -1347,6 +1689,7 @@ function loadState() {
       if (!s.elApiKey) s.elApiKey = EL_DEFAULT_KEY;
       if (!s.memory) s.memory = '';
       if (!s.learnedMemory) s.learnedMemory = '';
+      if (!s.lang) s.lang = detectLanguage();
       // Migrate old useLocalTTS to new fields
       if (s.useApplePersonalVoice === undefined) s.useApplePersonalVoice = false;
       if (s.useElevenLabs === undefined) {
@@ -1376,7 +1719,7 @@ function loadState() {
     } catch {}
   }
   return {
-    userName: '', systemPrompt: DEFAULT_PROMPT,
+    userName: '', systemPrompt: DEFAULT_PROMPT, lang: detectLanguage(),
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '',
@@ -1414,16 +1757,16 @@ async function maybeExtractMemory() {
   if (!state.llmEnabled) return;
 
   const recent = state.history.slice(-10).map(m =>
-    `${m.isUser ? 'Patient' : 'Interlocuteur'}: ${m.text}`
+    `${m.isUser ? t('memoryHistoryMe') : t('memoryHistoryOther')}: ${m.text}`
   ).join('\n');
   const currentLearned = state.learnedMemory || '';
 
-  const sys = 'Tu es un assistant qui extrait des informations personnelles à partir de conversations.';
-  const prompt = `Voici une conversation récente :\n${recent}\n\nMémoire apprise actuelle :\n${currentLearned || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur l'utilisateur (goûts, famille, métier, habitudes, opinions, lieux, prénoms de proches). Ajoute-les à la mémoire existante sans doublons. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`;
+  const sys = t('memoryExtractSys');
+  const prompt = t('memoryExtractPrompt')(recent, currentLearned);
 
   try {
     const result = await callNativeLLM(sys, prompt);
-    if (result && !result.includes('RIEN') && result.trim().length > 5) {
+    if (result && !result.includes('RIEN') && !result.includes('NOTHING') && result.trim().length > 5) {
       state.learnedMemory = result.trim();
       save();
     }
@@ -1535,7 +1878,7 @@ function refreshSuggestions() {
     refreshCount++;
     fetchSuggestions(lastInterlocutorText);
   } else {
-    showToast('Pas encore de phrase à répondre');
+    showToast(t('noPhrase'));
   }
 }
 
@@ -1562,12 +1905,12 @@ function renderSuggestionCards(suggestions) {
     card.id = 'suggestionCard' + i;
     card.textContent = text;
     card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', 'Suggestion ' + (i + 1) + ' : ' + text);
+    card.setAttribute('aria-label', t('suggestionAriaLabel')(i + 1, text));
     card.onclick = () => speakSuggestion(text, i);
     // Report flag button
     const flag = document.createElement('button');
     flag.textContent = '\u2691';
-    flag.setAttribute('aria-label', 'Signaler cette suggestion');
+    flag.setAttribute('aria-label', t('flagAriaLabel'));
     flag.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:var(--text-tertiary);cursor:pointer;padding:4px;z-index:2;';
     flag.onclick = (e) => {
       e.stopPropagation();
@@ -1575,7 +1918,7 @@ function renderSuggestionCards(suggestions) {
       const body = encodeURIComponent('Suggestion signalée :\n"' + text + '"\n\nContexte : ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
       const mailto = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
       try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
-      showToast('Signalement préparé');
+      showToast(t('reportReady'));
     };
     card.appendChild(flag);
     zone.appendChild(card);
@@ -1787,7 +2130,7 @@ function speakApplePersonalVoice(text) {
   };
   
   try {
-    window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({ text, requestId: rid });
+    window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({ text, requestId: rid, lang: getLangCode() });
   } catch(e) {
     console.error('Failed native speech', e);
     speakLocal(text);
@@ -1797,14 +2140,14 @@ function speakApplePersonalVoice(text) {
 function speakLocal(text) {
   stopPlaybackOnly();
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'fr-FR';
+  utterance.lang = getLangCode();
   utterance.rate = 0.9;
   utterance.pitch = 1.0;
   const voices = speechSynthesis.getVoices();
-  const frVoice = voices.find(v => v.lang.startsWith('fr') && v.name.includes('Thomas'))
-    || voices.find(v => v.lang.startsWith('fr') && !v.name.includes('Siri'))
-    || voices.find(v => v.lang.startsWith('fr'));
-  if (frVoice) utterance.voice = frVoice;
+  const langPrefix = currentLang;
+  const localVoice = voices.find(v => v.lang.startsWith(langPrefix) && !v.name.includes('Siri'))
+    || voices.find(v => v.lang.startsWith(langPrefix));
+  if (localVoice) utterance.voice = localVoice;
   currentAudio = { isSpeechSynth: true, utterance };
 
   let done = false;
@@ -1914,13 +2257,13 @@ function beginRecognition(sess) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     console.error('[Talkie] SpeechRecognition API not available');
-    showToast('Reconnaissance vocale non disponible');
+    showToast(t('speechUnavailable'));
     isListening = false;
     updateListeningUI(false);
     return;
   }
   const rec = new SR();
-  rec.lang = 'fr-FR';
+  rec.lang = getLangCode();
   rec.continuous = true;
   rec.interimResults = true;
   recognition = rec;
@@ -1969,12 +2312,12 @@ function beginRecognition(sess) {
     if (micSession !== sess) return;
     if (e.error === 'no-speech' || e.error === 'aborted') return;
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      showToast('Accès micro refusé — vérifiez les réglages');
+      showToast(t('micDeniedDetail'));
       stopListening();
       return;
     }
     if (e.error === 'audio-capture') {
-      showToast('Micro inaccessible');
+      showToast(t('micUnavailable'));
       stopListening();
       return;
     }
@@ -2015,7 +2358,7 @@ function beginRecognition(sess) {
         console.log('[Talkie] Retry rec.start() called');
       } catch(e2) {
         console.error('[Talkie] Retry failed:', e2);
-        showToast('Impossible de démarrer le micro');
+        showToast(t('micStartFailed'));
         stopListening();
       }
     }, 600);
@@ -2076,10 +2419,10 @@ function updateListeningUI(active) {
   const txt = $('listeningText');
   if (active) {
     bar.classList.remove('inactive');
-    txt.textContent = 'À l\'écoute…';
+    txt.textContent = t('listening');
   } else {
     bar.classList.add('inactive');
-    txt.textContent = userHasInteracted ? 'Appuyez pour reprendre' : 'Appuyez pour écouter';
+    txt.textContent = t('tapToListen');
   }
 }
 
@@ -2153,7 +2496,7 @@ async function fetchSuggestions(interlocutorText) {
   showSuggestionLoading();
 
   const ctx = state.history.slice(-8).map(m =>
-    `${m.isUser ? 'Moi' : 'Autre'}: ${m.text}`
+    `${m.isUser ? t('historyMe') : t('historyOther')}: ${m.text}`
   ).join('\n');
 
   // Filter inappropriate input
@@ -2168,25 +2511,17 @@ async function fetchSuggestions(interlocutorText) {
   if (state.memory && state.memory.trim()) memParts.push(state.memory.trim());
   if (state.learnedMemory && state.learnedMemory.trim()) memParts.push(state.learnedMemory.trim());
   if (memParts.length) {
-    sys += `\n\nInformations personnelles sur l'utilisateur (à utiliser pour personnaliser les réponses) :\n${memParts.join('\n')}`;
+    sys += `\n\n${t('memoryContext')}\n${memParts.join('\n')}`;
   }
   if (state.userName) {
-    sys += `\nL'utilisateur s'appelle ${state.userName}.`;
+    sys += `\n${t('userNameCtx')} ${state.userName}.`;
   }
-  sys += `\n\nHistorique récent :\n${ctx}`;
+  sys += `\n\n${t('recentHistory')}\n${ctx}`;
 
   // Diversity instructions
-  const diversityHint = refreshCount > 0
-    ? `\nATTENTION : l'utilisateur a demandé ${refreshCount} fois des alternatives. Propose des réponses TRÈS DIFFÉRENTES des précédentes. Si les précédentes étaient positives, propose du négatif ou nuancé. Si elles étaient longues, propose du court. Varie le ton (humour, sérieux, tendre, direct).`
-    : '';
+  const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
 
-  const prompt = `L'interlocuteur dit : "${interlocutorText}"${diversityHint}
-
-Propose EXACTEMENT 3 réponses que je pourrais dire. Règles :
-- Les 3 réponses doivent être VARIÉES en ton et en opinion (positive, nuancée, négative ou déclinante)
-- Longueurs variées : une courte (< 10 mots), une moyenne, une plus détaillée
-- Naturelles, humaines, pas robotiques
-- UNE PAR LIGNE, pas de numéro, pas de tiret, pas de guillemets`;
+  const prompt = t('llmPrompt')(interlocutorText, diversityHint);
 
   try {
     const content = await callNativeLLM(sys, prompt);
@@ -2199,7 +2534,7 @@ Propose EXACTEMENT 3 réponses que je pourrais dire. Règles :
   } catch(e) {
     console.error('LLM:', e);
     clearSuggestionCards();
-    showToast('Suggestions indisponibles');
+    showToast(t('suggestionsUnavailable'));
   }
 }
 
@@ -2214,7 +2549,7 @@ function dataUrlToBlob(du) {
 $('addSampleBtn').onclick = () => $('fileInput').click();
 $('fileInput').onchange = async (e) => {
   for (const f of Array.from(e.target.files)) {
-    if (f.size > 5 * 1024 * 1024) { showToast('Fichier trop volumineux (max 5 Mo)'); continue; }
+    if (f.size > 5 * 1024 * 1024) { showToast(t('fileTooLarge')); continue; }
     const reader = new FileReader();
     const du = await new Promise(r => { reader.onload = () => r(reader.result); reader.readAsDataURL(f); });
     const audio = new Audio(du);
@@ -2233,7 +2568,7 @@ $('cloneBtn').onclick = async () => {
   if (!state.samples.length || !state.elApiKey) return;
   // Voice cloning consent — biometric data sent to ElevenLabs
   if (!localStorage.getItem('talkie_voice_clone_consent')) {
-    if (!confirm('Le clonage vocal enverra vos échantillons vocaux aux serveurs d\'ElevenLabs. Acceptez-vous ?')) return;
+    if (!confirm(t('voiceCloneConsent'))) return;
     localStorage.setItem('talkie_voice_clone_consent', '1');
   }
   $('cloneBtn').disabled = true; $('cloneBtn').textContent = 'Clonage...';
@@ -2247,7 +2582,7 @@ $('cloneBtn').onclick = async () => {
     if (!r.ok) throw new Error(await r.text());
     const d = await r.json();
     state.voiceId = d.voice_id; save(); renderSamples();
-    showToast('Voix clonée !');
+    showToast(t('voiceCloned'));
   } catch(e) { showToast('Erreur: ' + e.message.substring(0,60)); }
   finally { $('cloneBtn').disabled = false; $('cloneBtn').textContent = 'Cloner la voix'; }
 };
@@ -2264,7 +2599,7 @@ function renderSamples() {
   $('testVoiceBtn').style.display = state.voiceId ? 'block' : 'none';
   const area = $('voiceActiveArea');
   if (state.voiceId) {
-    area.innerHTML = `<div class="voice-badge"><span class="icon">✅</span><div class="info"><div class="title">Voix active</div><div class="sub">${esc(state.voiceId)}</div></div><button class="remove" id="removeVoiceBtn">Supprimer</button></div>`;
+    area.innerHTML = `<div class="voice-badge"><span class="icon">✅</span><div class="info"><div class="title">${t('voiceActive')}</div><div class="sub">${esc(state.voiceId)}</div></div><button class="remove" id="removeVoiceBtn">${t('removeVoice')}</button></div>`;
     $('removeVoiceBtn').onclick = () => { state.voiceId = ''; save(); renderSamples(); };
   } else { area.innerHTML = ''; }
   $('samplesContainer').innerHTML = '';
@@ -2285,7 +2620,7 @@ function loadSettings() {
   $('settingsELKey').value = state.elApiKey;
   $('settingsVoiceId').value = state.voiceId || '';
   $('settingsMemory').value = state.memory || '';
-  $('learnedMemoryDisplay').textContent = state.learnedMemory || 'Rien appris pour le moment.';
+  $('learnedMemoryDisplay').textContent = state.learnedMemory || t('learnedEmpty');
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   // Developer mode
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
@@ -2334,24 +2669,28 @@ function closeInAppPage(name) {
 $('privacyPolicyBtn').onclick = () => openInAppPage('privacy');
 $('supportBtn').onclick = () => openInAppPage('support');
 $('reportBtn').onclick = () => openInAppPage('report');
-$('memoryPageBtn').onclick = () => openInAppPage('memory');
+$('memoryPageBtn').onclick = () => {
+  $('settingsMemory').value = state.memory || '';
+  $('learnedMemoryDisplay').textContent = state.learnedMemory || t('learnedEmpty');
+  openInAppPage('memory');
+};
 $('advancedPageBtn').onclick = () => openInAppPage('advanced');
 
 // Report form
 $('reportSendBtn').onclick = () => {
   const text = $('reportTextarea').value.trim();
-  if (!text) { showToast('Veuillez décrire le problème'); return; }
+  if (!text) { showToast(t('describeProblem')); return; }
   const subject = encodeURIComponent('Talkie - Signalement');
   const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
   const mailtoUrl = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
   try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
   catch(_) { window.location.href = mailtoUrl; }
-  showToast('Préparation de l\'e-mail…');
+  showToast(t('emailReady'));
 };
 
 // Data management
 $('deleteAllDataBtn').onclick = () => {
-  if (confirm('Supprimer toutes vos données ? Cette action est irréversible.')) {
+  if (confirm(t('deleteConfirm'))) {
     keychainDelete('elApiKey');
     localStorage.removeItem(DB_KEY);
     localStorage.removeItem('talkie_onboarded');
@@ -2359,11 +2698,20 @@ $('deleteAllDataBtn').onclick = () => {
     for (const k of ['echo_v5', 'echo_v4', 'echo_v3', 'echo_v2', 'echo_v1', 'echo_onboarded']) {
       localStorage.removeItem(k);
     }
-    showToast('Données supprimées');
+    showToast(t('dataDeleted'));
     setTimeout(() => location.reload(), 800);
   }
 };
 
+$('langSelect').value = currentLang;
+$('langSelect').onchange = () => {
+  const newLang = $('langSelect').value;
+  currentLang = newLang;
+  state.lang = newLang;
+  localStorage.setItem('talkie_lang', newLang);
+  save();
+  applyStaticTranslations();
+};
 $('appleVoiceToggleBtn').onclick = () => {
   state.useApplePersonalVoice = !state.useApplePersonalVoice;
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
@@ -2371,7 +2719,7 @@ $('appleVoiceToggleBtn').onclick = () => {
 };
 $('useElevenLabsToggleBtn').onclick = () => {
   if (!state.useElevenLabs && !localStorage.getItem('talkie_el_consent')) {
-    if (confirm('En activant ElevenLabs, vos textes seront envoyés aux serveurs d\'ElevenLabs pour la synthèse vocale. Aucune donnée n\'est conservée par Talkie. Acceptez-vous ?')) {
+    if (confirm(t('elConsentMsg'))) {
       localStorage.setItem('talkie_el_consent', '1');
     } else {
       return;
@@ -2403,16 +2751,17 @@ $('toggleEL').onclick = () => {
   $('toggleEL').textContent = p ? 'Masquer' : 'Afficher';
 };
 $('resetPromptBtn').onclick = () => {
-  $('settingsPrompt').value = DEFAULT_PROMPT;
-  state.systemPrompt = DEFAULT_PROMPT;
+  const dp = getDefaultPrompt();
+  $('settingsPrompt').value = dp;
+  state.systemPrompt = dp;
   save();
 };
 $('clearLearnedMemoryBtn').onclick = () => {
-  if (confirm('Effacer tout ce que Talkie a appris de vos conversations ?')) {
+  if (confirm(t('clearLearnedConfirm'))) {
     state.learnedMemory = '';
     save();
-    $('learnedMemoryDisplay').textContent = 'Rien appris pour le moment.';
-    showToast('Mémoire apprise effacée');
+    $('learnedMemoryDisplay').textContent = t('learnedEmpty');
+    showToast(t('learnedCleared'));
   }
 };
 
@@ -2422,7 +2771,7 @@ window._llmAvailabilityCallback = function(available) {
   llmAvailable = available;
   console.log('[Talkie] LLM available:', available);
   if (!available) {
-    showToast('Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.', 5000);
+    showToast(t('llmUnavailable'), 5000);
   }
 };
 
