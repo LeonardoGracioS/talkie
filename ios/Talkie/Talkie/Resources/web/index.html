@@ -1000,14 +1000,14 @@ html, body {
       <div class="settings-section">
         <div class="settings-section-title">Apple Intelligence</div>
         <div class="settings-card">
-          <div class="settings-row" id="advancedPageBtn" style="cursor:pointer;">
+          <div class="settings-row" id="advancedPageBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Prompt système</span>
               <span class="desc">Modifier le comportement de l'assistant</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-          <div class="settings-row" id="memoryPageBtn" style="cursor:pointer;">
+          <div class="settings-row" id="memoryPageBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Mémoire IA</span>
               <span class="desc">Informations retenues pour personnaliser les réponses</span>
@@ -1019,7 +1019,7 @@ html, body {
               <span class="name">Utiliser ma voix personnelle</span>
               <span class="desc">Voix personnelle configurée dans Réglages iOS → Accessibilité</span>
             </div>
-            <button class="toggle" id="appleVoiceToggleBtn"></button>
+            <button class="toggle" id="appleVoiceToggleBtn" role="switch" aria-label="Utiliser ma voix personnelle"></button>
           </div>
         </div>
       </div>
@@ -1028,25 +1028,25 @@ html, body {
       <div class="settings-section">
         <div class="settings-section-title">À propos</div>
         <div class="settings-card">
-          <div class="settings-row" id="tutorialBtn" style="cursor:pointer;">
+          <div class="settings-row" id="tutorialBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Tutoriel</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-          <div class="settings-row" id="privacyPolicyBtn" style="cursor:pointer;">
+          <div class="settings-row" id="privacyPolicyBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Politique de confidentialité</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-          <div class="settings-row" id="supportBtn" style="cursor:pointer;">
+          <div class="settings-row" id="supportBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Support</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
           </div>
-          <div class="settings-row" id="reportBtn" style="cursor:pointer;">
+          <div class="settings-row" id="reportBtn" role="button" tabindex="0" style="cursor:pointer;">
             <div class="label">
               <span class="name">Signaler un problème</span>
             </div>
@@ -1078,7 +1078,7 @@ html, body {
               <span class="name">Utiliser ElevenLabs</span>
               <span class="desc">Utilise l'API ElevenLabs pour la synthèse vocale au lieu de la voix intégrée de l'iPhone</span>
             </div>
-            <button class="toggle" id="useElevenLabsToggleBtn"></button>
+            <button class="toggle" id="useElevenLabsToggleBtn" role="switch" aria-label="Utiliser ElevenLabs"></button>
           </div>
         </div>
         <div id="elevenLabsConfigArea" style="display:none;">
@@ -2197,6 +2197,7 @@ function dataUrlToBlob(du) {
 $('addSampleBtn').onclick = () => $('fileInput').click();
 $('fileInput').onchange = async (e) => {
   for (const f of Array.from(e.target.files)) {
+    if (f.size > 5 * 1024 * 1024) { showToast('Fichier trop volumineux (max 5 Mo)'); continue; }
     const reader = new FileReader();
     const du = await new Promise(r => { reader.onload = () => r(reader.result); reader.readAsDataURL(f); });
     const audio = new Audio(du);
@@ -2205,7 +2206,6 @@ $('fileInput').onchange = async (e) => {
       audio.onerror = () => r(0);
       setTimeout(() => r(0), 3000);
     });
-    if (du.length > 5 * 1024 * 1024) { showToast('Fichier trop volumineux (max 5 Mo)'); continue; }
     state.samples.push({ id: Date.now()+Math.random(), name: f.name, duration: dur, dataUrl: du });
   }
   save(); renderSamples(); $('fileInput').value = '';
@@ -2341,7 +2341,8 @@ $('deleteAllDataBtn').onclick = () => {
     for (const k of ['echo_v5', 'echo_v4', 'echo_v3', 'echo_v2', 'echo_v1', 'echo_onboarded']) {
       localStorage.removeItem(k);
     }
-    location.reload();
+    showToast('Données supprimées');
+    setTimeout(() => location.reload(), 800);
   }
 };
 
