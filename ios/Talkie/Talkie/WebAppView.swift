@@ -52,35 +52,6 @@ class MicState: ObservableObject {
     @Published var isListening = false
 }
 
-// Custom WKWebView that hides the iOS input accessory bar (˄ ˅ ✓)
-class NoAccessoryWebView: WKWebView {
-    override func didMoveToSuperview() {
-        super.didMoveToSuperview()
-        DispatchQueue.main.async { self.removeInputAccessory() }
-    }
-
-    func removeInputAccessory() {
-        guard let contentView = scrollView.subviews.first(where: {
-            String(describing: type(of: $0)).hasPrefix("WKContentView")
-        }) else { return }
-        let noAccessoryClass: AnyClass = NoAccessoryHelper.self
-        let noAccessorySel = #selector(getter: NoAccessoryHelper.dummyAccessory)
-        guard let noAccessoryMethod = class_getInstanceMethod(noAccessoryClass, noAccessorySel) else { return }
-        let originalSel = NSSelectorFromString("inputAccessoryView")
-        let contentClass: AnyClass = type(of: contentView)
-        if let original = class_getInstanceMethod(contentClass, originalSel) {
-            method_exchangeImplementations(original, noAccessoryMethod)
-        } else {
-            let imp = method_getImplementation(noAccessoryMethod)
-            let typeEncoding = method_getTypeEncoding(noAccessoryMethod)
-            class_addMethod(contentClass, originalSel, imp, typeEncoding)
-        }
-    }
-}
-
-class NoAccessoryHelper: NSObject {
-    @objc var dummyAccessory: AnyObject? { return nil }
-}
 
 struct WebAppView: UIViewRepresentable {
 
@@ -112,11 +83,12 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "openURL")
         config.userContentController.add(coordinator, name: "deactivateAudioSession")
         config.userContentController.add(coordinator, name: "speakApplePersonalVoice")
+        config.userContentController.add(coordinator, name: "openNativeSettings")
 
-        let webView = NoAccessoryWebView(frame: .zero, configuration: config)
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
-        webView.backgroundColor = UIColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
-        webView.scrollView.backgroundColor = UIColor(red: 242/255, green: 242/255, blue: 247/255, alpha: 1)
+        webView.backgroundColor = .systemGroupedBackground
+        webView.scrollView.backgroundColor = .systemGroupedBackground
         webView.navigationDelegate = coordinator
         webView.uiDelegate = coordinator
 
@@ -167,9 +139,7 @@ struct WebAppView: UIViewRepresentable {
                 mode: .default,
                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
-            if #available(iOS 13.0, *) {
-                try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
-            }
+            try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
             try session.setActive(true)
             print("[Audio] Session ready: playAndRecord (default)")
         } catch {
@@ -381,14 +351,19 @@ struct WebAppView: UIViewRepresentable {
                 return
             }
             if message.name == "checkLLMAvailability" {
-                let available: Bool
-                if #available(iOS 26.0, *) {
-                    available = true
-                } else {
-                    available = false
-                }
-                let js = "window._llmAvailabilityCallback(\(available));"
-                DispatchQueue.main.async { [weak self] in
+                Task { @MainActor [weak self] in
+                    var available = true
+                    do {
+                        let session = LanguageModelSession()
+                        let _ = try await session.respond(to: "test")
+                    } catch let error as LanguageModelSession.GenerationError {
+                        // GenerationError means the model exists but rejected the prompt — still available
+                        available = true
+                        _ = error
+                    } catch {
+                        available = false
+                    }
+                    let js = "window._llmAvailabilityCallback(\(available));"
                     self?.webView?.evaluateJavaScript(js, completionHandler: nil)
                 }
                 return
@@ -433,20 +408,15 @@ struct WebAppView: UIViewRepresentable {
                 let utterance = AVSpeechUtterance(string: text)
                 utterance.rate = AVSpeechUtteranceDefaultSpeechRate
                 
-                if #available(iOS 17.0, *) {
-                    AVSpeechSynthesizer.requestPersonalVoiceAuthorization { status in
-                        DispatchQueue.main.async {
-                            if status == .authorized, let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
-                                utterance.voice = personalVoice
-                            } else {
-                                utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
-                            }
-                            self.nativeSynthesizer.speak(utterance)
+                AVSpeechSynthesizer.requestPersonalVoiceAuthorization { status in
+                    DispatchQueue.main.async {
+                        if status == .authorized, let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+                            utterance.voice = personalVoice
+                        } else {
+                            utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
                         }
+                        self.nativeSynthesizer.speak(utterance)
                     }
-                } else {
-                    utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
-                    self.nativeSynthesizer.speak(utterance)
                 }
                 return
             }
@@ -485,6 +455,13 @@ struct WebAppView: UIViewRepresentable {
                 return
             }
 
+            if message.name == "openNativeSettings" {
+                Task { @MainActor [weak self] in
+                    self?.openNativeSettings()
+                }
+                return
+            }
+
             guard message.name == "llmRequest",
                   let body = message.body as? [String: Any],
                   let requestId = body["requestId"] as? String,
@@ -500,26 +477,141 @@ struct WebAppView: UIViewRepresentable {
 
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
-            if #available(iOS 26.0, *) {
-                do {
-                    let session = LanguageModelSession(instructions: systemPrompt)
-                    let response = try await session.respond(to: prompt)
-                    let text = response.content
-                        .replacingOccurrences(of: "\\", with: "\\\\")
-                        .replacingOccurrences(of: "'", with: "\\'")
-                        .replacingOccurrences(of: "\n", with: "\\n")
-                        .replacingOccurrences(of: "\r", with: "")
-                    let js = "window._llmCallback('\(requestId)', '\(text)', null);"
-                    try? await webView?.evaluateJavaScript(js)
-                } catch {
-                    let errMsg = error.localizedDescription
-                        .replacingOccurrences(of: "'", with: "\\'")
-                    let js = "window._llmCallback('\(requestId)', null, '\(errMsg)');"
-                    try? await webView?.evaluateJavaScript(js)
-                }
-            } else {
-                let js = "window._llmCallback('\(requestId)', null, 'iOS 26+ requis pour Apple Intelligence');"
+            do {
+                let safetyPrefix = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n"
+                let session = LanguageModelSession(instructions: safetyPrefix + systemPrompt)
+                let response = try await session.respond(to: prompt)
+                let text = response.content
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                    .replacingOccurrences(of: "\n", with: "\\n")
+                    .replacingOccurrences(of: "\r", with: "")
+                let js = "window._llmCallback('\(requestId)', '\(text)', null);"
                 try? await webView?.evaluateJavaScript(js)
+            } catch {
+                let errMsg = error.localizedDescription
+                    .replacingOccurrences(of: "'", with: "\\'")
+                let js = "window._llmCallback('\(requestId)', null, '\(errMsg)');"
+                try? await webView?.evaluateJavaScript(js)
+            }
+        }
+
+        // MARK: - Native Settings Bridge
+
+        @MainActor
+        private func openNativeSettings() {
+            guard let webView = self.webView else { return }
+            let js = """
+            JSON.stringify({
+                systemPrompt: state.systemPrompt,
+                memory: state.memory || '',
+                useApplePersonalVoice: state.useApplePersonalVoice,
+                useElevenLabs: state.useElevenLabs,
+                elApiKey: state.elApiKey || '',
+                voiceId: state.voiceId || '',
+                hasELConsent: !!localStorage.getItem('talkie_el_consent')
+            })
+            """
+            webView.evaluateJavaScript(js) { [weak self] result, _ in
+                guard let jsonStr = result as? String,
+                      let data = jsonStr.data(using: .utf8),
+                      let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    // Fallback: open settings anyway with defaults
+                    self?.presentNativeSettings()
+                    return
+                }
+
+                let vm = SettingsViewModel.shared
+                vm.systemPrompt = dict["systemPrompt"] as? String ?? ""
+                vm.memory = dict["memory"] as? String ?? ""
+                vm.useApplePersonalVoice = dict["useApplePersonalVoice"] as? Bool ?? false
+                vm.useElevenLabs = dict["useElevenLabs"] as? Bool ?? false
+                vm.elApiKey = dict["elApiKey"] as? String ?? ""
+                vm.voiceId = dict["voiceId"] as? String ?? ""
+                vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
+
+                self?.presentNativeSettings()
+            }
+        }
+
+        @MainActor
+        private func presentNativeSettings() {
+            let vm = SettingsViewModel.shared
+
+            vm.onDismiss = { [weak self] in
+                self?.syncSettingsToJS()
+                let restartJs = "if (userHasInteracted) startListening();"
+                self?.webView?.evaluateJavaScript(restartJs, completionHandler: nil)
+            }
+
+            vm.onReplayTutorial = { [weak self] in
+                self?.syncSettingsToJS()
+                let js = """
+                localStorage.removeItem('talkie_onboarded');
+                onbPage = 0;
+                document.querySelectorAll('.onb-page').forEach(p => p.classList.remove('active'));
+                document.querySelector('.onb-page[data-page="0"]').classList.add('active');
+                $('onboarding').classList.remove('hidden');
+                """
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+
+            vm.onResetAll = { [weak self] in
+                let js = """
+                keychainDelete('elApiKey');
+                localStorage.removeItem('talkie_v1');
+                localStorage.removeItem('talkie_onboarded');
+                ['echo_v5','echo_v4','echo_v3','echo_v2','echo_v1','echo_onboarded'].forEach(k => localStorage.removeItem(k));
+                location.reload();
+                """
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+
+            vm.onOpenVoiceCloning = { [weak self] in
+                self?.syncSettingsToJS()
+                let js = "loadSettings(); showView('settings'); $('devSection').classList.add('visible');"
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+
+            AppState.shared.showSettings = true
+        }
+
+        private func syncSettingsToJS() {
+            let vm = SettingsViewModel.shared
+            let prompt = vm.systemPrompt
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\n", with: "\\n")
+                .replacingOccurrences(of: "\r", with: "")
+            let memory = vm.memory
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\n", with: "\\n")
+                .replacingOccurrences(of: "\r", with: "")
+            let voiceId = vm.voiceId
+                .replacingOccurrences(of: "'", with: "\\'")
+
+            let js = """
+            state.systemPrompt = '\(prompt)';
+            state.memory = '\(memory)';
+            state.useApplePersonalVoice = \(vm.useApplePersonalVoice);
+            state.useElevenLabs = \(vm.useElevenLabs);
+            state.voiceId = '\(voiceId)';
+            save();
+            """
+            webView?.evaluateJavaScript(js, completionHandler: nil)
+
+            // Save API key to keychain if present
+            if !vm.elApiKey.isEmpty {
+                let escapedKey = vm.elApiKey.replacingOccurrences(of: "'", with: "\\'")
+                let keyJs = "keychainSave('elApiKey', '\(escapedKey)');"
+                webView?.evaluateJavaScript(keyJs, completionHandler: nil)
+            }
+
+            // Sync ElevenLabs consent
+            if vm.hasELConsent {
+                let consentJs = "localStorage.setItem('talkie_el_consent', '1');"
+                webView?.evaluateJavaScript(consentJs, completionHandler: nil)
             }
         }
 

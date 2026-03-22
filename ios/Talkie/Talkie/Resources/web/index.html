@@ -8,7 +8,13 @@
 <meta name="theme-color" content="#F5F6FA">
 <title>Talkie</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
+@font-face {
+  font-family: 'DM Sans';
+  src: url('DMSans-Variable.ttf') format('truetype');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --bg: #F5F6FA;
@@ -35,6 +41,22 @@
   --font: 'DM Sans', -apple-system, system-ui, sans-serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1C1C1E;
+    --bg-card: #2C2C2E;
+    --bg-card-hover: #3A3A3C;
+    --text: #F2F2F7;
+    --text-secondary: #AEAEB2;
+    --text-tertiary: #636366;
+    --separator: rgba(255,255,255,0.08);
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+    --shadow-card: 0 2px 12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+    --shadow-card-active: 0 1px 4px rgba(0,0,0,0.4);
+  }
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
@@ -304,7 +326,7 @@ html, body {
 }
 
 .suggestion-card.loading {
-  background:linear-gradient(90deg, #EDEDF2 25%, #F5F5FA 50%, #EDEDF2 75%);
+  background:linear-gradient(90deg, var(--bg-card-hover) 25%, var(--bg-card) 50%, var(--bg-card-hover) 75%);
   background-size:200% 100%;
   animation:shimmer 1.5s ease-in-out infinite;
   color:transparent; pointer-events:none;
@@ -789,6 +811,19 @@ html, body {
   box-shadow:none; margin-top:10px;
 }
 
+/* ─── Dark mode overrides ─── */
+@media (prefers-color-scheme: dark) {
+  #toast { background:var(--bg-card); color:var(--text); }
+  .toggle { background:#48484A; }
+  .toggle.active { background:#34C759; }
+  .settings-back-btn, .inapp-page-back { background:rgba(255,255,255,0.08); }
+  .settings-back-btn:active, .inapp-page-back:active { background:rgba(255,255,255,0.14); }
+  .manual-textarea, .settings-input, .settings-textarea, .report-textarea,
+  .settings-row .api-input { background:var(--bg); border-color:var(--separator); color:var(--text); }
+  .onb-tip { background:rgba(91,106,240,0.2) !important; }
+  .manual-back-btn { color:var(--accent); }
+}
+
 /* ─── Hidden inputs ─── */
 #fileInput { display:none; }
 </style>
@@ -826,6 +861,9 @@ html, body {
       <div class="onb-step"><div class="onb-step-num">1</div><div>L'interlocuteur parle. Appuyez sur la barre du haut pour activer l'écoute.</div></div>
       <div class="onb-step"><div class="onb-step-num">2</div><div>Talkie transcrit et propose 3 réponses adaptées.</div></div>
       <div class="onb-step"><div class="onb-step-num">3</div><div>Appuyez sur une réponse pour la prononcer à voix haute.</div></div>
+    </div>
+    <div class="onb-tip" style="margin-top:16px; padding:12px 16px; background:rgba(91,106,240,0.1); border-radius:12px; font-size:13px; color:var(--text-secondary); line-height:1.5;">
+      💡 <strong>Conseil :</strong> Pour profiter au maximum de Talkie, assurez-vous qu'Apple Intelligence est activé dans vos Réglages iOS. Vous bénéficierez ainsi de la suggestion automatique de réponses, générées directement sur votre appareil.
     </div>
     <div class="onb-dots"><div class="onb-dot"></div><div class="onb-dot active"></div><div class="onb-dot"></div></div>
     <button class="onb-btn" onclick="onbNext()">Continuer</button>
@@ -884,6 +922,7 @@ html, body {
         <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
       </div>
     </div>
+    <div class="ai-attribution" id="aiAttribution" style="display:none; text-align:center; font-size:11px; color:var(--text-tertiary); margin-top:6px; padding:0 20px;">Suggestions générées par Apple Intelligence</div>
 
     <!-- Controls -->
     <div class="controls-zone">
@@ -927,49 +966,30 @@ html, body {
     </div>
     <div class="settings-scroll">
 
-      <!-- Apple Intelligence (expandable) -->
+      <!-- Apple Intelligence -->
       <div class="settings-section">
         <div class="settings-section-title">Apple Intelligence</div>
         <div class="settings-card">
+          <div class="settings-row" id="advancedPageBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Prompt système</span>
+              <span class="desc">Modifier le comportement de l'assistant</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" id="memoryPageBtn" style="cursor:pointer;">
+            <div class="label">
+              <span class="name">Mémoire IA</span>
+              <span class="desc">Informations retenues pour personnaliser les réponses</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
           <div class="settings-row">
             <div class="label">
-              <span class="name">Utiliser Apple Intelligence</span>
-              <span class="desc">Nécessite iOS 26+ et un appareil compatible</span>
+              <span class="name">Utiliser ma voix personnelle</span>
+              <span class="desc">Voix personnelle configurée dans Réglages iOS → Accessibilité</span>
             </div>
-            <button class="toggle" id="aiMasterToggle"></button>
-          </div>
-        </div>
-        <!-- Sub-options revealed when AI is enabled -->
-        <div id="aiSubOptions" style="display:none; margin-top:10px;">
-          <div class="settings-card">
-            <div class="settings-row">
-              <div class="label">
-                <span class="name">Suggestions de texte IA</span>
-                <span class="desc">Propose 3 réponses automatiques</span>
-              </div>
-              <button class="toggle active" id="llmToggle"></button>
-            </div>
-            <div class="settings-row" id="advancedPageBtn" style="cursor:pointer;">
-              <div class="label">
-                <span class="name">Prompt système</span>
-                <span class="desc">Modifier le comportement de l'assistant</span>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="settings-row" id="memoryPageBtn" style="cursor:pointer;">
-              <div class="label">
-                <span class="name">Mémoire IA</span>
-                <span class="desc">Informations retenues pour personnaliser les réponses</span>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="settings-row">
-              <div class="label">
-                <span class="name">Utiliser ma voix personnelle</span>
-                <span class="desc">Voix personnelle configurée dans Réglages iOS → Accessibilité</span>
-              </div>
-              <button class="toggle" id="appleVoiceToggleBtn"></button>
-            </div>
+            <button class="toggle" id="appleVoiceToggleBtn"></button>
           </div>
         </div>
       </div>
@@ -1103,8 +1123,8 @@ html, body {
       <li>Les échantillons vocaux (si fournis)</li>
     </ul>
 
-    <h2>Clé API ElevenLabs</h2>
-    <p>Si vous utilisez la fonctionnalité de voix personnalisée, votre clé API est stockée de manière sécurisée dans le Keychain iOS, le système de stockage chiffré d'Apple. Elle n'est jamais transmise ailleurs qu'aux serveurs d'ElevenLabs pour la synthèse vocale.</p>
+    <h2>ElevenLabs (optionnel)</h2>
+    <p>Si vous activez la voix ElevenLabs, votre clé API est stockée de manière sécurisée dans le Keychain iOS. Lorsque vous utilisez cette fonctionnalité, le texte de vos réponses est envoyé aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée audio ou textuelle n'est conservée par Talkie. Votre consentement est demandé avant la première activation.</p>
 
     <h2>Apple Intelligence</h2>
     <p>Les suggestions IA sont générées localement via Apple Intelligence sur votre appareil. Aucune donnée de conversation n'est envoyée à des serveurs tiers pour cette fonctionnalité.</p>
@@ -1118,7 +1138,7 @@ html, body {
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Pour toute question concernant la confidentialité :</p>
-      <p><strong>samuelgracio@gmail.com</strong></p>
+      <p><strong>talkie-app@proton.me</strong></p>
     </div>
   </div>
 </div>
@@ -1144,20 +1164,20 @@ html, body {
     </ul>
 
     <h2>Suggestions IA</h2>
-    <p>Les suggestions nécessitent Apple Intelligence (iOS 26+). Si votre appareil n'est pas compatible, vous pouvez toujours utiliser Talkie en mode saisie libre.</p>
+    <p>Les suggestions sont générées par Apple Intelligence directement sur votre appareil. Assurez-vous qu'Apple Intelligence est activé dans Réglages iOS → Apple Intelligence et Siri.</p>
 
     <h2>Personnaliser la voix</h2>
     <p>Par défaut, Talkie utilise la voix intégrée de votre iPhone. Vous pouvez activer une voix personnalisée via ElevenLabs dans les réglages pour une expérience plus naturelle.</p>
 
     <h2>Questions fréquentes</h2>
     <p><strong>Le micro ne fonctionne pas ?</strong><br>Vérifiez que Talkie a l'autorisation d'accéder au microphone dans Réglages iOS → Talkie.</p>
-    <p><strong>Les suggestions n'apparaissent pas ?</strong><br>Assurez-vous qu'Apple Intelligence est activé sur votre appareil et que l'option est activée dans les réglages de Talkie.</p>
+    <p><strong>Les suggestions n'apparaissent pas ?</strong><br>Assurez-vous qu'Apple Intelligence est activé dans Réglages iOS → Apple Intelligence et Siri.</p>
     <p><strong>Comment supprimer mes données ?</strong><br>Allez dans Réglages → Données personnelles → Supprimer toutes mes données.</p>
 
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Besoin d'aide supplémentaire ?</p>
-      <p><strong>samuelgracio@gmail.com</strong></p>
+      <p><strong>talkie-app@proton.me</strong></p>
     </div>
   </div>
 </div>
@@ -1214,7 +1234,7 @@ html, body {
      ═══════════════════════════════════════════ -->
 <script>
 
-const BUILD_VERSION = 'v2.2';
+const BUILD_VERSION = 'v2.2.0';
 
 // Global error handler — shows errors visually
 window.onerror = function(msg, src, line) {
@@ -1228,7 +1248,9 @@ window.onerror = function(msg, src, line) {
 const DB_KEY = 'talkie_v1';
 const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne ayant des difficultés à parler (SLA, mutisme ou autre) à communiquer.
 Tu proposes des réponses naturelles et chaleureuses en français.
-Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.`;
+Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.
+Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.`;
+const SAFETY_PREFIX = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n";
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
 /** Silence minimal après le dernier mot reconnu avant de valider la phrase (ms). Trop bas = coupe au milieu. */
@@ -1432,7 +1454,15 @@ function showView(id) {
   else console.error('[Talkie] View not found: view-' + id);
 }
 
-safeClick('settingsBtn', () => { stopListening(); loadSettings(); showView('settings'); });
+safeClick('settingsBtn', () => {
+  stopListening();
+  try {
+    window.webkit.messageHandlers.openNativeSettings.postMessage('open');
+  } catch(_) {
+    // Fallback to HTML settings if native bridge unavailable
+    loadSettings(); showView('settings');
+  }
+});
 safeClick('backFromSettingsBtn', () => { showView('suggestions'); if (userHasInteracted) startListening(); });
 safeClick('btnKeyboard', () => switchToManual());
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
@@ -1488,8 +1518,22 @@ function renderSuggestionCards(suggestions) {
     card.id = 'suggestionCard' + i;
     card.textContent = text;
     card.onclick = () => speakSuggestion(text, i);
+    // Report flag button
+    const flag = document.createElement('button');
+    flag.textContent = '\u2691';
+    flag.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:var(--text-tertiary);cursor:pointer;padding:4px;z-index:2;';
+    flag.onclick = (e) => {
+      e.stopPropagation();
+      const subject = encodeURIComponent('Talkie - Contenu inapproprié');
+      const body = encodeURIComponent('Suggestion signalée :\n"' + text + '"\n\nContexte : ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
+      const mailto = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
+      try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
+      showToast('Signalement préparé');
+    };
+    card.appendChild(flag);
     zone.appendChild(card);
   });
+  $('aiAttribution').style.display = 'block';
 }
 
 function showSuggestionLoading() {
@@ -1509,6 +1553,7 @@ function clearSuggestionCards() {
       <div class="suggestions-empty-icon">💬</div>
       <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
     </div>`;
+  $('aiAttribution').style.display = 'none';
 }
 
 // ─── TTS Overlay ───
@@ -2020,16 +2065,37 @@ function callNativeLLM(sys, prompt) {
 // ─── Content Filter (Guideline 4.7) ───
 const _blocklist = [
   // Violence / harm
-  'tuer', 'suicide', 'suicider', 'arme', 'bombe', 'terroris', 'viol ',
+  'tuer', 'suicide', 'suicider', 'arme à feu', 'bombe', 'terroris', 'viol ',
+  'meurtr', 'assassin', 'poignard', 'égorger', 'torturer', 'mutiler',
+  'automutil', 'se couper les vein', 'overdose',
   // Hate speech
-  'nazi', 'nègre', 'pédé', 'tapette', 'salope', 'pute',
+  'nazi', 'nègre', 'pédé', 'tapette', 'salope', 'pute', 'enculé',
+  'gouine', 'bougnoule', 'youpin', 'négro', 'sous-race', 'race inférieure',
   // Explicit
-  'pornograph', 'orgasm', 'masturb',
+  'pornograph', 'orgasm', 'masturb', 'sodomie', 'fellation',
+  // Drugs
+  'cocaïne', 'héroïne', 'méthamphétamine', 'crack',
+];
+
+const _blockPatterns = [
+  /tu\s+vas\s+mourir/i,
+  /je\s+vais\s+te\s+tuer/i,
+  /va\s+te\s+faire/i,
+  /n[i1]qu[eé]/i,
+  /fils?\s+de\s+pute/i,
+  /cr[eè]ve/i,
+  /je\s+te\s+hais/i,
+  /t[uw]e[rz]?\s+(l[ea]s?|tout|ces)/i,
+  /comment\s+(fabriquer|faire)\s+(une?\s+)?(bombe|arme|drogue|poison)/i,
+  /ignore\s+(tes|les)\s+instructions/i,
+  /oublie\s+(tes|les)\s+(instructions|règles|consignes)/i,
 ];
 
 function isInappropriate(text) {
   const lower = text.toLowerCase();
-  return _blocklist.some(term => lower.includes(term));
+  if (_blocklist.some(term => lower.includes(term))) return true;
+  if (_blockPatterns.some(re => re.test(text))) return true;
+  return false;
 }
 
 async function fetchSuggestions(interlocutorText) {
@@ -2043,8 +2109,14 @@ async function fetchSuggestions(interlocutorText) {
     `${m.isUser ? 'Moi' : 'Autre'}: ${m.text}`
   ).join('\n');
 
-  // Build system prompt with memory
-  let sys = state.systemPrompt;
+  // Filter inappropriate input
+  if (isInappropriate(interlocutorText)) {
+    clearSuggestionCards();
+    return;
+  }
+
+  // Build system prompt with safety prefix always prepended
+  let sys = SAFETY_PREFIX + state.systemPrompt;
   if (state.memory && state.memory.trim()) {
     sys += `\n\nInformations personnelles sur l'utilisateur (à utiliser pour personnaliser les réponses) :\n${state.memory.trim()}`;
   }
@@ -2108,6 +2180,11 @@ $('fileInput').onchange = async (e) => {
 $('cloneBtn').onclick = async () => {
   const name = $('voiceNameInput').value.trim() || 'Talkie';
   if (!state.samples.length || !state.elApiKey) return;
+  // Voice cloning consent — biometric data sent to ElevenLabs
+  if (!localStorage.getItem('talkie_voice_clone_consent')) {
+    if (!confirm('Le clonage vocal enverra vos échantillons vocaux aux serveurs d\'ElevenLabs. Acceptez-vous ?')) return;
+    localStorage.setItem('talkie_voice_clone_consent', '1');
+  }
   $('cloneBtn').disabled = true; $('cloneBtn').textContent = 'Clonage...';
   try {
     const fd = new FormData();
@@ -2157,10 +2234,6 @@ function loadSettings() {
   $('settingsELKey').value = state.elApiKey;
   $('settingsVoiceId').value = state.voiceId || '';
   $('settingsMemory').value = state.memory || '';
-  // Apple Intelligence master + sub toggles
-  $('aiMasterToggle').classList.toggle('active', state.llmEnabled);
-  $('llmToggle').classList.toggle('active', state.llmEnabled);
-  $('aiSubOptions').style.display = state.llmEnabled ? 'block' : 'none';
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   // Developer mode
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
@@ -2218,7 +2291,7 @@ $('reportSendBtn').onclick = () => {
   if (!text) { showToast('Veuillez décrire le problème'); return; }
   const subject = encodeURIComponent('Talkie - Signalement');
   const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
-  const mailtoUrl = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
+  const mailtoUrl = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
   try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
   catch(_) { window.location.href = mailtoUrl; }
   showToast('Préparation de l\'e-mail…');
@@ -2238,30 +2311,19 @@ $('deleteAllDataBtn').onclick = () => {
   }
 };
 
-// Apple Intelligence master toggle
-$('aiMasterToggle').onclick = () => {
-  state.llmEnabled = !state.llmEnabled;
-  $('aiMasterToggle').classList.toggle('active', state.llmEnabled);
-  $('llmToggle').classList.toggle('active', state.llmEnabled);
-  $('aiSubOptions').style.display = state.llmEnabled ? 'block' : 'none';
-  save();
-};
-$('llmToggle').onclick = () => {
-  state.llmEnabled = !state.llmEnabled;
-  $('llmToggle').classList.toggle('active', state.llmEnabled);
-  // If turning off suggestions, also turn off AI master
-  if (!state.llmEnabled) {
-    $('aiMasterToggle').classList.remove('active');
-    $('aiSubOptions').style.display = 'none';
-  }
-  save();
-};
 $('appleVoiceToggleBtn').onclick = () => {
   state.useApplePersonalVoice = !state.useApplePersonalVoice;
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   save();
 };
 $('useElevenLabsToggleBtn').onclick = () => {
+  if (!state.useElevenLabs && !localStorage.getItem('talkie_el_consent')) {
+    if (confirm('En activant ElevenLabs, vos textes seront envoyés aux serveurs d\'ElevenLabs pour la synthèse vocale. Aucune donnée n\'est conservée par Talkie. Acceptez-vous ?')) {
+      localStorage.setItem('talkie_el_consent', '1');
+    } else {
+      return;
+    }
+  }
   state.useElevenLabs = !state.useElevenLabs;
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
   $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
@@ -2299,20 +2361,7 @@ window._llmAvailabilityCallback = function(available) {
   llmAvailable = available;
   console.log('[Talkie] LLM available:', available);
   if (!available) {
-    // Hide suggestion-specific UI, switch to manual-first mode
-    $('suggestionsLabel').style.display = 'none';
-    $('suggestionsZone').style.display = 'none';
-    $('btnRefresh').style.display = 'none';
-    // Show info banner in context zone
-    $('contextText').innerHTML = 'Les suggestions IA nécessitent iOS 26+.<br>Utilisez le clavier pour taper vos réponses.';
-    $('contextText').className = 'context-text';
-    // Disable AI toggles in settings
-    state.llmEnabled = false;
-    $('aiMasterToggle').classList.remove('active');
-    $('aiMasterToggle').disabled = true;
-    $('llmToggle').classList.remove('active');
-    $('llmToggle').disabled = true;
-    $('aiSubOptions').style.display = 'none';
+    showToast('Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.', 5000);
   }
 };
 
