@@ -420,12 +420,12 @@ struct WebAppView: UIViewRepresentable {
                       let text = body["text"] as? String,
                       let requestId = body["requestId"] as? String else { return }
 
+                let lang = (body["lang"] as? String) ?? "fr-FR"
                 WebAppView.reassertPlayAndRecordSession()
                 nativeSpeechCallbackId = requestId
                 // Sanitize text to prevent AVSpeechSynthesizer from attempting SSML parsing.
-                // Characters like <, >, & cause "Could not parse SSML" errors.
                 let sanitized = text
-                    .replacingOccurrences(of: "&", with: " et ")
+                    .replacingOccurrences(of: "&", with: lang.hasPrefix("fr") ? " et " : " and ")
                     .replacingOccurrences(of: "<", with: "")
                     .replacingOccurrences(of: ">", with: "")
                 let utterance = AVSpeechUtterance(string: sanitized)
@@ -438,7 +438,7 @@ struct WebAppView: UIViewRepresentable {
                            let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
                             utterance.voice = personalVoice
                         } else {
-                            utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
+                            utterance.voice = AVSpeechSynthesisVoice(language: lang)
                         }
                         self.nativeSynthesizer.speak(utterance)
                     }
