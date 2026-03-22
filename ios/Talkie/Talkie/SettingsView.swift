@@ -5,6 +5,24 @@ import SwiftUI
 class AppState: ObservableObject {
     static let shared = AppState()
     @Published var showSettings = false
+    /// 0 = system, 1 = light, 2 = dark
+    @Published var appearanceMode: Int = UserDefaults.standard.integer(forKey: "talkie_appearance_mode") {
+        didSet { UserDefaults.standard.set(appearanceMode, forKey: "talkie_appearance_mode") }
+    }
+    @Published var textSizePercent: Double = {
+        let saved = UserDefaults.standard.double(forKey: "talkie_text_size_pct")
+        return saved > 0 ? saved : 100
+    }() {
+        didSet { UserDefaults.standard.set(textSizePercent, forKey: "talkie_text_size_pct") }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch appearanceMode {
+        case 1: return .light
+        case 2: return .dark
+        default: return nil
+        }
+    }
 }
 
 // MARK: - Settings View Model
@@ -25,6 +43,7 @@ class SettingsViewModel: ObservableObject {
     var onResetAll: (() -> Void)?
     var onDismiss: (() -> Void)?
     var onOpenVoiceCloning: (() -> Void)?
+    var onTextSizeChanged: ((Double) -> Void)?
 }
 
 // MARK: - Settings View
@@ -32,6 +51,7 @@ class SettingsViewModel: ObservableObject {
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var vm = SettingsViewModel.shared
+    @ObservedObject var appState = AppState.shared
     @State private var showResetConfirm = false
     @State private var showELConsent = false
     @State private var devTapCount = 0
@@ -58,6 +78,33 @@ struct SettingsView: View {
                             Text("Configurée dans Réglages iOS \u{2192} Accessibilité")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section("Accessibilité") {
+                    Picker(selection: $appState.appearanceMode) {
+                        Text("Système").tag(0)
+                        Text("Clair").tag(1)
+                        Text("Sombre").tag(2)
+                    } label: {
+                        Label("Apparence", systemImage: "circle.lefthalf.filled")
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Label("Taille du texte", systemImage: "textformat.size")
+                            Spacer()
+                            Text("\(Int(appState.textSizePercent))%")
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack(spacing: 12) {
+                            Text("A").font(.caption)
+                            Slider(value: $appState.textSizePercent, in: 80...150, step: 5)
+                                .onChange(of: appState.textSizePercent) { _ in
+                                    vm.onTextSizeChanged?(appState.textSizePercent)
+                                }
+                            Text("A").font(.title3)
                         }
                     }
                 }

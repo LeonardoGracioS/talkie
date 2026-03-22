@@ -822,6 +822,36 @@ html, body {
   .settings-row .api-input { background:var(--bg); border-color:var(--separator); color:var(--text); }
   .onb-tip { background:rgba(91,106,240,0.2) !important; }
   .manual-back-btn { color:var(--accent); }
+  /* Suggestion cards */
+  .suggestion-card { background:var(--bg-card); color:var(--text); }
+  .suggestion-card:active { background:var(--bg-card-hover); }
+  .suggestion-card.empty { background:var(--separator); }
+  /* Context zone */
+  .context-zone { background:linear-gradient(135deg, rgba(91,106,240,0.12) 0%, rgba(91,106,240,0.04) 100%); }
+  .context-text { color:var(--text); }
+  .context-text.empty { color:var(--text-tertiary); }
+  .context-text.interim { color:var(--text-secondary); }
+  /* Controls */
+  .control-btn.keyboard { background:var(--bg-card); color:var(--text); }
+  .control-btn.keyboard:active { background:var(--bg-card-hover); }
+  /* Settings card */
+  .settings-card { background:var(--bg-card); }
+  .settings-row .name { color:var(--text); }
+  /* Splash */
+  #splash { background:linear-gradient(145deg, #3A3F9E 0%, #5B6AF0 50%, #7B87F5 100%); }
+  /* About box */
+  .about-box { color:var(--text-tertiary); }
+  /* In-app pages */
+  .inapp-page { background:var(--bg); }
+  .inapp-page-content h2 { color:var(--text); }
+  .inapp-page-content p { color:var(--text-secondary); }
+  .inapp-page-content li { color:var(--text-secondary); }
+  .inapp-page-content .contact-box { background:var(--bg-card); }
+  /* Onboarding */
+  #onboarding { background:var(--bg); }
+  .onb-title { color:var(--text); }
+  .onb-desc { color:var(--text-secondary); }
+  .onb-step { color:var(--text); }
 }
 
 /* ─── Hidden inputs ─── */
@@ -2383,6 +2413,24 @@ $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
 keychainLoad('elApiKey');
+// Update theme-color for dark mode
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.querySelector('meta[name="theme-color"]').content = '#1C1C1E';
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  document.querySelector('meta[name="theme-color"]').content = e.matches ? '#1C1C1E' : '#F5F6FA';
+});
+
+// Apply saved text size
+const savedTextSize = localStorage.getItem('talkie_text_size');
+if (savedTextSize) document.documentElement.style.fontSize = savedTextSize + 'px';
+
+// Text size bridge — called from native settings
+window._setTextSize = function(size) {
+  document.documentElement.style.fontSize = size + 'px';
+  localStorage.setItem('talkie_text_size', String(size));
+};
+
 console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
 </script>
