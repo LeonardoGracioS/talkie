@@ -926,13 +926,13 @@ html, body {
           <span class="app-logo-text">Talkie</span>
         </div>
       </div>
-      <button class="settings-btn" id="settingsBtn">
+      <button class="settings-btn" id="settingsBtn" aria-label="Paramètres">
         <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
       </button>
     </div>
 
     <!-- Listening indicator (tap to start/stop) -->
-    <div class="listening-bar inactive" id="listeningBar" role="button">
+    <div class="listening-bar inactive" id="listeningBar" role="button" aria-label="Appuyez pour écouter la conversation">
       <div class="listening-dot"></div>
       <div class="listening-waves"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="listening-text" id="listeningText">Appuyez pour écouter</div>
@@ -978,7 +978,7 @@ html, body {
       <div style="width:70px"></div>
     </div>
     <div class="manual-input-wrap">
-      <textarea class="manual-textarea" id="manualInput" placeholder="Tapez votre message ici..."></textarea>
+      <textarea class="manual-textarea" id="manualInput" placeholder="Tapez votre message ici..." aria-label="Message à prononcer"></textarea>
     </div>
     <button class="manual-speak-btn" id="btnSpeak">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
@@ -989,7 +989,7 @@ html, body {
   <!-- ═══ SETTINGS ═══ -->
   <div id="view-settings" class="view">
     <div class="settings-header">
-      <button class="settings-back-btn" id="backFromSettingsBtn">
+      <button class="settings-back-btn" id="backFromSettingsBtn" aria-label="Retour">
         <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
       </button>
       <div class="settings-title">Réglages</div>
@@ -1271,7 +1271,7 @@ window.onerror = function(msg, src, line) {
   console.error('[Talkie] JS Error:', msg, 'at line', line);
   try {
     const t = document.getElementById('toast');
-    if (t) { t.textContent = 'JS Error L' + line + ': ' + msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 5000); }
+    if (t) { t.textContent = 'Une erreur est survenue'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 5000); }
   } catch(_) {}
 };
 
@@ -1547,10 +1547,13 @@ function renderSuggestionCards(suggestions) {
     card.className = 'suggestion-card';
     card.id = 'suggestionCard' + i;
     card.textContent = text;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Suggestion ' + (i + 1) + ' : ' + text);
     card.onclick = () => speakSuggestion(text, i);
     // Report flag button
     const flag = document.createElement('button');
     flag.textContent = '\u2691';
+    flag.setAttribute('aria-label', 'Signaler cette suggestion');
     flag.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:var(--text-tertiary);cursor:pointer;padding:4px;z-index:2;';
     flag.onclick = (e) => {
       e.stopPropagation();
@@ -2202,6 +2205,7 @@ $('fileInput').onchange = async (e) => {
       audio.onerror = () => r(0);
       setTimeout(() => r(0), 3000);
     });
+    if (du.length > 5 * 1024 * 1024) { showToast('Fichier trop volumineux (max 5 Mo)'); continue; }
     state.samples.push({ id: Date.now()+Math.random(), name: f.name, duration: dur, dataUrl: du });
   }
   save(); renderSamples(); $('fileInput').value = '';
@@ -2243,7 +2247,7 @@ function renderSamples() {
   $('testVoiceBtn').style.display = state.voiceId ? 'block' : 'none';
   const area = $('voiceActiveArea');
   if (state.voiceId) {
-    area.innerHTML = `<div class="voice-badge"><span class="icon">✅</span><div class="info"><div class="title">Voix active</div><div class="sub">${state.voiceId}</div></div><button class="remove" id="removeVoiceBtn">Supprimer</button></div>`;
+    area.innerHTML = `<div class="voice-badge"><span class="icon">✅</span><div class="info"><div class="title">Voix active</div><div class="sub">${esc(state.voiceId)}</div></div><button class="remove" id="removeVoiceBtn">Supprimer</button></div>`;
     $('removeVoiceBtn').onclick = () => { state.voiceId = ''; save(); renderSamples(); };
   } else { area.innerHTML = ''; }
   $('samplesContainer').innerHTML = '';

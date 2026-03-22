@@ -5,6 +5,9 @@ import FoundationModels
 import Security
 import SafariServices
 import UIKit
+import os
+
+private let logger = Logger(subsystem: "com.leonardogracios.talkie", category: "NativeTTS")
 
 // MARK: - Keychain Helper
 
@@ -221,7 +224,7 @@ struct WebAppView: UIViewRepresentable {
                   let base64 = body["base64"] as? String,
                   let data = Data(base64Encoded: base64),
                   !data.isEmpty else {
-                print("[NativeTTS] invalid or empty payload")
+                logger.warning("Invalid or empty payload")
                 return
             }
             stopNativeTTSPlayback(notifyJS: false)
@@ -232,14 +235,14 @@ struct WebAppView: UIViewRepresentable {
                 nativePlaybackId = playbackId
                 nativeAudioPlayer = player
                 guard player.prepareToPlay() else {
-                    print("[NativeTTS] prepareToPlay failed")
+                    logger.warning("prepareToPlay failed")
                     failNativeTTS(playbackId: playbackId, code: "prepare_failed")
                     return
                 }
                 player.play()
                 startNativeProgressTimer(playbackId: playbackId)
             } catch {
-                print("[NativeTTS] AVAudioPlayer error: \(error)")
+                logger.error("AVAudioPlayer error: \(error.localizedDescription)")
                 failNativeTTS(playbackId: playbackId, code: "decode_failed")
             }
         }
@@ -307,7 +310,7 @@ struct WebAppView: UIViewRepresentable {
         }
 
         func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-            print("[NativeTTS] decode error: \(error?.localizedDescription ?? "?")")
+            logger.error("Decode error: \(error?.localizedDescription ?? "?", privacy: .public)")
             let id = nativePlaybackId ?? ""
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
@@ -514,7 +517,7 @@ struct WebAppView: UIViewRepresentable {
                 do {
                     _ = try await webView.evaluateJavaScript(js)
                 } catch {
-                    print("[LLM] Échec envoi résultat au Web: \(error)")
+                    logger.error("Failed to send LLM result to web: \(error.localizedDescription)")
                 }
             } catch {
                 let errMsg = error.localizedDescription
@@ -523,7 +526,7 @@ struct WebAppView: UIViewRepresentable {
                 do {
                     _ = try await webView.evaluateJavaScript(js)
                 } catch {
-                    print("[LLM] Échec envoi erreur au Web: \(error)")
+                    logger.error("Failed to send LLM error to web: \(error.localizedDescription)")
                 }
             }
         }
