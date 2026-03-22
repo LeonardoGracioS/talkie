@@ -30,7 +30,6 @@ class AppState: ObservableObject {
 class SettingsViewModel: ObservableObject {
     static let shared = SettingsViewModel()
 
-    @Published var systemPrompt = ""
     @Published var memory = ""
     @Published var useApplePersonalVoice = false
     @Published var useElevenLabs = false
@@ -60,12 +59,6 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section("Apple Intelligence") {
-                    NavigationLink {
-                        SystemPromptView(prompt: $vm.systemPrompt)
-                    } label: {
-                        Label("Prompt système", systemImage: "text.bubble")
-                    }
-
                     NavigationLink {
                         MemoryView(memory: $vm.memory)
                     } label: {
@@ -99,7 +92,7 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
                             Text("A").font(.caption)
                             Slider(value: $appState.textSizePercent, in: 80...150, step: 5)
-                                .onChange(of: appState.textSizePercent) { newValue in
+                                .onChange(of: appState.textSizePercent) { _, newValue in
                                     vm.onTextSizeChanged?(newValue)
                                 }
                             Text("A").font(.title3)
@@ -240,38 +233,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - System Prompt View
-
-struct SystemPromptView: View {
-    @Binding var prompt: String
-
-    private let defaultPrompt = """
-Tu es un assistant qui aide une personne ayant des difficultés à parler (SLA, mutisme ou autre) à communiquer.
-Tu proposes des réponses naturelles et chaleureuses en français.
-Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.
-Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.
-"""
-
-    var body: some View {
-        Form {
-            Section {
-                TextEditor(text: $prompt)
-                    .frame(minHeight: 200)
-            } header: {
-                Text("Ce prompt modifie le comportement global de l'assistant.")
-            }
-
-            Section {
-                Button("Réinitialiser aux valeurs par défaut") {
-                    prompt = defaultPrompt
-                }
-            }
-        }
-        .navigationTitle("Prompt système")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 // MARK: - Memory View
 
 struct MemoryView: View {
@@ -315,7 +276,7 @@ struct PrivacyPolicyNativeView: View {
                         BulletText("Votre nom (si renseigné)")
                         BulletText("L'historique des conversations (les 20 derniers échanges)")
                         BulletText("Les informations retenues par la mémoire IA")
-                        BulletText("Le prompt système personnalisé")
+                        BulletText("Le prompt système de l’assistant (fixe, défini par Talkie)")
                         BulletText("Les échantillons vocaux (si fournis)")
                     }
                 }
@@ -343,7 +304,7 @@ struct PrivacyPolicyNativeView: View {
                 Group {
                     Text("Contact").font(.headline)
                     Text("talkie-app@proton.me")
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .padding()
@@ -385,7 +346,7 @@ struct SupportNativeView: View {
                 Group {
                     Text("Contact").font(.headline)
                     Text("talkie-app@proton.me")
-                        .foregroundStyle(.accent)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .padding()
