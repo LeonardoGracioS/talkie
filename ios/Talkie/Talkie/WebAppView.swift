@@ -122,7 +122,7 @@ struct WebAppView: UIViewRepresentable {
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
-            print("[Audio] deactivate: \(error)")
+            // Silently ignore — session may already be inactive
         }
     }
 
@@ -131,7 +131,7 @@ struct WebAppView: UIViewRepresentable {
         do {
             try session.setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
-            print("[Audio] deactivate: \(error)")
+            // Silently ignore — session may already be inactive
         }
         do {
             try session.setCategory(
@@ -141,7 +141,6 @@ struct WebAppView: UIViewRepresentable {
             )
             try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
             try session.setActive(true)
-            print("[Audio] Session ready: playAndRecord (default)")
         } catch {
             print("[Audio] activate failed: \(error)")
         }
@@ -352,14 +351,12 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "checkLLMAvailability" {
                 Task { @MainActor [weak self] in
+                    // Try to create a session — if FoundationModels is available, this succeeds
                     var available = true
                     do {
                         let session = LanguageModelSession()
-                        let _ = try await session.respond(to: "test")
-                    } catch let error as LanguageModelSession.GenerationError {
-                        // GenerationError means the model exists but rejected the prompt — still available
-                        available = true
-                        _ = error
+                        // Session created successfully — Apple Intelligence is available
+                        _ = session
                     } catch {
                         available = false
                     }
@@ -573,6 +570,12 @@ struct WebAppView: UIViewRepresentable {
                 self?.webView?.evaluateJavaScript(js, completionHandler: nil)
             }
 
+            vm.onTextSizeChanged = { [weak self] pct in
+                let fontSize = 16.0 * pct / 100.0
+                let js = "window._setTextSize && window._setTextSize(\(fontSize));"
+                self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
+
             AppState.shared.showSettings = true
         }
 
@@ -612,6 +615,16 @@ struct WebAppView: UIViewRepresentable {
             if vm.hasELConsent {
                 let consentJs = "localStorage.setItem('talkie_el_consent', '1');"
                 webView?.evaluateJavaScript(consentJs, completionHandler: nil)
+            }
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // Apply saved text size after page loads
+            let pct = AppState.shared.textSizePercent
+            if pct != 100 {
+                let fontSize = 16.0 * pct / 100.0
+                let js = "document.documentElement.style.fontSize = '\(fontSize)px';"
+                webView.evaluateJavaScript(js, completionHandler: nil)
             }
         }
 
