@@ -8,9 +8,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.10"
-    # Replace XXXXXXXXXX with your Apple Developer Team ID
-    # Find it at: https://developer.apple.com/account → Membership → Team ID
-    DEVELOPMENT_TEAM: "XXXXXXXXXX"
+    DEVELOPMENT_TEAM: "Z75997FG3P"
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
 targets:
@@ -22,10 +20,11 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "Resources/**"
+          - "Assets.xcassets/**"
       - path: Talkie/Resources/web
         buildPhase: resources
         type: folder
-      - path: Talkie/Resources/Assets.xcassets
+      - path: Talkie/Assets.xcassets
         buildPhase: resources
       - path: Talkie/PrivacyInfo.xcprivacy
     settings:
