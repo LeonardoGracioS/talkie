@@ -537,6 +537,8 @@ struct WebAppView: UIViewRepresentable {
             let js = """
             JSON.stringify({
                 memory: state.memory || '',
+                learnedMemory: state.learnedMemory || '',
+                lang: state.lang || currentLang || 'fr',
                 useApplePersonalVoice: state.useApplePersonalVoice,
                 useElevenLabs: state.useElevenLabs,
                 elApiKey: state.elApiKey || '',
@@ -556,6 +558,8 @@ struct WebAppView: UIViewRepresentable {
                     }
                     let vm = SettingsViewModel.shared
                     vm.memory = dict["memory"] as? String ?? ""
+                    vm.learnedMemory = dict["learnedMemory"] as? String ?? ""
+                    vm.lang = dict["lang"] as? String ?? "fr"
                     vm.useApplePersonalVoice = dict["useApplePersonalVoice"] as? Bool ?? false
                     vm.useElevenLabs = dict["useElevenLabs"] as? Bool ?? false
                     vm.elApiKey = dict["elApiKey"] as? String ?? ""
@@ -580,6 +584,21 @@ struct WebAppView: UIViewRepresentable {
                 self?.runJavaScript("loadSettings();")
                 let restartJs = "if (userHasInteracted) startListening();"
                 self?.runJavaScript(restartJs)
+            }
+
+            vm.onClearLearnedMemory = { [weak self] in
+                self?.runJavaScript("state.learnedMemory = ''; save();")
+            }
+
+            vm.onLanguageChanged = { [weak self] newLang in
+                let js = """
+                currentLang = '\(newLang)';
+                state.lang = '\(newLang)';
+                localStorage.setItem('talkie_lang', '\(newLang)');
+                save();
+                applyStaticTranslations();
+                """
+                self?.runJavaScript(js)
             }
 
             vm.onReplayTutorial = { [weak self] in
@@ -629,16 +648,24 @@ struct WebAppView: UIViewRepresentable {
             }
 
             let memory = Self.escapeForJavaScript(vm.memory)
+            let learnedMemory = Self.escapeForJavaScript(vm.learnedMemory)
             let voiceId = Self.escapeForJavaScript(vm.voiceId)
             let elKey = Self.escapeForJavaScript(vm.elApiKey)
+
+            let lang = Self.escapeForJavaScript(vm.lang)
 
             var js = """
             state.elApiKey = '\(elKey)';
             state.memory = '\(memory)';
+            state.learnedMemory = '\(learnedMemory)';
             state.useApplePersonalVoice = \(vm.useApplePersonalVoice);
             state.useElevenLabs = \(vm.useElevenLabs);
             state.voiceId = '\(voiceId)';
+            currentLang = '\(lang)';
+            state.lang = '\(lang)';
+            localStorage.setItem('talkie_lang', '\(lang)');
             save();
+            applyStaticTranslations();
             """
             if vm.hasELConsent {
                 js += "\nlocalStorage.setItem('talkie_el_consent', '1');"
@@ -689,8 +716,9 @@ struct WebAppView: UIViewRepresentable {
                      runJavaScriptConfirmPanelWithMessage message: String,
                      initiatedByFrame frame: WKFrameInfo,
                      completionHandler: @escaping (Bool) -> Void) {
+            let cancelTitle = SettingsViewModel.shared.lang == "fr" ? "Annuler" : "Cancel"
             let alert = UIAlertController(title: "Talkie", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Annuler", style: .cancel) { _ in completionHandler(false) })
+            alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { _ in completionHandler(false) })
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in completionHandler(true) })
             if let vc = webView.window?.rootViewController {
                 vc.present(alert, animated: true)
@@ -702,9 +730,10 @@ struct WebAppView: UIViewRepresentable {
                      defaultText: String?,
                      initiatedByFrame frame: WKFrameInfo,
                      completionHandler: @escaping (String?) -> Void) {
+            let cancelTitle = SettingsViewModel.shared.lang == "fr" ? "Annuler" : "Cancel"
             let alert = UIAlertController(title: "Talkie", message: prompt, preferredStyle: .alert)
             alert.addTextField { tf in tf.text = defaultText }
-            alert.addAction(UIAlertAction(title: "Annuler", style: .cancel) { _ in completionHandler(nil) })
+            alert.addAction(UIAlertAction(title: cancelTitle, style: .cancel) { _ in completionHandler(nil) })
             alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
                 completionHandler(alert.textFields?.first?.text)
             })
