@@ -31,6 +31,8 @@ class SettingsViewModel: ObservableObject {
     static let shared = SettingsViewModel()
 
     @Published var memory = ""
+    @Published var learnedMemory = ""
+    @Published var lang = "fr"
     @Published var useApplePersonalVoice = false
     @Published var useElevenLabs = false
     @Published var elApiKey = ""
@@ -43,6 +45,8 @@ class SettingsViewModel: ObservableObject {
     var onDismiss: (() -> Void)?
     var onOpenVoiceCloning: (() -> Void)?
     var onTextSizeChanged: ((Double) -> Void)?
+    var onClearLearnedMemory: (() -> Void)?
+    var onLanguageChanged: ((String) -> Void)?
 }
 
 // MARK: - Settings View
@@ -58,33 +62,43 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section(vm.lang == "fr" ? "Langue" : "Language") {
+                    Picker(vm.lang == "fr" ? "Langue" : "Language", selection: $vm.lang) {
+                        Text("Français").tag("fr")
+                        Text("English").tag("en")
+                    }
+                    .onChange(of: vm.lang) { _, newValue in
+                        vm.onLanguageChanged?(newValue)
+                    }
+                }
+
                 Section("Apple Intelligence") {
                     NavigationLink {
-                        MemoryView(memory: $vm.memory)
+                        MemoryView(memory: $vm.memory, learnedMemory: $vm.learnedMemory, lang: vm.lang, onClearLearnedMemory: vm.onClearLearnedMemory)
                     } label: {
-                        Label("Mémoire IA", systemImage: "brain")
+                        Label(vm.lang == "fr" ? "Mémoire IA" : "AI Memory", systemImage: "brain")
                     }
 
                     Toggle(isOn: $vm.useApplePersonalVoice) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Voix personnelle")
-                            Text("Configurée dans Réglages iOS \u{2192} Accessibilité")
+                            Text(vm.lang == "fr" ? "Voix personnelle" : "Personal Voice")
+                            Text(vm.lang == "fr" ? "Configurée dans Réglages iOS \u{2192} Accessibilité" : "Configured in iOS Settings \u{2192} Accessibility")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
 
-                Section("Accessibilité") {
-                    Picker("Apparence", selection: $appState.appearanceMode) {
-                        Text("Système").tag(0)
-                        Text("Clair").tag(1)
-                        Text("Sombre").tag(2)
+                Section(vm.lang == "fr" ? "Accessibilité" : "Accessibility") {
+                    Picker(vm.lang == "fr" ? "Apparence" : "Appearance", selection: $appState.appearanceMode) {
+                        Text(vm.lang == "fr" ? "Système" : "System").tag(0)
+                        Text(vm.lang == "fr" ? "Clair" : "Light").tag(1)
+                        Text(vm.lang == "fr" ? "Sombre" : "Dark").tag(2)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Taille du texte")
+                            Text(vm.lang == "fr" ? "Taille du texte" : "Text size")
                             Spacer()
                             Text("\(Int(appState.textSizePercent))%")
                                 .foregroundStyle(.secondary)
@@ -100,18 +114,18 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("À propos") {
+                Section(vm.lang == "fr" ? "À propos" : "About") {
                     Button {
                         vm.onReplayTutorial?()
                         dismiss()
                     } label: {
-                        Label("Tutoriel", systemImage: "questionmark.circle")
+                        Label(vm.lang == "fr" ? "Tutoriel" : "Tutorial", systemImage: "questionmark.circle")
                     }
 
                     NavigationLink {
                         PrivacyPolicyNativeView()
                     } label: {
-                        Label("Politique de confidentialité", systemImage: "hand.raised")
+                        Label(vm.lang == "fr" ? "Politique de confidentialité" : "Privacy Policy", systemImage: "hand.raised")
                     }
 
                     NavigationLink {
@@ -123,7 +137,7 @@ struct SettingsView: View {
                     NavigationLink {
                         ReportNativeView()
                     } label: {
-                        Label("Signaler un problème", systemImage: "exclamationmark.triangle")
+                        Label(vm.lang == "fr" ? "Signaler un problème" : "Report an issue", systemImage: "exclamationmark.triangle")
                     }
                 }
 
@@ -174,7 +188,7 @@ struct SettingsView: View {
                     } label: {
                         HStack {
                             Spacer()
-                            Text("Réinitialiser l'application")
+                            Text(vm.lang == "fr" ? "Réinitialiser l'application" : "Reset application")
                             Spacer()
                         }
                     }
@@ -183,7 +197,7 @@ struct SettingsView: View {
                 Section {
                     HStack {
                         Spacer()
-                        Text("Talkie v2.2.0")
+                        Text("Talkie v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0")")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .onTapGesture {
@@ -204,30 +218,30 @@ struct SettingsView: View {
                     .listRowBackground(Color.clear)
                 }
             }
-            .navigationTitle("Réglages")
+            .navigationTitle(vm.lang == "fr" ? "Réglages" : "Settings")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Fermer") { dismiss() }
+                    Button(vm.lang == "fr" ? "Fermer" : "Close") { dismiss() }
                 }
             }
-            .alert("Réinitialiser ?", isPresented: $showResetConfirm) {
-                Button("Annuler", role: .cancel) {}
-                Button("Réinitialiser", role: .destructive) {
+            .alert(vm.lang == "fr" ? "Réinitialiser ?" : "Reset?", isPresented: $showResetConfirm) {
+                Button(vm.lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}
+                Button(vm.lang == "fr" ? "Réinitialiser" : "Reset", role: .destructive) {
                     vm.onResetAll?()
                     dismiss()
                 }
             } message: {
-                Text("Toutes vos données seront supprimées. Cette action est irréversible.")
+                Text(vm.lang == "fr" ? "Toutes vos données seront supprimées. Cette action est irréversible." : "All your data will be deleted. This action is irreversible.")
             }
             .alert("ElevenLabs", isPresented: $showELConsent) {
-                Button("Annuler", role: .cancel) {}
-                Button("Accepter") {
+                Button(vm.lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}
+                Button(vm.lang == "fr" ? "Accepter" : "Accept") {
                     vm.hasELConsent = true
                     vm.useElevenLabs = true
                 }
             } message: {
-                Text("En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie.")
+                Text(vm.lang == "fr" ? "En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie." : "By enabling ElevenLabs, your text will be sent to ElevenLabs servers for speech synthesis. No data is stored by Talkie.")
             }
         }
     }
@@ -237,6 +251,10 @@ struct SettingsView: View {
 
 struct MemoryView: View {
     @Binding var memory: String
+    @Binding var learnedMemory: String
+    var lang: String
+    var onClearLearnedMemory: (() -> Void)?
+    @State private var showClearConfirm = false
 
     var body: some View {
         Form {
@@ -244,13 +262,43 @@ struct MemoryView: View {
                 TextEditor(text: $memory)
                     .frame(minHeight: 200)
             } header: {
-                Text("Talkie retient des informations pour personnaliser les réponses.")
+                Text(lang == "fr" ? "Talkie retient des informations pour personnaliser les réponses." : "Talkie remembers information to personalize responses.")
             } footer: {
-                Text("Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur...")
+                Text(lang == "fr" ? "Ex: J'aime le football, j'ai 2 enfants, je suis ingénieur..." : "E.g.: I like football, I have 2 kids, I'm an engineer...")
+            }
+
+            Section {
+                TextEditor(text: $learnedMemory)
+                    .frame(minHeight: 120)
+            } header: {
+                Text(lang == "fr" ? "Appris des conversations" : "Learned from conversations")
+            } footer: {
+                Text(lang == "fr" ? "Talkie apprend automatiquement des détails à partir de vos échanges. Vous pouvez modifier ou effacer ces informations." : "Talkie automatically learns details from your conversations. You can edit or clear this information.")
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    showClearConfirm = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text(lang == "fr" ? "Effacer la mémoire apprise" : "Clear learned memory")
+                        Spacer()
+                    }
+                }
             }
         }
-        .navigationTitle("Mémoire IA")
+        .navigationTitle(lang == "fr" ? "Mémoire IA" : "AI Memory")
         .navigationBarTitleDisplayMode(.inline)
+        .alert(lang == "fr" ? "Effacer ?" : "Clear?", isPresented: $showClearConfirm) {
+            Button(lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}
+            Button(lang == "fr" ? "Effacer" : "Clear", role: .destructive) {
+                learnedMemory = ""
+                onClearLearnedMemory?()
+            }
+        } message: {
+            Text(lang == "fr" ? "La mémoire apprise sera supprimée." : "Learned memory will be deleted.")
+        }
     }
 }
 
@@ -385,7 +433,8 @@ struct ReportNativeView: View {
 
     private func sendReport() {
         let subject = "Talkie - Signalement".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let body = (reportText + "\n\n---\nVersion: v2.2.0").addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0"
+        let body = (reportText + "\n\n---\nVersion: v\(version)").addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "mailto:talkie-app@proton.me?subject=\(subject)&body=\(body)") {
             UIApplication.shared.open(url)
         }
