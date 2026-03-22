@@ -1280,7 +1280,9 @@ const DEFAULT_PROMPT = `Tu es un assistant qui aide une personne ayant des diffi
 Tu proposes des réponses naturelles et chaleureuses en français.
 Sois concis et naturel. La personne peut avoir du mal à taper, propose des réponses courtes et utiles.
 Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.`;
-const SAFETY_PREFIX = "Tu ne dois JAMAIS générer de contenu violent, haineux, sexuel, discriminatoire ou illégal. Si on te le demande, refuse poliment.\n\n";
+// Safety prefix removed — already included in DEFAULT_PROMPT. Duplicating it made Apple Intelligence
+// overly cautious, causing random refusals on benign inputs like "Bonjour, ça va ?".
+const SAFETY_PREFIX = "";
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
 /** Silence minimal après le dernier mot reconnu avant de valider la phrase (ms). Trop bas = coupe au milieu. */
