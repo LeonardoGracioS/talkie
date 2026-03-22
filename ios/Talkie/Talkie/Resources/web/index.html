@@ -1540,85 +1540,99 @@ function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || I18N.f
 function getLangCode() { return currentLang === 'fr' ? 'fr-FR' : 'en-US'; }
 
 function applyStaticTranslations() {
+  try {
   document.documentElement.lang = currentLang;
+  const q = (sel) => document.querySelector(sel);
+  const qa = (sel) => document.querySelectorAll(sel);
+  const el = (id) => document.getElementById(id);
+  const setText = (node, key) => { if (node) node.textContent = t(key); };
+  const setPlaceholder = (node, key) => { if (node) node.placeholder = t(key); };
+  const setSvgBtn = (node, key) => { if (node) { const svg = node.querySelector('svg'); node.innerHTML = (svg ? svg.outerHTML + ' ' : '') + t(key); } };
   // Splash
-  const splashSub = document.querySelector('.splash-sub');
-  if (splashSub) splashSub.textContent = t('splashSub');
+  setText(q('.splash-sub'), 'splashSub');
   // Onboarding
-  const onbTitles = document.querySelectorAll('.onb-title');
-  if (onbTitles[0]) onbTitles[0].textContent = t('onbWelcome');
-  if (onbTitles[1]) onbTitles[1].textContent = t('onbHowTitle');
-  if (onbTitles[2]) onbTitles[2].textContent = t('onbCustomize');
-  const onbDescs = document.querySelectorAll('.onb-desc');
-  if (onbDescs[0]) onbDescs[0].textContent = t('onbDesc');
-  if (onbDescs[1]) onbDescs[1].textContent = t('onbCustomizeDesc');
-  const onbBtns = document.querySelectorAll('.onb-btn:not(.secondary)');
-  onbBtns.forEach((btn, i) => {
+  const onbTitles = qa('.onb-title');
+  setText(onbTitles[0], 'onbWelcome');
+  setText(onbTitles[1], 'onbHowTitle');
+  setText(onbTitles[2], 'onbCustomize');
+  const onbDescs = qa('.onb-desc');
+  setText(onbDescs[0], 'onbDesc');
+  setText(onbDescs[1], 'onbCustomizeDesc');
+  qa('.onb-btn:not(.secondary)').forEach((btn, i) => {
     if (i < 2) btn.textContent = t('onbContinue');
     else if (i === 2) btn.textContent = t('onbStart');
   });
-  const onbSecBtn = document.querySelector('.onb-btn.secondary');
-  if (onbSecBtn) onbSecBtn.textContent = t('onbOpenSettings');
-  const steps = document.querySelectorAll('.onb-step');
-  if (steps[0]) steps[0].querySelector('div:last-child').textContent = t('onbStep1');
-  if (steps[1]) steps[1].querySelector('div:last-child').textContent = t('onbStep2');
-  if (steps[2]) steps[2].querySelector('div:last-child').textContent = t('onbStep3');
-  const tipEl = document.querySelector('.onb-tip');
+  setText(q('.onb-btn.secondary'), 'onbOpenSettings');
+  const steps = qa('.onb-step');
+  steps.forEach((s, i) => { const d = s.querySelector('div:last-child'); if (d) d.textContent = t(['onbStep1','onbStep2','onbStep3'][i]); });
+  const tipEl = q('.onb-tip');
   if (tipEl) tipEl.innerHTML = '💡 <strong>' + (currentLang === 'fr' ? 'Conseil :' : 'Tip:') + '</strong> ' + t('onbTip');
   // Main UI
-  document.getElementById('listeningText').textContent = t('tapToListen');
-  document.querySelector('.context-label').textContent = t('contextLabel');
-  document.getElementById('contextText').textContent = t('contextEmpty');
-  document.getElementById('btnRefresh').innerHTML = document.getElementById('btnRefresh').querySelector('svg').outerHTML + ' ' + t('refresh');
-  document.getElementById('btnKeyboard').innerHTML = document.getElementById('btnKeyboard').querySelector('svg').outerHTML + ' ' + t('write');
-  document.querySelector('.manual-title').textContent = t('manualTitle');
-  document.getElementById('manualInput').placeholder = t('manualPlaceholder');
-  document.getElementById('btnSpeak').innerHTML = document.getElementById('btnSpeak').querySelector('svg').outerHTML + ' ' + t('speak');
-  document.getElementById('btnBackToSuggestions').innerHTML = document.getElementById('btnBackToSuggestions').querySelector('svg').outerHTML + ' ' + t('manualBack');
-  document.getElementById('aiAttribution').textContent = t('aiAttribution');
-  document.querySelector('.tts-overlay-text').textContent = t('ttsSpeaking');
-  document.querySelector('.tts-stop-btn').textContent = t('ttsStop');
+  setText(el('listeningText'), 'tapToListen');
+  setText(q('.context-label'), 'contextLabel');
+  setText(el('contextText'), 'contextEmpty');
+  setSvgBtn(el('btnRefresh'), 'refresh');
+  setSvgBtn(el('btnKeyboard'), 'write');
+  setText(q('.manual-title'), 'manualTitle');
+  setPlaceholder(el('manualInput'), 'manualPlaceholder');
+  setSvgBtn(el('btnSpeak'), 'speak');
+  setSvgBtn(el('btnBackToSuggestions'), 'manualBack');
+  setText(el('aiAttribution'), 'aiAttribution');
+  setText(q('.tts-overlay-text'), 'ttsSpeaking');
+  setText(q('.tts-stop-btn'), 'ttsStop');
   // Settings
-  document.querySelector('.settings-title').textContent = t('settings');
-  document.querySelectorAll('.settings-section-title')[0].textContent = t('sectionAI');
-  document.querySelector('#advancedPageBtn .name').textContent = t('systemPrompt');
-  document.querySelector('#advancedPageBtn .desc').textContent = t('systemPromptDesc');
-  document.querySelector('#memoryPageBtn .name').textContent = t('memoryAI');
-  document.querySelector('#memoryPageBtn .desc').textContent = t('memoryAIDesc');
-  const pvRow = document.getElementById('appleVoiceToggleBtn').closest('.settings-row');
-  pvRow.querySelector('.name').textContent = t('usePersonalVoice');
-  pvRow.querySelector('.desc').textContent = t('personalVoiceDesc');
-  document.querySelectorAll('.settings-section-title')[1].textContent = t('sectionAbout');
-  document.querySelector('#tutorialBtn .name').textContent = t('tutorial');
-  document.querySelector('#privacyPolicyBtn .name').textContent = t('privacyPolicy');
-  document.querySelector('#supportBtn .name').textContent = t('support');
-  document.querySelector('#reportBtn .name').textContent = t('reportProblem');
-  document.querySelector('#deleteAllDataBtn .name').textContent = t('resetApp');
+  setText(q('.settings-title'), 'settings');
+  const sectionTitles = qa('.settings-section-title');
+  setText(sectionTitles[0], 'sectionAI');
+  setText(sectionTitles[1], 'sectionAbout');
+  setText(q('#advancedPageBtn .name'), 'systemPrompt');
+  setText(q('#advancedPageBtn .desc'), 'systemPromptDesc');
+  setText(q('#memoryPageBtn .name'), 'memoryAI');
+  setText(q('#memoryPageBtn .desc'), 'memoryAIDesc');
+  const pvRow = el('appleVoiceToggleBtn')?.closest('.settings-row');
+  setText(pvRow?.querySelector('.name'), 'usePersonalVoice');
+  setText(pvRow?.querySelector('.desc'), 'personalVoiceDesc');
+  setText(q('#tutorialBtn .name'), 'tutorial');
+  setText(q('#privacyPolicyBtn .name'), 'privacyPolicy');
+  setText(q('#supportBtn .name'), 'support');
+  setText(q('#reportBtn .name'), 'reportProblem');
+  setText(q('#deleteAllDataBtn .name'), 'resetApp');
+  // Lang section
+  setText(el('langSectionTitle'), 'language');
+  setText(el('langLabel'), 'language');
+  setText(el('langDesc'), 'languageDesc');
   // Dev section
-  const devTitle = document.querySelectorAll('.settings-section-title')[2];
-  if (devTitle) devTitle.textContent = t('sectionDev');
-  const elRow = document.getElementById('useElevenLabsToggleBtn').closest('.settings-row');
-  elRow.querySelector('.name').textContent = t('useElevenLabs');
-  elRow.querySelector('.desc').textContent = t('elevenLabsDesc');
-  document.getElementById('settingsELKey').placeholder = t('elApiKeyPlaceholder');
-  document.getElementById('addSampleBtn').textContent = t('addSample');
-  document.getElementById('voiceNameInput').placeholder = t('voiceNamePlaceholder');
-  document.getElementById('cloneBtn').textContent = t('cloneBtn');
-  document.getElementById('testVoiceBtn').textContent = t('testVoice');
+  const devTitle = sectionTitles[3];
+  setText(devTitle, 'sectionDev');
+  const elRow = el('useElevenLabsToggleBtn')?.closest('.settings-row');
+  setText(elRow?.querySelector('.name'), 'useElevenLabs');
+  setText(elRow?.querySelector('.desc'), 'elevenLabsDesc');
+  setPlaceholder(el('settingsELKey'), 'elApiKeyPlaceholder');
+  setText(el('addSampleBtn'), 'addSample');
+  setPlaceholder(el('voiceNameInput'), 'voiceNamePlaceholder');
+  setText(el('cloneBtn'), 'cloneBtn');
+  setText(el('testVoiceBtn'), 'testVoice');
   // Memory page
-  const memPage = document.getElementById('page-memory');
-  memPage.querySelectorAll('h2')[0].textContent = t('myInfo');
-  memPage.querySelectorAll('p')[0].textContent = t('myInfoDesc');
-  document.getElementById('settingsMemory').placeholder = t('myInfoPlaceholder');
-  memPage.querySelectorAll('h2')[1].textContent = t('learnedTitle');
-  memPage.querySelectorAll('p')[1].textContent = t('learnedDesc');
-  document.getElementById('clearLearnedMemoryBtn').textContent = t('clearLearned');
+  const memPage = el('page-memory');
+  if (memPage) {
+    const h2s = memPage.querySelectorAll('h2');
+    const ps = memPage.querySelectorAll('p');
+    setText(h2s[0], 'myInfo');
+    setText(ps[0], 'myInfoDesc');
+    setPlaceholder(el('settingsMemory'), 'myInfoPlaceholder');
+    setText(h2s[1], 'learnedTitle');
+    setText(ps[1], 'learnedDesc');
+    setText(el('clearLearnedMemoryBtn'), 'clearLearned');
+  }
   // Advanced page
-  const advPage = document.getElementById('page-advanced');
-  advPage.querySelector('.inapp-page-title').textContent = t('advanced');
-  advPage.querySelector('h2').textContent = t('promptTitle');
-  advPage.querySelector('p').textContent = t('promptDesc');
-  document.getElementById('resetPromptBtn').textContent = t('resetPrompt');
+  const advPage = el('page-advanced');
+  if (advPage) {
+    setText(advPage.querySelector('.inapp-page-title'), 'advanced');
+    setText(advPage.querySelector('h2'), 'promptTitle');
+    setText(advPage.querySelector('p'), 'promptDesc');
+    setText(el('resetPromptBtn'), 'resetPrompt');
+  }
+  } catch(e) { console.warn('[i18n]', e); }
 }
 
 // Global error handler — shows errors visually
