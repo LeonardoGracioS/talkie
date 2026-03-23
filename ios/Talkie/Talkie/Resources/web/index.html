@@ -1185,7 +1185,7 @@ html, body {
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Pour toute question concernant la confidentialité :</p>
-      <p><strong>talkie-app@proton.me</strong></p>
+      <p><strong>samuelgracio@gmail.com</strong></p>
     </div>
   </div>
 </div>
@@ -1224,7 +1224,7 @@ html, body {
     <h2>Contact</h2>
     <div class="contact-box">
       <p>Besoin d'aide supplémentaire ?</p>
-      <p><strong>talkie-app@proton.me</strong></p>
+      <p><strong>samuelgracio@gmail.com</strong></p>
     </div>
   </div>
 </div>
@@ -1930,7 +1930,7 @@ function renderSuggestionCards(suggestions) {
       e.stopPropagation();
       const subject = encodeURIComponent('Talkie - Contenu inapproprié');
       const body = encodeURIComponent('Suggestion signalée :\n"' + text + '"\n\nContexte : ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
-      const mailto = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
+      const mailto = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
       try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
       showToast(t('reportReady'));
     };
@@ -2696,7 +2696,7 @@ $('reportSendBtn').onclick = () => {
   if (!text) { showToast(t('describeProblem')); return; }
   const subject = encodeURIComponent('Talkie - Signalement');
   const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
-  const mailtoUrl = 'mailto:talkie-app@proton.me?subject=' + subject + '&body=' + body;
+  const mailtoUrl = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
   try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
   catch(_) { window.location.href = mailtoUrl; }
   showToast(t('emailReady'));

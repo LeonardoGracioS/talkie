@@ -351,7 +351,7 @@ struct PrivacyPolicyNativeView: View {
 
                 Group {
                     Text("Contact").font(.headline)
-                    Text("talkie-app@proton.me")
+                    Text("samuelgracio@gmail.com")
                         .foregroundStyle(Color.accentColor)
                 }
             }
@@ -393,7 +393,7 @@ struct SupportNativeView: View {
 
                 Group {
                     Text("Contact").font(.headline)
-                    Text("talkie-app@proton.me")
+                    Text("samuelgracio@gmail.com")
                         .foregroundStyle(Color.accentColor)
                 }
             }
@@ -435,7 +435,7 @@ struct ReportNativeView: View {
         let subject = "Talkie - Signalement".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0"
         let body = (reportText + "\n\n---\nVersion: v\(version)").addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let url = URL(string: "mailto:talkie-app@proton.me?subject=\(subject)&body=\(body)") {
+        if let url = URL(string: "mailto:samuelgracio@gmail.com?subject=\(subject)&body=\(body)") {
             UIApplication.shared.open(url)
         }
     }
