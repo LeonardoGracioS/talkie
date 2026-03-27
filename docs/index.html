@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Talkie — Légal &amp; support</title>
+<style>
+html { color-scheme: light dark; background: var(--bg); }
+:root {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+  --card: #ffffff;
+  --card-border: rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --text: #f2f2f7;
+    --text-secondary: #aeaeb8;
+    --heading: #a8b4ff;
+    --link: #b4c0ff;
+    --link-hover: #d0d8ff;
+    --card: #2c2c2e;
+    --card-border: rgba(255,255,255,.12);
+  }
+}
+:root.talkie-light {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+  --card: #ffffff;
+  --card-border: rgba(0,0,0,.08);
+}
+:root.talkie-dark {
+  --bg: #1c1c1e;
+  --text: #f2f2f7;
+  --text-secondary: #aeaeb8;
+  --heading: #a8b4ff;
+  --link: #b4c0ff;
+  --link-hover: #d0d8ff;
+  --card: #2c2c2e;
+  --card-border: rgba(255,255,255,.12);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px 40px;
+  min-height: 100%;
+  min-height: 100dvh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.02em; color: var(--text); }
+p.lead { color: var(--text-secondary); margin: 0 0 24px; font-size: 15px; }
+h2 { font-size: 16px; font-weight: 600; margin: 24px 0 12px; color: var(--heading); text-transform: uppercase; letter-spacing: .04em; }
+ul { list-style: none; padding: 0; margin: 0; }
+li { margin-bottom: 10px; }
+a {
+  display: block;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 500;
+}
+a:hover { color: var(--link-hover); border-color: var(--link); }
+a span { display: block; font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-top: 4px; }
+</style>
+<script>
+(function(){
+  function sync(){
+    var dark = false;
+    try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+    document.documentElement.classList.remove("talkie-light","talkie-dark");
+    document.documentElement.classList.add(dark ? "talkie-dark" : "talkie-light");
+  }
+  sync();
+  try {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<h1>Talkie</h1>
+<p class="lead">Pages légales et assistance — mêmes contenus que dans l’application.</p>
+
+<h2>Français</h2>
+<ul>
+  <li><a href="privacy.html">Politique de confidentialité<span>Données, services tiers, contact</span></a></li>
+  <li><a href="support.html">Support<span>FAQ, contact, signalement</span></a></li>
+</ul>
+
+<h2>English</h2>
+<ul>
+  <li><a href="privacy-en.html">Privacy policy<span>Data, third parties, contact</span></a></li>
+  <li><a href="support-en.html">Support<span>FAQ, contact, reporting</span></a></li>
+</ul>
+</body>
+</html>

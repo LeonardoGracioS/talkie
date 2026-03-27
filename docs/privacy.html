@@ -3,15 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Talkie — Politique de confidentialité</title>
 <style>
-  body { font-family: -apple-system, system-ui, sans-serif; max-width: 700px; margin: 0 auto; padding: 24px; color: #1a1d2e; line-height: 1.6; }
-  h1 { font-size: 24px; margin-bottom: 4px; }
-  h2 { font-size: 18px; margin-top: 28px; color: #5B6AF0; }
-  .date { color: #6b7194; font-size: 14px; margin-bottom: 24px; }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 8px; }
+html { color-scheme: light dark; background: var(--bg); }
+:root {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --text: #f2f2f7;
+    --text-secondary: #aeaeb8;
+    --heading: #a8b4ff;
+    --link: #b4c0ff;
+    --link-hover: #d0d8ff;
+  }
+}
+:root.talkie-light {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+}
+:root.talkie-dark {
+  --bg: #1c1c1e;
+  --text: #f2f2f7;
+  --text-secondary: #aeaeb8;
+  --heading: #a8b4ff;
+  --link: #b4c0ff;
+  --link-hover: #d0d8ff;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px 40px;
+  min-height: 100%;
+  min-height: 100dvh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; color: var(--text); letter-spacing: -0.02em; }
+h2 { font-size: 18px; font-weight: 600; margin: 28px 0 10px; color: var(--heading); }
+h3 { font-size: 16px; font-weight: 600; margin: 22px 0 8px; color: var(--text); }
+.date { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+p { margin: 0 0 12px; }
+ul { padding-left: 20px; margin: 0 0 12px; }
+li { margin-bottom: 8px; }
+a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+strong { color: var(--text); font-weight: 600; }
 </style>
+<script>
+(function(){
+  function sync(){
+    var dark = false;
+    try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+    document.documentElement.classList.remove("talkie-light","talkie-dark");
+    document.documentElement.classList.add(dark ? "talkie-dark" : "talkie-light");
+  }
+  sync();
+  try {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 <h1>Politique de confidentialité</h1>
@@ -30,7 +102,7 @@
 
 <h2>Services tiers</h2>
 <ul>
-  <li><strong>ElevenLabs</strong> (optionnel) — synthèse vocale et clonage de voix. Lorsque vous activez cette fonctionnalité, votre consentement explicite est requis. Le texte à prononcer et/ou les échantillons vocaux sont envoyés aux serveurs d'ElevenLabs. Aucune donnée n'est conservée par Talkie. Consultez la <a href="https://elevenlabs.io/privacy" target="_blank">politique de confidentialité d'ElevenLabs</a>.</li>
+  <li><strong>ElevenLabs</strong> (optionnel) — synthèse vocale et clonage de voix. Lorsque vous activez cette fonctionnalité, votre consentement explicite est requis. Le texte à prononcer et/ou les échantillons vocaux sont envoyés aux serveurs d'ElevenLabs. Aucune donnée n'est conservée par Talkie. Consultez la <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">politique de confidentialité d'ElevenLabs</a>.</li>
   <li><strong>Apple Intelligence</strong> (iOS 26+) — génération de suggestions de réponse. Le traitement est effectué entièrement sur votre appareil. Aucune donnée ne quitte votre iPhone/iPad.</li>
 </ul>
 

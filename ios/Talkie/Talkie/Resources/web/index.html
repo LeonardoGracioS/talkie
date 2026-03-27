@@ -44,7 +44,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-app-theme="light"]) {
     --bg: #1C1C1E;
     --bg-card: #2C2C2E;
     --bg-card-hover: #3A3A3C;
@@ -58,6 +58,19 @@
     --shadow-card-active: 0 1px 4px rgba(0,0,0,0.4);
   }
 }
+:root[data-app-theme="dark"] {
+  --bg: #1C1C1E;
+  --bg-card: #2C2C2E;
+  --bg-card-hover: #3A3A3C;
+  --text: #F2F2F7;
+  --text-secondary: #AEAEB2;
+  --text-tertiary: #636366;
+  --separator: rgba(255,255,255,0.08);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-card-active: 0 1px 4px rgba(0,0,0,0.4);
+}
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
     -webkit-user-select:none; user-select:none; }
@@ -67,6 +80,7 @@ html, body {
   height:100%; overflow:hidden;
   background:var(--bg); color:var(--text);
   font-family:var(--font);
+  font-size:20px;
   -webkit-font-smoothing:antialiased;
 }
 
@@ -141,7 +155,7 @@ html, body {
 }
 .top-bar-left { display:flex; align-items:center; gap:10px; }
 .settings-btn {
-  width:42px; height:42px; border-radius:50%;
+  width:60px; height:60px; border-radius:50%;
   border:none; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   background:var(--accent-soft); color:var(--accent);
@@ -153,10 +167,11 @@ html, body {
 /* ─── Listening indicator ─── */
 .listening-bar {
   display:flex; align-items:center; justify-content:center;
-  gap:10px; padding:14px 16px;
+  gap:10px; padding:16px 16px;
+  min-height:60px;
   background:var(--green-soft);
   border-radius:var(--radius-sm);
-  margin-bottom:10px; flex-shrink:0;
+  margin-bottom:12px; flex-shrink:0;
   transition:background .3s, opacity .3s;
   cursor:pointer;
   -webkit-tap-highlight-color:transparent;
@@ -196,7 +211,7 @@ html, body {
   50% { transform:scaleY(1); opacity:1; }
 }
 .listening-text {
-  font:600 14px var(--font); color:var(--green);
+  font:600 16px var(--font); color:var(--green);
   letter-spacing:0.2px;
 }
 
@@ -205,7 +220,7 @@ html, body {
   background:linear-gradient(135deg, rgba(91,106,240,0.06) 0%, rgba(91,106,240,0.02) 100%);
   border-radius:var(--radius);
   padding:18px 20px;
-  margin-bottom:12px; flex-shrink:0;
+  margin-bottom:16px; flex-shrink:0;
   min-height:60px;
   max-height:min(38vh, 260px);
   overflow-y:auto;
@@ -214,13 +229,13 @@ html, body {
   transition:box-shadow .3s;
 }
 .context-label {
-  font:700 11px var(--font);
+  font:700 13px var(--font);
   text-transform:uppercase; letter-spacing:1px;
   color:var(--accent);
   margin-bottom:6px;
 }
 .context-text {
-  font:600 20px/1.35 var(--font);
+  font-weight:600; font-size:1.25rem; line-height:1.35; font-family:var(--font);
   color:var(--text);
   min-height:27px;
   word-break:break-word;
@@ -245,20 +260,20 @@ html, body {
   color:var(--text-tertiary);
   font-weight:500;
   font-style:italic;
-  font-size:17px;
+  font-size:1.0625rem;
 }
 
 /* ─── Suggestions zone (center) ─── */
 .suggestions-label {
-  font:700 11px var(--font);
+  font:700 13px var(--font);
   text-transform:uppercase; letter-spacing:1px;
   color:var(--green);
-  margin-bottom:8px; padding-left:4px;
+  margin-bottom:10px; padding-left:4px;
   flex-shrink:0;
 }
 .suggestions-zone {
   flex:1; display:flex; flex-direction:column;
-  gap:10px; min-height:0;
+  gap:16px; min-height:0;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   padding:2px 2px;
@@ -268,12 +283,12 @@ html, body {
   background:var(--bg-card);
   border-radius:var(--radius);
   padding:20px 48px 20px 20px;
-  min-height:90px;
+  min-height:80px;
   box-shadow:var(--shadow-card);
   flex-shrink:0;
   cursor:pointer;
   display:flex; align-items:center;
-  font:600 19px/1.4 var(--font);
+  font-weight:600; font-size:1.25rem; line-height:1.4; font-family:var(--font);
   color:var(--text);
   transition:transform .15s ease, box-shadow .15s ease, background .15s;
   position:relative;
@@ -344,19 +359,72 @@ html, body {
 }
 .suggestions-empty-icon { font-size:40px; opacity:0.5; }
 .suggestions-empty-text {
-  font:500 16px var(--font); color:var(--text-tertiary);
+  font:500 18px var(--font); color:var(--text-tertiary);
   text-align:center; line-height:1.5;
+}
+
+/* ─── Soundboard (quick phrases) ─── */
+.soundboard-zone {
+  flex-shrink:0;
+  padding-top:10px;
+  overflow:visible;
+}
+.soundboard-scroll {
+  display:flex;
+  gap:12px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding:2px 2px 6px;
+  scrollbar-width:none;
+}
+.soundboard-scroll::-webkit-scrollbar { display:none; }
+.soundboard-btn {
+  flex-shrink:0;
+  min-width:60px;
+  min-height:60px;
+  padding:8px 14px;
+  border:none;
+  border-radius:16px;
+  background:var(--green-soft);
+  color:var(--green);
+  font:600 13px var(--font);
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  transition:transform .12s, background .2s, box-shadow .2s;
+  box-shadow:0 1px 4px rgba(52,199,133,0.08);
+  -webkit-tap-highlight-color:transparent;
+}
+.soundboard-btn:active {
+  transform:scale(0.92);
+  background:rgba(52,199,133,0.22);
+}
+.soundboard-btn .sb-emoji {
+  font-size:22px;
+  line-height:1;
+}
+.soundboard-btn .sb-label {
+  font-size:12px;
+  line-height:1.1;
+  white-space:nowrap;
+  max-width:80px;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* ─── Controls zone (bottom) ─── */
 .controls-zone {
-  display:flex; gap:10px;
-  padding-top:12px; flex-shrink:0;
+  display:flex; gap:16px;
+  padding-top:16px; flex-shrink:0;
 }
 .control-btn {
-  flex:1; min-height:58px;
+  flex:1; min-height:60px;
   border:none; border-radius:var(--radius);
-  font:700 16px var(--font);
+  font:700 17px var(--font);
   cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:8px;
   transition:transform .12s, background .2s;
@@ -402,11 +470,12 @@ html, body {
   font:700 15px var(--font); color:white;
 }
 .tts-stop-btn {
-  padding:8px 16px;
+  padding:12px 20px;
+  min-height:48px;
   border:2px solid rgba(255,255,255,0.5);
   border-radius:10px;
   background:rgba(255,255,255,0.15);
-  color:white; font:700 13px var(--font);
+  color:white; font:700 15px var(--font);
   cursor:pointer; margin-left:auto;
 }
 .tts-stop-btn:active { background:rgba(255,255,255,0.3); }
@@ -427,7 +496,8 @@ html, body {
   display:flex; align-items:center; gap:6px;
   background:none; border:none; cursor:pointer;
   font:600 16px var(--font); color:var(--accent);
-  padding:8px 4px;
+  padding:12px 8px;
+  min-height:60px;
 }
 .manual-back-btn svg { width:20px; height:20px; fill:currentColor; }
 .manual-title { font:800 20px var(--font); color:var(--text); }
@@ -441,7 +511,7 @@ html, body {
   border:2px solid var(--separator);
   border-radius:var(--radius);
   padding:20px;
-  font:500 20px/1.45 var(--font);
+  font-weight:500; font-size:1.25rem; line-height:1.45; font-family:var(--font);
   color:var(--text);
   resize:none;
   outline:none;
@@ -492,7 +562,7 @@ html, body {
   border-bottom:1px solid var(--separator);
 }
 .settings-back-btn {
-  width:40px; height:40px; border-radius:50%;
+  width:48px; height:48px; border-radius:50%;
   border:none; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   background:rgba(0,0,0,0.04); color:var(--text-secondary);
@@ -517,7 +587,8 @@ html, body {
 }
 .settings-row {
   display:flex; align-items:center; justify-content:space-between;
-  padding:14px 16px; gap:12px;
+  padding:16px 16px; gap:12px;
+  min-height:60px;
   border-bottom:1px solid var(--separator);
 }
 .settings-row:last-child { border-bottom:none; }
@@ -681,7 +752,7 @@ html, body {
   border-bottom:1px solid var(--separator);
 }
 .inapp-page-back {
-  width:40px; height:40px; border-radius:50%;
+  width:48px; height:48px; border-radius:50%;
   border:none; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
   background:rgba(0,0,0,0.04); color:var(--text-secondary);
@@ -692,6 +763,21 @@ html, body {
 .inapp-page-content {
   flex:1; overflow-y:auto; padding:24px 20px calc(var(--safe-bottom) + 24px);
   -webkit-overflow-scrolling:touch;
+}
+.inapp-legal-wrap {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.legal-iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 60vh;
+  border: 0;
+  background: var(--bg-card);
 }
 .inapp-page-content h2 {
   font:700 18px var(--font); color:var(--text); margin:20px 0 8px;
@@ -854,6 +940,55 @@ html, body {
   .onb-step { color:var(--text); }
 }
 
+/* ─── OLED Black Mode ─── */
+body.oled-mode {
+  --bg: #000000;
+  --bg-card: #111111;
+  --bg-card-hover: #1A1A1A;
+  --text: #FFFFFF;
+  --text-secondary: #FFFF00;
+  --text-tertiary: #999999;
+  --separator: rgba(255,255,255,0.12);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-card: 0 0 0 2px #333333;
+  --shadow-card-active: 0 0 0 2px #444444;
+}
+body.oled-mode .suggestion-card,
+body.oled-mode .settings-card,
+body.oled-mode .context-zone,
+body.oled-mode .control-btn,
+body.oled-mode .listening-bar,
+body.oled-mode .manual-textarea,
+body.oled-mode .report-textarea,
+body.oled-mode .settings-input,
+body.oled-mode .settings-textarea {
+  border: 2px solid #333333;
+}
+body.oled-mode .context-zone {
+  background: linear-gradient(135deg, rgba(91,106,240,0.15) 0%, rgba(91,106,240,0.06) 100%);
+}
+body.oled-mode .toggle { background: #333333; }
+body.oled-mode .toggle.active { background: #34C759; }
+body.oled-mode #toast { background: #111111; color: #FFFFFF; }
+body.oled-mode .settings-back-btn,
+body.oled-mode .inapp-page-back { background: rgba(255,255,255,0.1); }
+body.oled-mode #onboarding { background: #000000; }
+body.oled-mode .inapp-page { background: #000000; }
+body.oled-mode #view-settings { background: #000000; }
+body.oled-mode #splash { background: linear-gradient(145deg, #1A1A4E 0%, #3A3A9E 50%, #5B6AF0 100%); }
+body.oled-mode .onb-title,
+body.oled-mode .onb-step { color: #FFFFFF; }
+body.oled-mode .onb-desc { color: #FFFF00; }
+body.oled-mode .settings-row .name { color: #FFFFFF; }
+body.oled-mode .settings-row .desc { color: #FFFF00; }
+body.oled-mode .context-text { color: #FFFFFF; }
+body.oled-mode .context-text.empty { color: #999999; }
+body.oled-mode .context-text.interim { color: #FFFF00; }
+body.oled-mode .listening-bar.inactive { background: rgba(91,106,240,0.15); }
+body.oled-mode .listening-bar { background: rgba(52,199,133,0.15); }
+body.oled-mode .soundboard-btn { border: 2px solid #333333; }
+
 /* ─── Hidden inputs ─── */
 #fileInput { display:none; }
 </style>
@@ -954,6 +1089,11 @@ html, body {
     </div>
     <div class="ai-attribution" id="aiAttribution" style="display:none; text-align:center; font-size:11px; color:var(--text-tertiary); margin-top:6px; padding:0 20px;">Suggestions générées par Apple Intelligence</div>
 
+    <!-- Soundboard (quick phrases) -->
+    <div class="soundboard-zone" id="soundboardZone">
+      <div class="soundboard-scroll" id="soundboardScroll"></div>
+    </div>
+
     <!-- Controls -->
     <div class="controls-zone">
       <button class="control-btn refresh" id="btnRefresh">
@@ -975,7 +1115,9 @@ html, body {
         Retour
       </button>
       <div class="manual-title">Saisie libre</div>
-      <div style="width:70px"></div>
+      <button class="manual-back-btn" id="btnCloseManual" style="padding:8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="manual-input-wrap">
       <textarea class="manual-textarea" id="manualInput" placeholder="Tapez votre message ici..." aria-label="Message à prononcer"></textarea>
@@ -1146,86 +1288,29 @@ html, body {
 
 <!-- ═══ IN-APP PAGES ═══ -->
 
-<!-- Privacy Policy -->
+<!-- Privacy Policy (contenu distant selon la langue) -->
 <div class="inapp-page" id="page-privacy">
   <div class="inapp-page-header">
-    <button class="inapp-page-back" onclick="closeInAppPage('privacy')">
+    <button type="button" class="inapp-page-back" onclick="closeInAppPage('privacy')" aria-label="Back">
       <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
-    <div class="inapp-page-title">Politique de confidentialité</div>
+    <div class="inapp-page-title" id="privacyPageTitle">Politique de confidentialité</div>
   </div>
-  <div class="inapp-page-content">
-    <p><strong>Dernière mise à jour :</strong> Mars 2026</p>
-
-    <h2>Résumé</h2>
-    <p>Talkie respecte votre vie privée. Toutes vos données restent sur votre appareil. Aucune donnée personnelle n'est collectée ni transmise à nos serveurs.</p>
-
-    <h2>Données stockées localement</h2>
-    <p>Les informations suivantes sont stockées uniquement sur votre iPhone :</p>
-    <ul>
-      <li>Votre nom (si renseigné)</li>
-      <li>L'historique des conversations (les 20 derniers échanges)</li>
-      <li>Les informations retenues par la mémoire IA</li>
-      <li>Le prompt système personnalisé</li>
-      <li>Les échantillons vocaux (si fournis)</li>
-    </ul>
-
-    <h2>ElevenLabs (optionnel)</h2>
-    <p>Si vous activez la voix ElevenLabs, votre clé API est stockée de manière sécurisée dans le Keychain iOS. Lorsque vous utilisez cette fonctionnalité, le texte de vos réponses est envoyé aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée audio ou textuelle n'est conservée par Talkie. Votre consentement est demandé avant la première activation.</p>
-
-    <h2>Apple Intelligence</h2>
-    <p>Les suggestions IA sont générées localement via Apple Intelligence sur votre appareil. Aucune donnée de conversation n'est envoyée à des serveurs tiers pour cette fonctionnalité.</p>
-
-    <h2>Reconnaissance vocale</h2>
-    <p>La reconnaissance vocale utilise l'API Web Speech de votre navigateur intégré. Le traitement peut impliquer les serveurs d'Apple conformément à leur politique de confidentialité.</p>
-
-    <h2>Suppression des données</h2>
-    <p>Vous pouvez supprimer toutes vos données à tout moment dans Réglages → Données personnelles → Supprimer toutes mes données.</p>
-
-    <h2>Contact</h2>
-    <div class="contact-box">
-      <p>Pour toute question concernant la confidentialité :</p>
-      <p><strong>samuelgracio@gmail.com</strong></p>
-    </div>
+  <div class="inapp-page-content inapp-legal-wrap">
+    <iframe id="iframePrivacy" class="legal-iframe" title="Privacy Policy" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
   </div>
 </div>
 
-<!-- Support -->
+<!-- Support (contenu distant selon la langue) -->
 <div class="inapp-page" id="page-support">
   <div class="inapp-page-header">
-    <button class="inapp-page-back" onclick="closeInAppPage('support')">
+    <button type="button" class="inapp-page-back" onclick="closeInAppPage('support')" aria-label="Back">
       <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
-    <div class="inapp-page-title">Support</div>
+    <div class="inapp-page-title" id="supportPageTitle">Support</div>
   </div>
-  <div class="inapp-page-content">
-    <h2>Comment utiliser Talkie</h2>
-    <p>Talkie est une application de communication assistée conçue pour les personnes vivant avec la SLA (maladie de Charcot), les personnes muettes ou ayant des difficultés à parler.</p>
-
-    <h2>Fonctionnement</h2>
-    <ul>
-      <li><strong>Écoute :</strong> Appuyez sur la barre d'écoute pour activer le micro. Talkie transcrit ce que dit votre interlocuteur.</li>
-      <li><strong>Suggestions :</strong> Si Apple Intelligence est activé, 3 réponses sont proposées automatiquement.</li>
-      <li><strong>Parler :</strong> Appuyez sur une suggestion pour la prononcer à voix haute.</li>
-      <li><strong>Saisie libre :</strong> Utilisez le bouton « Écrire » pour taper manuellement votre message.</li>
-    </ul>
-
-    <h2>Suggestions IA</h2>
-    <p>Les suggestions sont générées par Apple Intelligence directement sur votre appareil. Assurez-vous qu'Apple Intelligence est activé dans Réglages iOS → Apple Intelligence et Siri.</p>
-
-    <h2>Personnaliser la voix</h2>
-    <p>Par défaut, Talkie utilise la voix intégrée de votre iPhone. Vous pouvez activer une voix personnalisée via ElevenLabs dans les réglages pour une expérience plus naturelle.</p>
-
-    <h2>Questions fréquentes</h2>
-    <p><strong>Le micro ne fonctionne pas ?</strong><br>Vérifiez que Talkie a l'autorisation d'accéder au microphone dans Réglages iOS → Talkie.</p>
-    <p><strong>Les suggestions n'apparaissent pas ?</strong><br>Assurez-vous qu'Apple Intelligence est activé dans Réglages iOS → Apple Intelligence et Siri.</p>
-    <p><strong>Comment supprimer mes données ?</strong><br>Allez dans Réglages → Données personnelles → Supprimer toutes mes données.</p>
-
-    <h2>Contact</h2>
-    <div class="contact-box">
-      <p>Besoin d'aide supplémentaire ?</p>
-      <p><strong>samuelgracio@gmail.com</strong></p>
-    </div>
+  <div class="inapp-page-content inapp-legal-wrap">
+    <iframe id="iframeSupport" class="legal-iframe" title="Support" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
   </div>
 </div>
 
@@ -1268,17 +1353,17 @@ html, body {
 <!-- Signaler un problème -->
 <div class="inapp-page" id="page-report">
   <div class="inapp-page-header">
-    <button class="inapp-page-back" onclick="closeInAppPage('report')">
+    <button type="button" class="inapp-page-back" onclick="closeInAppPage('report')" id="reportBackBtn" aria-label="Back">
       <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
-    <div class="inapp-page-title">Signaler un problème</div>
+    <div class="inapp-page-title" id="reportPageTitle">Signaler un problème</div>
   </div>
   <div class="inapp-page-content">
-    <h2>Décrivez le problème</h2>
-    <p>Bug, contenu inapproprié, ou suggestion d'amélioration — décrivez-nous le problème rencontré.</p>
+    <h2 id="reportSectionTitle">Décrivez le problème</h2>
+    <p id="reportIntro">Bug, contenu inapproprié, ou suggestion d'amélioration — décrivez-nous le problème rencontré.</p>
     <textarea class="report-textarea" id="reportTextarea" placeholder="Décrivez le problème ici..."></textarea>
     <button class="report-send-btn" id="reportSendBtn">Envoyer par e-mail</button>
-    <p style="margin-top:16px; font-size:13px; color:var(--text-tertiary);">Un e-mail sera préparé avec votre description. Vous pourrez le vérifier avant envoi.</p>
+    <p id="reportFooterHint" style="margin-top:16px; font-size:13px; color:var(--text-tertiary);">Un e-mail sera préparé avec votre description. Vous pourrez le vérifier avant envoi.</p>
   </div>
 </div>
 
@@ -1343,6 +1428,7 @@ const I18N = {
     hide: 'Masquer',
     voiceIdLabel: 'Voice ID',
     voiceIdDesc: "ID d'une voix ElevenLabs existante",
+    voiceIdInputPlaceholder: 'Ex : pNInz6obpgDQGcFmaJgB',
     cloneVoice: 'Cloner une voix',
     addSample: '+ Ajouter un audio pour cloner',
     voiceNamePlaceholder: 'Nom de la voix',
@@ -1378,17 +1464,18 @@ const I18N = {
     elConsentMsg: "En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie. Acceptez-vous ?",
     voiceCloneConsent: "Le clonage vocal envoie vos échantillons audio à ElevenLabs. Ces données biométriques sont traitées selon leur politique de confidentialité. Acceptez-vous ?",
     // LLM prompts
-    defaultPrompt: `Tu es l'expression directe de l'utilisateur (ton "Moi" numérique). Ton but est de proposer 3 options de réponses authentiques.
-DIRECTIVES :
-1. ADAPTABILITÉ : Calque la complexité de tes réponses sur l'interlocuteur. S'il pose une question simple, réponds court. S'il engage une discussion profonde ou technique, propose des phrases construites et nuancées.
-2. DIVERSITÉ DE TON :
-   - Option 1 : Directe / Pragmatique (Oui, non, d'accord).
-   - Option 2 : Sociale / Émotive (Humour, empathie, enthousiasme).
-   - Option 3 : Relance / Nuance (Une question en retour ou une réflexion plus longue).
-3. PARLER HUMAIN : Utilise un ton naturel. Évite les formulations d'assistant type "Comment puis-je vous aider ?".
-4. MÉMOIRE : Utilise les infos de la "Mémoire IA" pour personnaliser (goûts, prénom, proches).
-FORMAT :
-3 suggestions uniquement, séparées par un saut de ligne. Pas d'introduction.`,
+    defaultPrompt: `Tu ES l'utilisateur de cette application (tu ne peux pas parler, tu utilises cette app pour communiquer). Un interlocuteur te parle. Génère 3 choses que TU pourrais lui répondre.
+RÈGLES :
+- Parle à la 1ère personne ("Je"). Ne parle JAMAIS de toi à la 3ème personne.
+- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.
+- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.
+- Ton naturel et humain. INTERDICTION d'utiliser des labels ("Option 1 :", "Réponse :", etc.).
+- INTERDICTION des phrases d'assistant ("Comment puis-je vous aider ?", "Voici des options").
+- Utilise la "Mémoire IA" (tes informations personnelles) pour personnaliser (tes goûts, ton prénom, tes proches).
+FORMAT STRICT :
+- Exactement 3 phrases, UNE PAR LIGNE
+- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction
+- Pas de numérotation, pas de tiret, pas de guillemets`,
     memoryContext: 'Informations personnelles sur l\'utilisateur (à utiliser pour personnaliser les réponses) :',
     userNameCtx: "L'utilisateur s'appelle",
     recentHistory: 'Historique récent :',
@@ -1411,6 +1498,28 @@ FORMAT :
     voiceCloned: 'Voix clonée !',
     describeProblem: 'Veuillez décrire le problème',
     llmUnavailable: 'Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.',
+    soundboardLabel: 'Réponses rapides',
+    suggestionsHeading: 'Vos réponses',
+    suggestionsEmptyLine1: 'Les suggestions apparaîtront ici',
+    suggestionsEmptyLine2: "quand l'interlocuteur parlera",
+    llmOutputLanguage: 'LANGUE OBLIGATOIRE : réponds UNIQUEMENT en français. Les 3 phrases doivent être intégralement en français.',
+    memoryExtractOutputLang: 'Réponds en français uniquement.',
+    reportSectionTitle: 'Décrivez le problème',
+    reportIntro: "Bug, contenu inapproprié, ou suggestion d'amélioration — décrivez-nous le problème rencontré.",
+    reportFooterHint: 'Un e-mail sera préparé avec votre description. Vous pourrez le vérifier avant envoi.',
+    reportSendEmail: 'Envoyer par e-mail',
+    flagEmailSubject: 'Talkie - Contenu inapproprié',
+    flagEmailBodyIntro: 'Suggestion signalée :',
+    flagEmailContext: 'Contexte :',
+    reportEmailSubject: 'Talkie - Signalement',
+    cloningInProgress: 'Clonage…',
+    ariaBack: 'Retour',
+    ariaSettings: 'Réglages',
+    ariaListeningBar: 'Appuyez pour écouter la conversation',
+    devModeOn: 'Mode développeur activé',
+    devModeOff: 'Mode développeur désactivé',
+    voiceTestPrompt: 'Texte à lire :',
+    voiceTestDefault: 'Bonjour, ceci est ma voix.',
   },
   en: {
     splashSub: 'Your voice, preserved',
@@ -1461,6 +1570,7 @@ FORMAT :
     hide: 'Hide',
     voiceIdLabel: 'Voice ID',
     voiceIdDesc: 'ID of an existing ElevenLabs voice',
+    voiceIdInputPlaceholder: 'e.g. pNInz6obpgDQGcFmaJgB',
     cloneVoice: 'Clone a voice',
     addSample: '+ Add audio to clone',
     voiceNamePlaceholder: 'Voice name',
@@ -1492,17 +1602,18 @@ FORMAT :
     fileTooLarge: 'File too large (max 5 MB)',
     elConsentMsg: 'By enabling ElevenLabs, your texts will be sent to ElevenLabs servers for speech synthesis. No data is stored by Talkie. Do you accept?',
     voiceCloneConsent: 'Voice cloning sends your audio samples to ElevenLabs. This biometric data is processed according to their privacy policy. Do you accept?',
-    defaultPrompt: `You are the direct expression of the user (their digital "Self"). Your goal is to propose 3 authentic response options.
-DIRECTIVES:
-1. ADAPTABILITY: Match the complexity of your responses to the speaker. If they ask a simple question, respond briefly. If they engage in a deep or technical discussion, offer constructed and nuanced sentences.
-2. TONE DIVERSITY:
-   - Option 1: Direct / Pragmatic (Yes, no, okay).
-   - Option 2: Social / Emotive (Humor, empathy, enthusiasm).
-   - Option 3: Follow-up / Nuance (A question back or a longer reflection).
-3. SPEAK HUMAN: Use a natural tone. Avoid assistant-like phrasing such as "How can I help you?".
-4. MEMORY: Use information from "AI Memory" to personalize (interests, name, loved ones).
-FORMAT:
-3 suggestions only, separated by a line break. No introduction.`,
+    defaultPrompt: `You ARE the user of this app (you cannot speak, you use this app to communicate). Someone is talking to you. Generate 3 things YOU could reply to them.
+RULES:
+- Speak in the 1st person ("I"). NEVER refer to yourself in the 3rd person.
+- Match complexity: simple question → short answer, deep discussion → constructed sentences.
+- Vary tones: one direct response, one warm/emotive, one that continues the conversation.
+- Natural human tone. FORBIDDEN to use labels ("Option 1:", "Response:", etc.).
+- FORBIDDEN to use assistant-like phrasing ("How can I help you?", "Here are options").
+- Use "AI Memory" (your personal information) to personalize (your interests, your name, your loved ones).
+STRICT FORMAT:
+- Exactly 3 sentences, ONE PER LINE
+- START DIRECTLY with the first response, no introduction whatsoever
+- No numbering, no dashes, no quotes`,
     memoryContext: 'Personal information about the user (use to personalize responses):',
     userNameCtx: 'The user\'s name is',
     recentHistory: 'Recent history:',
@@ -1525,6 +1636,28 @@ FORMAT:
     voiceCloned: 'Voice cloned!',
     describeProblem: 'Please describe the problem',
     llmUnavailable: 'Apple Intelligence unavailable. Enable it in Settings → Apple Intelligence.',
+    soundboardLabel: 'Quick phrases',
+    suggestionsHeading: 'Your replies',
+    suggestionsEmptyLine1: 'Suggestions will appear here',
+    suggestionsEmptyLine2: 'when the other person speaks',
+    llmOutputLanguage: 'MANDATORY LANGUAGE: respond ONLY in English. All 3 lines must be entirely in English.',
+    memoryExtractOutputLang: 'Reply in English only.',
+    reportSectionTitle: 'Describe the issue',
+    reportIntro: 'Bug, inappropriate content, or improvement suggestion — tell us what happened.',
+    reportFooterHint: 'An email will be prepared with your message. You can review it before sending.',
+    reportSendEmail: 'Send by email',
+    flagEmailSubject: 'Talkie - Inappropriate content',
+    flagEmailBodyIntro: 'Flagged suggestion:',
+    flagEmailContext: 'Context:',
+    reportEmailSubject: 'Talkie - Report',
+    cloningInProgress: 'Cloning…',
+    ariaBack: 'Back',
+    ariaSettings: 'Settings',
+    ariaListeningBar: 'Tap to listen to the conversation',
+    devModeOn: 'Developer mode on',
+    devModeOff: 'Developer mode off',
+    voiceTestPrompt: 'Text to speak:',
+    voiceTestDefault: 'Hello, this is my voice.',
   }
 };
 
@@ -1538,6 +1671,28 @@ function detectLanguage() {
 let currentLang = detectLanguage();
 function t(key) { return (I18N[currentLang] && I18N[currentLang][key]) || I18N.fr[key] || key; }
 function getLangCode() { return currentLang === 'fr' ? 'fr-FR' : 'en-US'; }
+
+const LEGAL_URL_BASE = 'https://leonardogracios.github.io/talkie-support/';
+function legalUrl(kind) {
+  const en = currentLang !== 'fr';
+  if (kind === 'privacy') return LEGAL_URL_BASE + (en ? 'privacy-en.html' : 'privacy.html');
+  if (kind === 'support') return LEGAL_URL_BASE + (en ? 'support-en.html' : 'support.html');
+  return '';
+}
+function refreshLegalIframes() {
+  try {
+    const p = document.getElementById('iframePrivacy');
+    const s = document.getElementById('iframeSupport');
+    if (p) {
+      p.src = legalUrl('privacy');
+      p.setAttribute('title', t('privacyPolicy'));
+    }
+    if (s) {
+      s.src = legalUrl('support');
+      s.setAttribute('title', t('support'));
+    }
+  } catch (_) {}
+}
 
 function applyStaticTranslations() {
   try {
@@ -1571,6 +1726,31 @@ function applyStaticTranslations() {
   setText(el('listeningText'), 'tapToListen');
   setText(q('.context-label'), 'contextLabel');
   setText(el('contextText'), 'contextEmpty');
+  setText(el('suggestionsLabel'), 'suggestionsHeading');
+  const emptyText = document.querySelector('#suggestionsEmpty .suggestions-empty-text');
+  if (emptyText) {
+    emptyText.innerHTML = t('suggestionsEmptyLine1') + '<br>' + t('suggestionsEmptyLine2');
+  }
+  const listenBar = el('listeningBar');
+  if (listenBar) listenBar.setAttribute('aria-label', t('ariaListeningBar'));
+  const setBtn = el('settingsBtn');
+  if (setBtn) setBtn.setAttribute('aria-label', t('ariaSettings'));
+  const repBack = el('reportBackBtn');
+  if (repBack) repBack.setAttribute('aria-label', t('ariaBack'));
+  const backSet = el('backFromSettingsBtn');
+  if (backSet) backSet.setAttribute('aria-label', t('ariaBack'));
+  setText(el('privacyPageTitle'), 'privacyPolicy');
+  setText(el('supportPageTitle'), 'support');
+  setText(el('reportPageTitle'), 'reportProblem');
+  setText(el('reportSectionTitle'), 'reportSectionTitle');
+  const rIntro = el('reportIntro');
+  if (rIntro) rIntro.textContent = t('reportIntro');
+  setPlaceholder(el('reportTextarea'), 'describeProblem');
+  setText(el('reportSendBtn'), 'reportSendEmail');
+  const rFoot = el('reportFooterHint');
+  if (rFoot) rFoot.textContent = t('reportFooterHint');
+  refreshLegalIframes();
+  document.querySelectorAll('#page-privacy .inapp-page-back, #page-support .inapp-page-back').forEach(b => b.setAttribute('aria-label', t('ariaBack')));
   setSvgBtn(el('btnRefresh'), 'refresh');
   setSvgBtn(el('btnKeyboard'), 'write');
   setText(q('.manual-title'), 'manualTitle');
@@ -1584,7 +1764,10 @@ function applyStaticTranslations() {
   setText(q('.settings-title'), 'settings');
   const sectionTitles = qa('.settings-section-title');
   setText(sectionTitles[0], 'sectionAI');
-  setText(sectionTitles[1], 'sectionAbout');
+  setText(sectionTitles[1], 'language');
+  setText(sectionTitles[2], 'sectionAbout');
+  if (sectionTitles[3]) setText(sectionTitles[3], 'sectionDev');
+  if (sectionTitles[4]) setText(sectionTitles[4], 'cloneVoice');
   setText(q('#advancedPageBtn .name'), 'systemPrompt');
   setText(q('#advancedPageBtn .desc'), 'systemPromptDesc');
   setText(q('#memoryPageBtn .name'), 'memoryAI');
@@ -1592,29 +1775,41 @@ function applyStaticTranslations() {
   const pvRow = el('appleVoiceToggleBtn')?.closest('.settings-row');
   setText(pvRow?.querySelector('.name'), 'usePersonalVoice');
   setText(pvRow?.querySelector('.desc'), 'personalVoiceDesc');
+  if (el('appleVoiceToggleBtn')) el('appleVoiceToggleBtn').setAttribute('aria-label', t('usePersonalVoice'));
   setText(q('#tutorialBtn .name'), 'tutorial');
   setText(q('#privacyPolicyBtn .name'), 'privacyPolicy');
   setText(q('#supportBtn .name'), 'support');
   setText(q('#reportBtn .name'), 'reportProblem');
   setText(q('#deleteAllDataBtn .name'), 'resetApp');
-  // Lang section
+  // Lang section (id + labels)
   setText(el('langSectionTitle'), 'language');
   setText(el('langLabel'), 'language');
   setText(el('langDesc'), 'languageDesc');
-  // Dev section
-  const devTitle = sectionTitles[3];
-  setText(devTitle, 'sectionDev');
   const elRow = el('useElevenLabsToggleBtn')?.closest('.settings-row');
   setText(elRow?.querySelector('.name'), 'useElevenLabs');
   setText(elRow?.querySelector('.desc'), 'elevenLabsDesc');
+  if (el('useElevenLabsToggleBtn')) el('useElevenLabsToggleBtn').setAttribute('aria-label', t('useElevenLabs'));
   setPlaceholder(el('settingsELKey'), 'elApiKeyPlaceholder');
+  const voiceIdRow = el('settingsVoiceId')?.closest('.settings-row');
+  if (voiceIdRow) {
+    const nm = voiceIdRow.querySelector('.name');
+    const dsc = voiceIdRow.querySelector('.desc');
+    if (nm) nm.textContent = t('voiceIdLabel');
+    if (dsc) dsc.textContent = t('voiceIdDesc');
+  }
+  setPlaceholder(el('settingsVoiceId'), 'voiceIdInputPlaceholder');
   setText(el('addSampleBtn'), 'addSample');
   setPlaceholder(el('voiceNameInput'), 'voiceNamePlaceholder');
   setText(el('cloneBtn'), 'cloneBtn');
   setText(el('testVoiceBtn'), 'testVoice');
+  const tel = el('toggleEL');
+  if (tel) tel.textContent = $('settingsELKey')?.type === 'password' ? t('show') : t('hide');
   // Memory page
   const memPage = el('page-memory');
   if (memPage) {
+    const mb = memPage.querySelector('.inapp-page-back');
+    if (mb) mb.setAttribute('aria-label', t('ariaBack'));
+    setText(memPage.querySelector('.inapp-page-title'), 'memoryAI');
     const h2s = memPage.querySelectorAll('h2');
     const ps = memPage.querySelectorAll('p');
     setText(h2s[0], 'myInfo');
@@ -1627,11 +1822,14 @@ function applyStaticTranslations() {
   // Advanced page
   const advPage = el('page-advanced');
   if (advPage) {
+    const ab = advPage.querySelector('.inapp-page-back');
+    if (ab) ab.setAttribute('aria-label', t('ariaBack'));
     setText(advPage.querySelector('.inapp-page-title'), 'advanced');
     setText(advPage.querySelector('h2'), 'promptTitle');
     setText(advPage.querySelector('p'), 'promptDesc');
     setText(el('resetPromptBtn'), 'resetPrompt');
   }
+  if (typeof renderSoundboard === "function") renderSoundboard();
   } catch(e) { console.warn('[i18n]', e); }
 }
 
@@ -1646,7 +1844,6 @@ window.onerror = function(msg, src, line) {
 
 const DB_KEY = 'talkie_v1';
 function getDefaultPrompt() { return t('defaultPrompt'); }
-const DEFAULT_PROMPT = getDefaultPrompt();
 const SAFETY_PREFIX = "";
 const EL_DEFAULT_KEY = '';
 const DEFAULT_VOICE_ID = '';
@@ -1685,6 +1882,17 @@ setTimeout(() => {
 // ─── State ───
 let state = loadState();
 currentLang = state.lang || detectLanguage();
+
+// Upgrade existing default prompts on load
+(function() {
+  const oldFR = "Tu génères 3 réponses que l'utilisateur pourrait dire à son interlocuteur. Tu parles EN TANT QUE l'utilisateur, pas en tant qu'assistant.\nRÈGLES :\n- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.\n- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.\n- Ton naturel et humain. INTERDICTION ABSOLUE d'utiliser des labels comme \"Directe :\", \"Autre :\", \"Option 1 :\", \"Sociale :\", \"Pragmatique :\" ou tout préfixe de catégorie avant les réponses.\n- INTERDICTION de formulations d'assistant (\"Comment puis-je vous aider ?\", \"Voici mes suggestions\", \"Je suis prêt\", \"Bien sûr\").\n- Utilise la \"Mémoire IA\" pour personnaliser (goûts, prénom, proches).\nFORMAT STRICT :\n- Exactement 3 phrases, UNE PAR LIGNE\n- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction\n- Pas de numérotation, pas de tiret, pas de guillemets, pas de label";
+  const oldEN = "You generate 3 responses the user could say to the person they're talking to. You speak AS the user, not as an assistant.\nRULES:\n- Match complexity: simple question → short answer, deep discussion → constructed sentences.\n- Vary tones: one direct response, one warm/emotive, one that continues the conversation.\n- Natural human tone. ABSOLUTELY FORBIDDEN to use labels like \"Direct:\", \"Other:\", \"Option 1:\", \"Social:\", \"Pragmatic:\" or any category prefix before responses.\n- FORBIDDEN to use assistant-like phrasing (\"How can I help you?\", \"Here are my suggestions\", \"I'm ready\", \"Sure\").\n- Use \"AI Memory\" to personalize (interests, name, loved ones).\nSTRICT FORMAT:\n- Exactly 3 sentences, ONE PER LINE\n- START DIRECTLY with the first response, no introduction whatsoever\n- No numbering, no dashes, no quotes, no labels";
+  if (state.systemPrompt === oldFR || state.systemPrompt === oldEN) {
+    state.systemPrompt = I18N[currentLang]?.defaultPrompt || I18N['fr'].defaultPrompt;
+    save();
+  }
+})();
+
 applyStaticTranslations();
 let currentAudio = null;
 let isListening = false;
@@ -1695,7 +1903,86 @@ let lastInterlocutorText = '';
 let conversationHistory = [];
 let isSpeaking = false;
 
+// ─── Soundboard (quick phrases) ───
+const DEFAULT_QUICK_PHRASES = {
+  fr: [
+    { emoji: "✋", text: "Attends" },
+    { emoji: "❌", text: "Non" },
+    { emoji: "✅", text: "Oui" },
+    { emoji: "🤔", text: "Je réfléchis" },
+    { emoji: "✍️", text: "J'écris ma réponse" },
+    { emoji: "😊", text: "Haha" },
+    { emoji: "👋", text: "Bonjour" },
+    { emoji: "🙏", text: "Merci" },
+  ],
+  en: [
+    { emoji: "✋", text: "Wait" },
+    { emoji: "❌", text: "No" },
+    { emoji: "✅", text: "Yes" },
+    { emoji: "🤔", text: "Let me think" },
+    { emoji: "✍️", text: "I'm typing" },
+    { emoji: "😊", text: "Haha" },
+    { emoji: "👋", text: "Hello" },
+    { emoji: "🙏", text: "Thanks" },
+  ]
+};
+
+function getQuickPhrases() {
+  var custom = state.quickPhrases;
+  if (custom && custom.length > 0) return custom;
+  return DEFAULT_QUICK_PHRASES[currentLang] || DEFAULT_QUICK_PHRASES.fr;
+}
+
+function renderSoundboard() {
+  var container = document.getElementById("soundboardScroll");
+  if (!container) return;
+  container.innerHTML = "";
+  var phrases = getQuickPhrases();
+  phrases.forEach(function(phrase) {
+    var btn = document.createElement("button");
+    btn.className = "soundboard-btn";
+    btn.setAttribute("aria-label", phrase.text);
+    btn.innerHTML = '<span class="sb-emoji">' + phrase.emoji + '</span><span class="sb-label">' + phrase.text + '</span>';
+    btn.addEventListener("click", function() { speakSoundboardPhrase(phrase.text); });
+    container.appendChild(btn);
+  });
+}
+
+function speakSoundboardPhrase(text) {
+  if (isSpeaking) return;
+  userHasInteracted = true;
+  stopListening();
+  showTTSOverlay();
+  addToHistory(text, true);
+  speakTextWithCallback(text, function() {
+    hideTTSOverlay();
+    startListening();
+  });
+}
+
+window._updateQuickPhrases = function(phrasesJSON) {
+  try {
+    var phrases = JSON.parse(phrasesJSON);
+    if (Array.isArray(phrases)) {
+      state.quickPhrases = phrases;
+      save();
+      renderSoundboard();
+    }
+  } catch(e) { console.warn("[Soundboard] Invalid phrases JSON", e); }
+};
+
+window._getQuickPhrases = function() {
+  return JSON.stringify(getQuickPhrases());
+};
+
 function loadState() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) {
+      const peek = JSON.parse(raw);
+      if (peek && peek.lang) currentLang = peek.lang;
+    }
+  } catch (_) {}
   try {
     const s = JSON.parse(localStorage.getItem(DB_KEY));
     if (s && s.history !== undefined) {
@@ -1704,13 +1991,15 @@ function loadState() {
       if (!s.memory) s.memory = '';
       if (!s.learnedMemory) s.learnedMemory = '';
       if (!s.lang) s.lang = detectLanguage();
+      currentLang = s.lang;
       // Migrate old useLocalTTS to new fields
       if (s.useApplePersonalVoice === undefined) s.useApplePersonalVoice = false;
       if (s.useElevenLabs === undefined) {
         s.useElevenLabs = (s.useLocalTTS === false && s.voiceId && s.elApiKey);
       }
       delete s.useLocalTTS;
-      return s;
+      if (s.oledMode === undefined) s.oledMode = false;
+      if (!s.quickPhrases) s.quickPhrases = [];      return s;
     }
   } catch {}
   // Migrate from old Echo versions
@@ -1720,7 +2009,7 @@ function loadState() {
       if (old) {
         return {
           userName: old.userName || '',
-          systemPrompt: old.systemPrompt || DEFAULT_PROMPT,
+          systemPrompt: old.systemPrompt || getDefaultPrompt(),
           elApiKey: old.elApiKey || EL_DEFAULT_KEY,
           voiceId: old.voiceId || DEFAULT_VOICE_ID,
           samples: old.samples || [],
@@ -1732,11 +2021,12 @@ function loadState() {
       }
     } catch {}
   }
+  currentLang = detectLanguage();
   return {
-    userName: '', systemPrompt: DEFAULT_PROMPT, lang: detectLanguage(),
+    userName: '', systemPrompt: getDefaultPrompt(), lang: currentLang,
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
-    history: [], memory: '', learnedMemory: '',
+    history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
   };
 }
 
@@ -1750,9 +2040,10 @@ function save() {
 }
 
 function addToHistory(text, isUser) {
+  const loc = currentLang === 'fr' ? 'fr-FR' : 'en-US';
   const entry = {
     text: text.trim(), isUser,
-    time: new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+    time: new Date().toLocaleTimeString(loc, { hour:'2-digit', minute:'2-digit' })
   };
   state.history.push(entry);
   if (state.history.length > 20) state.history = state.history.slice(-20);
@@ -1775,7 +2066,7 @@ async function maybeExtractMemory() {
   ).join('\n');
   const currentLearned = state.learnedMemory || '';
 
-  const sys = t('memoryExtractSys');
+  const sys = `${t('memoryExtractSys')}\n\n${t('memoryExtractOutputLang')}`;
   const prompt = t('memoryExtractPrompt')(recent, currentLearned);
 
   try {
@@ -1867,6 +2158,7 @@ safeClick('settingsBtn', () => {
 safeClick('backFromSettingsBtn', () => { showView('suggestions'); if (userHasInteracted) startListening(); });
 safeClick('btnKeyboard', () => switchToManual());
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
+safeClick('btnCloseManual', () => switchToSuggestions());
 safeClick('btnRefresh', () => refreshSuggestions());
 safeClick('btnSpeak', () => speakManual());
 safeClick('listeningBar', () => {
@@ -1880,10 +2172,10 @@ function switchToManual() {
   setTimeout(() => $('manualInput').focus(), 100);
 }
 
-function switchToSuggestions() {
+function switchToSuggestions(resumeMic = true) {
   $('manualInput').value = '';
   showView('suggestions');
-  startListening();
+  if (resumeMic) startListening();
 }
 
 let refreshCount = 0;
@@ -1900,7 +2192,7 @@ function refreshSuggestions() {
 function updateContextDisplay(text, isInterim) {
   const el = $('contextText');
   if (!text) {
-    el.textContent = 'En attente de parole...';
+    el.textContent = t('contextEmpty');
     el.className = 'context-text empty';
     return;
   }
@@ -1928,8 +2220,8 @@ function renderSuggestionCards(suggestions) {
     flag.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:var(--text-tertiary);cursor:pointer;padding:4px;z-index:2;';
     flag.onclick = (e) => {
       e.stopPropagation();
-      const subject = encodeURIComponent('Talkie - Contenu inapproprié');
-      const body = encodeURIComponent('Suggestion signalée :\n"' + text + '"\n\nContexte : ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
+      const subject = encodeURIComponent(t('flagEmailSubject'));
+      const body = encodeURIComponent(t('flagEmailBodyIntro') + '\n"' + text + '"\n\n' + t('flagEmailContext') + ' ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
       const mailto = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
       try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
       showToast(t('reportReady'));
@@ -1955,7 +2247,7 @@ function clearSuggestionCards() {
   $('suggestionsZone').innerHTML = `
     <div class="suggestions-empty" id="suggestionsEmpty">
       <div class="suggestions-empty-icon">💬</div>
-      <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
+      <div class="suggestions-empty-text">${t('suggestionsEmptyLine1')}<br>${t('suggestionsEmptyLine2')}</div>
     </div>`;
   $('aiAttribution').style.display = 'none';
 }
@@ -1976,7 +2268,7 @@ function hideTTSOverlay() {
 document.querySelector('.tts-stop-btn').addEventListener('click', () => {
   stopAudio();
   hideTTSOverlay();
-  startListening();
+  if (_ttsResumeMicAfter) startListening();
 });
 
 // ─── Speak suggestion ───
@@ -1985,26 +2277,29 @@ function speakSuggestion(text, cardIndex) {
   userHasInteracted = true;
   const card = $('suggestionCard' + cardIndex);
   if (card) card.classList.add('speaking');
-  stopListening();
+  const wasListening = isListening;
+  if (wasListening) stopListening();
   showTTSOverlay();
   addToHistory(text, true);
   maybeExtractMemory();
   speakTextWithCallback(text, () => {
     hideTTSOverlay();
-    startListening();
-  });
+    if (wasListening) startListening();
+  }, wasListening);
 }
 
 function speakManual() {
   const text = $('manualInput').value.trim();
   if (!text || isSpeaking) return;
+  const wasListening = isListening;
+  if (wasListening) stopListening();
   addToHistory(text, true);
   showTTSOverlay();
   speakTextWithCallback(text, () => {
     hideTTSOverlay();
     $('manualInput').value = '';
-    switchToSuggestions();
-  });
+    switchToSuggestions(wasListening);
+  }, wasListening);
 }
 
 // ─── TTS (bridge-compatible) ───
@@ -2024,8 +2319,11 @@ function blobToBase64(blob) {
 let _ttsCallback = null;
 let _ttsSafetyTimer = null;
 let _nativeTTSNearEndTimer = null;
+/** Dernier flag passé à speakTextWithCallback (stop TTS / sécurité). */
+let _ttsResumeMicAfter = true;
 
-function speakTextWithCallback(text, onDone) {
+function speakTextWithCallback(text, onDone, resumeMicAfter = true) {
+  _ttsResumeMicAfter = resumeMicAfter;
   _ttsCallback = onDone;
   // Safety: auto-dismiss after 30s max if callback never fires
   clearTimeout(_ttsSafetyTimer);
@@ -2034,9 +2332,9 @@ function speakTextWithCallback(text, onDone) {
       console.warn('[Talkie] TTS safety timeout');
       stopAudio();
       hideTTSOverlay();
-      startListening();
+      if (resumeMicAfter) startListening();
     }
-  }, 600000);
+  }, 15000);
   if (state.useElevenLabs && state.voiceId && state.elApiKey) {
     playTTS(text);
   } else if (state.useApplePersonalVoice) {
@@ -2059,6 +2357,7 @@ function _onTTSDone() {
 
 async function playElevenLabsBlobHTML5(blob) {
   const audio = new Audio();
+  audio.volume = 1.0;
   audio.playsInline = true;
   audio.setAttribute('playsinline', '');
   audio.preload = 'auto';
@@ -2127,14 +2426,15 @@ function speakApplePersonalVoice(text) {
   stopPlaybackOnly();
   const rid = 'sv_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
   currentAudio = { isNativeTTS: true, playbackId: rid };
-  
+  let _nativeSpeechDone = false;
+
   window._nativeSpeechCallback = (cbRid, err) => {
-    if (cbRid !== rid) return;
+    if (cbRid !== rid || _nativeSpeechDone) return;
+    _nativeSpeechDone = true;
     window._nativeSpeechCallback = null;
     currentAudio = null;
     if (err) {
       console.warn('[Talkie] Native speech error/cancelled:', err);
-      // fallback to normal speech if failed
       if (err !== 'cancelled') {
         speakLocal(text);
         return;
@@ -2142,7 +2442,6 @@ function speakApplePersonalVoice(text) {
     }
     _onTTSDone();
   };
-  
   try {
     window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({ text, requestId: rid, lang: getLangCode() });
   } catch(e) {
@@ -2185,11 +2484,11 @@ function speakLocal(text) {
   _speechPollTimer = setInterval(() => {
     if (!speechSynthesis.speaking && !speechSynthesis.pending) {
       silentStreak++;
-      if (silentStreak >= 4) finish();
+      if (silentStreak >= 2) finish();
     } else {
       silentStreak = 0;
     }
-  }, 220);
+  }, 150);
   clearTimeout(_speechSynthMaxTimer);
   _speechSynthMaxTimer = setTimeout(() => {
     if (!done) {
@@ -2208,6 +2507,8 @@ function stopPlaybackOnly() {
   clearTimeout(_speechSynthMaxTimer);
   _speechSynthMaxTimer = null;
   clearTimeout(_nativeTTSNearEndTimer);
+  // Nullify the native speech callback so late Swift callbacks are ignored
+  window._nativeSpeechCallback = null;
   try { window.webkit?.messageHandlers?.stopNativeTTS?.postMessage({}); } catch (_) {}
   if (currentAudio) {
     if (currentAudio.isSpeechSynth) {
@@ -2251,6 +2552,20 @@ async function fetchTTSAudio(text) {
   });
   if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
   return await resp.blob();
+}
+
+// ─── Punctuation post-processing ───
+function inferQuestionMark(text) {
+  if (/[?!]$/.test(text)) return text;
+  // Strip trailing period — Speech API often adds one even for questions
+  const cleaned = text.replace(/\.\s*$/, '').trim();
+  const lower = cleaned.toLowerCase();
+  const frQ = /^(est[-\s]ce qu|qu[''\u2019]est[-\s]ce qu|comment|pourquoi|quand|o[uù]\s|qui\s|que\s|quel|quelle|quels|quelles|combien|ça va|c[''\u2019]est vrai|tu vas|tu veux|tu peux|tu crois|tu penses|vous voulez|vous pouvez|vous pensez|y a[-\s]t[-\s]il|as[-\s]tu|avez[-\s]vous|es[-\s]tu|êtes[-\s]vous|on va|on peut)/i;
+  const frEnd = /(n[''\u2019]est[-\s]ce pas|non|hein|d[''\u2019]accord|ou pas|ou quoi)$/i;
+  const enQ = /^(is |are |was |were |do |does |did |will |would |could |can |should |shall |have |has |had |how |what |when |where |who |whom |which |why |whose )/i;
+  if (currentLang === 'fr' && (frQ.test(lower) || frEnd.test(lower))) return cleaned + ' ?';
+  if (currentLang === 'en' && enQ.test(lower)) return cleaned + '?';
+  return text;
 }
 
 // ─── Speech Recognition ───
@@ -2306,7 +2621,7 @@ function beginRecognition(sess) {
     phraseEndTimer = setTimeout(() => {
       phraseEndTimer = null;
       if (micSession !== sess || !isListening || isSpeaking) return;
-      const text = interimBuf.trim();
+      const text = inferQuestionMark(interimBuf.trim());
       if (text.length < 2) return;
       updateContextDisplay(text, false);
       addToHistory(text, false);
@@ -2425,7 +2740,6 @@ function stopListening() {
   killRecognition();
   updateListeningUI(false);
   try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: false }); } catch(_) {}
-  try { window.webkit?.messageHandlers?.deactivateAudioSession?.postMessage('deactivate'); } catch(_) {}
 }
 
 function updateListeningUI(active) {
@@ -2531,6 +2845,7 @@ async function fetchSuggestions(interlocutorText) {
     sys += `\n${t('userNameCtx')} ${state.userName}.`;
   }
   sys += `\n\n${t('recentHistory')}\n${ctx}`;
+  sys += `\n\n${t('llmOutputLanguage')}`;
 
   // Diversity instructions
   const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
@@ -2539,9 +2854,12 @@ async function fetchSuggestions(interlocutorText) {
 
   try {
     const content = await callNativeLLM(sys, prompt);
+    const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready)/i;
+    const _labelRe = /^(directe|pragmatique|sociale|émotive|émotiv|relance|nuance|autre|option\s*\d|social|emotive|follow.?up)\s*[:–—-]\s*/i;
     const suggestions = content.split('\n')
       .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
-      .filter(s => s.length > 2 && !isInappropriate(s))
+      .map(s => s.replace(_labelRe, '').trim())
+      .filter(s => s.length > 2 && !isInappropriate(s) && !_preambleRe.test(s))
       .slice(0, 3);
     if (suggestions.length) renderSuggestionCards(suggestions);
     else clearSuggestionCards();
@@ -2585,7 +2903,7 @@ $('cloneBtn').onclick = async () => {
     if (!confirm(t('voiceCloneConsent'))) return;
     localStorage.setItem('talkie_voice_clone_consent', '1');
   }
-  $('cloneBtn').disabled = true; $('cloneBtn').textContent = 'Clonage...';
+  $('cloneBtn').disabled = true; $('cloneBtn').textContent = t('cloningInProgress');
   try {
     const fd = new FormData();
     fd.append('name', name); fd.append('description', 'Talkie voice');
@@ -2597,12 +2915,12 @@ $('cloneBtn').onclick = async () => {
     const d = await r.json();
     state.voiceId = d.voice_id; save(); renderSamples();
     showToast(t('voiceCloned'));
-  } catch(e) { showToast('Erreur: ' + e.message.substring(0,60)); }
-  finally { $('cloneBtn').disabled = false; $('cloneBtn').textContent = 'Cloner la voix'; }
+  } catch(e) { showToast((currentLang === 'fr' ? 'Erreur : ' : 'Error: ') + e.message.substring(0,60)); }
+  finally { $('cloneBtn').disabled = false; $('cloneBtn').textContent = t('cloneBtn'); }
 };
 $('testVoiceBtn').onclick = () => {
-  const t = prompt('Texte:', 'Bonjour, ceci est ma voix.');
-  if (t) speakTextWithCallback(t, () => {});
+  const sample = prompt(t('voiceTestPrompt'), t('voiceTestDefault'));
+  if (sample) speakTextWithCallback(sample, () => {}, false);
 };
 
 function renderSamples() {
@@ -2622,7 +2940,13 @@ function renderSamples() {
     card.className = 'sample-card';
     const m = Math.floor(s.duration/60), sec = Math.floor(s.duration%60);
     card.innerHTML = `<button class="sample-play">▶</button><div class="sample-info"><div class="sample-name">${esc(s.name)}</div><div class="sample-meta">${m}:${sec.toString().padStart(2,'0')}</div></div><button class="sample-delete">✕</button>`;
-    card.querySelector('.sample-play').onclick = () => { stopAudio(); currentAudio = new Audio(URL.createObjectURL(dataUrlToBlob(s.dataUrl))); currentAudio.play(); };
+    card.querySelector('.sample-play').onclick = () => {
+      stopAudio();
+      const a = new Audio(URL.createObjectURL(dataUrlToBlob(s.dataUrl)));
+      a.volume = 1.0;
+      currentAudio = a;
+      a.play();
+    };
     card.querySelector('.sample-delete').onclick = () => { state.samples = state.samples.filter(x => x.id !== s.id); save(); renderSamples(); };
     $('samplesContainer').appendChild(card);
   });
@@ -2674,6 +2998,7 @@ $('tutorialBtn').onclick = () => {
 function openInAppPage(name) {
   const page = $('page-' + name);
   if (page) page.classList.add('active');
+  if (name === 'privacy' || name === 'support') refreshLegalIframes();
 }
 function closeInAppPage(name) {
   const page = $('page-' + name);
@@ -2694,7 +3019,7 @@ $('advancedPageBtn').onclick = () => openInAppPage('advanced');
 $('reportSendBtn').onclick = () => {
   const text = $('reportTextarea').value.trim();
   if (!text) { showToast(t('describeProblem')); return; }
-  const subject = encodeURIComponent('Talkie - Signalement');
+  const subject = encodeURIComponent(t('reportEmailSubject'));
   const body = encodeURIComponent(text + '\n\n---\nVersion: ' + BUILD_VERSION);
   const mailtoUrl = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
   try { window.webkit?.messageHandlers?.openURL?.postMessage(mailtoUrl); }
@@ -2718,13 +3043,35 @@ $('deleteAllDataBtn').onclick = () => {
 };
 
 $('langSelect').value = currentLang;
-$('langSelect').onchange = () => {
-  const newLang = $('langSelect').value;
+window.changeLanguage = function(newLang) {
+  const oldLang = currentLang;
+  
+  // Update systemPrompt if it was the default one of the old language or any of the hardcoded defaults
+  const oldDefaultPrompt = I18N[oldLang]?.defaultPrompt || I18N['fr'].defaultPrompt;
+  const oldFR = "Tu génères 3 réponses que l'utilisateur pourrait dire à son interlocuteur. Tu parles EN TANT QUE l'utilisateur, pas en tant qu'assistant.\nRÈGLES :\n- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.\n- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.\n- Ton naturel et humain. INTERDICTION ABSOLUE d'utiliser des labels comme \"Directe :\", \"Autre :\", \"Option 1 :\", \"Sociale :\", \"Pragmatique :\" ou tout préfixe de catégorie avant les réponses.\n- INTERDICTION de formulations d'assistant (\"Comment puis-je vous aider ?\", \"Voici mes suggestions\", \"Je suis prêt\", \"Bien sûr\").\n- Utilise la \"Mémoire IA\" pour personnaliser (goûts, prénom, proches).\nFORMAT STRICT :\n- Exactement 3 phrases, UNE PAR LIGNE\n- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction\n- Pas de numérotation, pas de tiret, pas de guillemets, pas de label";
+  const oldEN = "You generate 3 responses the user could say to the person they're talking to. You speak AS the user, not as an assistant.\nRULES:\n- Match complexity: simple question → short answer, deep discussion → constructed sentences.\n- Vary tones: one direct response, one warm/emotive, one that continues the conversation.\n- Natural human tone. ABSOLUTELY FORBIDDEN to use labels like \"Direct:\", \"Other:\", \"Option 1:\", \"Social:\", \"Pragmatic:\" or any category prefix before responses.\n- FORBIDDEN to use assistant-like phrasing (\"How can I help you?\", \"Here are my suggestions\", \"I'm ready\", \"Sure\").\n- Use \"AI Memory\" to personalize (interests, name, loved ones).\nSTRICT FORMAT:\n- Exactly 3 sentences, ONE PER LINE\n- START DIRECTLY with the first response, no introduction whatsoever\n- No numbering, no dashes, no quotes, no labels";
+  const isDefaultPrompt = (state.systemPrompt === oldDefaultPrompt) || 
+                          (state.systemPrompt === I18N['fr'].defaultPrompt) || 
+                          (state.systemPrompt === I18N['en'].defaultPrompt) ||
+                          (state.systemPrompt === oldFR) ||
+                          (state.systemPrompt === oldEN);
+
   currentLang = newLang;
   state.lang = newLang;
+  
+  if (isDefaultPrompt && I18N[newLang]) {
+    state.systemPrompt = I18N[newLang].defaultPrompt;
+    const el = document.getElementById('settingsPrompt');
+    if (el) el.value = state.systemPrompt;
+  }
+  
   localStorage.setItem('talkie_lang', newLang);
   save();
   applyStaticTranslations();
+};
+
+$('langSelect').onchange = () => {
+  window.changeLanguage($('langSelect').value);
 };
 $('appleVoiceToggleBtn').onclick = () => {
   state.useApplePersonalVoice = !state.useApplePersonalVoice;
@@ -2756,13 +3103,13 @@ $('versionBox').onclick = () => {
     _devTapCount = 0;
     const dev = $('devSection');
     dev.classList.toggle('visible');
-    showToast(dev.classList.contains('visible') ? 'Mode développeur activé' : 'Mode développeur désactivé');
+    showToast(dev.classList.contains('visible') ? t('devModeOn') : t('devModeOff'));
   }
 };
 $('toggleEL').onclick = () => {
   const p = $('settingsELKey').type === 'password';
   $('settingsELKey').type = p ? 'text' : 'password';
-  $('toggleEL').textContent = p ? 'Masquer' : 'Afficher';
+  $('toggleEL').textContent = p ? t('hide') : t('show');
 };
 $('resetPromptBtn').onclick = () => {
   const dp = getDefaultPrompt();
@@ -2807,23 +3154,47 @@ $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
 keychainLoad('elApiKey');
-// Update theme-color for dark mode
-if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-  document.querySelector('meta[name="theme-color"]').content = '#1C1C1E';
-}
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-  document.querySelector('meta[name="theme-color"]').content = e.matches ? '#1C1C1E' : '#F5F6FA';
-});
+// Update theme-color — driven by data-app-theme attribute (set by native side)
+(function() {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const update = () => {
+    const isDark = document.documentElement.getAttribute('data-app-theme') === 'dark';
+    if (meta) meta.content = isDark ? '#1C1C1E' : '#F5F6FA';
+  };
+  update();
+  new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-app-theme'] });
+})();
 
 // Apply saved text size
 const savedTextSize = localStorage.getItem('talkie_text_size');
-if (savedTextSize) document.documentElement.style.fontSize = savedTextSize + 'px';
+if (savedTextSize) document.documentElement.style.fontSize = savedTextSize + '%';
 
 // Text size bridge — called from native settings
 window._setTextSize = function(size) {
-  document.documentElement.style.fontSize = size + 'px';
+  document.documentElement.style.fontSize = size + '%';
   localStorage.setItem('talkie_text_size', String(size));
 };
+
+// OLED mode — apply/remove .oled-mode on body
+function applyOledMode(enabled) {
+  if (enabled) {
+    document.body.classList.add('oled-mode');
+  } else {
+    document.body.classList.remove('oled-mode');
+  }
+  state.oledMode = !!enabled;
+  save();
+}
+
+// OLED mode bridge — called from native settings
+window._setOledMode = function(enabled) {
+  applyOledMode(enabled);
+};
+
+// Apply saved OLED mode on load
+if (state.oledMode) {
+  document.body.classList.add('oled-mode');
+}
 
 console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
