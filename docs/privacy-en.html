@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Talkie — Privacy Policy</title>
+<style>
+html { color-scheme: light dark; background: var(--bg); }
+:root {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --text: #f2f2f7;
+    --text-secondary: #aeaeb8;
+    --heading: #a8b4ff;
+    --link: #b4c0ff;
+    --link-hover: #d0d8ff;
+  }
+}
+:root.talkie-light {
+  --bg: #f5f6fa;
+  --text: #1a1d2e;
+  --text-secondary: #6b7194;
+  --heading: #4f5fd4;
+  --link: #4a5ad4;
+  --link-hover: #3d4bb8;
+}
+:root.talkie-dark {
+  --bg: #1c1c1e;
+  --text: #f2f2f7;
+  --text-secondary: #aeaeb8;
+  --heading: #a8b4ff;
+  --link: #b4c0ff;
+  --link-hover: #d0d8ff;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px 40px;
+  min-height: 100%;
+  min-height: 100dvh;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; color: var(--text); letter-spacing: -0.02em; }
+h2 { font-size: 18px; font-weight: 600; margin: 28px 0 10px; color: var(--heading); }
+h3 { font-size: 16px; font-weight: 600; margin: 22px 0 8px; color: var(--text); }
+.date { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+p { margin: 0 0 12px; }
+ul { padding-left: 20px; margin: 0 0 12px; }
+li { margin-bottom: 8px; }
+a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+strong { color: var(--text); font-weight: 600; }
+</style>
+<script>
+(function(){
+  function sync(){
+    var dark = false;
+    try { dark = window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+    document.documentElement.classList.remove("talkie-light","talkie-dark");
+    document.documentElement.classList.add(dark ? "talkie-dark" : "talkie-light");
+  }
+  sync();
+  try {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<h1>Privacy Policy</h1>
+<div class="date">Last updated: March 2026</div>
+
+<p>Talkie is a communication aid app for people living with ALS, people who are non-speaking, or who have difficulty speaking. Your privacy is our priority.</p>
+
+<h2>Data we collect</h2>
+<ul>
+  <li><strong>Username</strong> — stored only on your device, used to personalize suggestions.</li>
+  <li><strong>Conversation transcripts</strong> — stored only on your device (last 20 exchanges maximum). Never sent to an external server.</li>
+  <li><strong>Patient memory</strong> — personal notes stored locally, used to contextualize AI suggestions.</li>
+  <li><strong>ElevenLabs API key</strong> — provided by you, stored securely in the iOS Keychain. Used only for ElevenLabs API calls.</li>
+  <li><strong>Voice samples</strong> — stored locally. Sent to ElevenLabs only when you initiate voice cloning.</li>
+</ul>
+
+<h2>Third-party services</h2>
+<ul>
+  <li><strong>ElevenLabs</strong> (optional) — speech synthesis and voice cloning. When you enable this feature, your explicit consent is required. Text to speak and/or voice samples are sent to ElevenLabs servers. Talkie does not retain this data. See <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">ElevenLabs privacy policy</a>.</li>
+  <li><strong>Apple Intelligence</strong> (iOS 26+) — response suggestions. Processing is done entirely on your device. No data leaves your iPhone or iPad.</li>
+</ul>
+
+<h2>What we do NOT do</h2>
+<ul>
+  <li>No backend server — all data stays on your device.</li>
+  <li>No analytics or telemetry.</li>
+  <li>No advertising.</li>
+  <li>No cross-app tracking.</li>
+  <li>No sale or sharing of data with third parties.</li>
+</ul>
+
+<h2>Microphone</h2>
+<p>Talkie uses the microphone for speech recognition (Web Speech API). Audio is processed on your device and is never recorded or sent to an external server.</p>
+
+<h2>Deleting your data</h2>
+<p>You can delete all your data at any time from the app settings (Personal data section). This removes history, memory, voice samples, and the API key from the Keychain.</p>
+
+<h2>Children</h2>
+<p>Talkie is not intended for children under 13.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions, contact us at: <a href="mailto:samuelgracio@gmail.com">samuelgracio@gmail.com</a></p>
+</body>
+</html>

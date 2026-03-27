@@ -10,6 +10,7 @@ struct TalkieApp: App {
                 .ignoresSafeArea(.all)
                 .statusBarHidden(false)
                 .preferredColorScheme(appState.colorScheme)
+                .onAppear { AppState.applyAppearance(appState.appearanceMode) }
                 .sheet(isPresented: $appState.showSettings, onDismiss: {
                     SettingsViewModel.shared.onDismiss?()
                 }) {
