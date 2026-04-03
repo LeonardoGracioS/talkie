@@ -480,6 +480,67 @@ html, body {
 }
 .tts-stop-btn:active { background:rgba(255,255,255,0.3); }
 
+/* ─── Consent Modal ─── */
+#consentOverlay {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  z-index:200; display:none; align-items:flex-end; justify-content:center;
+}
+#consentOverlay.active { display:flex; }
+.consent-sheet {
+  background:var(--bg-card); border-radius:20px 20px 0 0;
+  width:100%; max-width:600px; max-height:85vh;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:24px 20px calc(var(--safe-bottom) + 24px);
+  animation:consentSlideUp .3s ease;
+}
+@keyframes consentSlideUp {
+  from { transform:translateY(100%); }
+  to { transform:translateY(0); }
+}
+.consent-icon {
+  width:56px; height:56px; border-radius:16px;
+  background:var(--accent-soft); display:flex; align-items:center; justify-content:center;
+  margin:0 auto 16px;
+}
+.consent-icon svg { width:28px; height:28px; fill:var(--accent); }
+.consent-title {
+  font:700 20px var(--font); color:var(--text); text-align:center; margin-bottom:8px;
+}
+.consent-subtitle {
+  font:400 14px/1.5 var(--font); color:var(--text-secondary); text-align:center; margin-bottom:20px;
+}
+.consent-rows {
+  background:var(--bg); border-radius:var(--radius-sm); padding:4px 0; margin-bottom:16px;
+}
+.consent-row {
+  display:flex; align-items:flex-start; gap:12px; padding:12px 16px;
+}
+.consent-row + .consent-row { border-top:1px solid var(--separator); }
+.consent-row-icon {
+  width:32px; height:32px; border-radius:8px; flex-shrink:0;
+  background:var(--accent-soft); display:flex; align-items:center; justify-content:center;
+}
+.consent-row-icon svg { width:16px; height:16px; fill:var(--accent); }
+.consent-row-text { flex:1; }
+.consent-row-title { font:600 14px var(--font); color:var(--text); margin-bottom:2px; }
+.consent-row-detail { font:400 12px/1.4 var(--font); color:var(--text-secondary); }
+.consent-link {
+  display:block; text-align:center; font:500 14px var(--font); color:var(--accent);
+  text-decoration:underline; text-underline-offset:2px; margin-bottom:20px; cursor:pointer;
+}
+.consent-btn-accept {
+  width:100%; padding:16px; border:none; border-radius:var(--radius-sm);
+  background:var(--accent); color:white; font:700 16px var(--font); cursor:pointer;
+  margin-bottom:10px;
+}
+.consent-btn-accept:active { background:var(--accent-light); }
+.consent-btn-decline {
+  width:100%; padding:14px; border:1.5px solid var(--separator); border-radius:var(--radius-sm);
+  background:transparent; color:var(--text-secondary); font:600 14px var(--font); cursor:pointer;
+}
+.consent-btn-decline:active { background:var(--bg); }
+
 /* ═══════════════════════════════════════════
    MANUAL MODE
    ═══════════════════════════════════════════ */
@@ -1286,6 +1347,21 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
   <button class="tts-stop-btn">Stop</button>
 </div>
 
+<!-- ═══ CONSENT MODAL ═══ -->
+<div id="consentOverlay">
+  <div class="consent-sheet">
+    <div class="consent-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
+    </div>
+    <div class="consent-title" id="consentTitle"></div>
+    <div class="consent-subtitle" id="consentSubtitle"></div>
+    <div class="consent-rows" id="consentRows"></div>
+    <a class="consent-link" id="consentLink" href="https://elevenlabs.io/privacy" target="_blank" rel="noopener"></a>
+    <button class="consent-btn-accept" id="consentAcceptBtn"></button>
+    <button class="consent-btn-decline" id="consentDeclineBtn"></button>
+  </div>
+</div>
+
 <!-- ═══ IN-APP PAGES ═══ -->
 
 <!-- Privacy Policy (contenu distant selon la langue) -->
@@ -1434,6 +1510,8 @@ const I18N = {
     voiceNamePlaceholder: 'Nom de la voix',
     cloneBtn: 'Cloner la voix',
     testVoice: 'Tester la voix',
+    voiceCloneTitle: 'Clonage vocal',
+    settingsTitle: 'Réglages',
     language: 'Langue',
     languageDesc: 'Langue de l\'interface et des réponses',
     // Memory page
@@ -1463,6 +1541,32 @@ const I18N = {
     fileTooLarge: 'Fichier trop volumineux (max 5 Mo)',
     elConsentMsg: "En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie. Acceptez-vous ?",
     voiceCloneConsent: "Le clonage vocal envoie vos échantillons audio à ElevenLabs. Ces données biométriques sont traitées selon leur politique de confidentialité. Acceptez-vous ?",
+    consentTtsTitle: 'Partage de données avec ElevenLabs',
+    consentTtsSubtitle: "En activant ElevenLabs, certaines de vos données seront envoyées à un service tiers pour la synthèse vocale. Veuillez lire attentivement les informations ci-dessous.",
+    consentTtsRowData: 'Données envoyées',
+    consentTtsRowDataDetail: 'Le texte de vos messages sera envoyé aux serveurs d\'ElevenLabs pour être converti en parole.',
+    consentTtsRowWho: 'Destinataire',
+    consentTtsRowWhoDetail: 'ElevenLabs, Inc. — service tiers de synthèse vocale et de clonage de voix.',
+    consentTtsRowProtect: 'Protection',
+    consentTtsRowProtectDetail: 'ElevenLabs traite vos données conformément à sa politique de confidentialité. Talkie ne conserve aucune copie des données envoyées.',
+    consentTtsRowControl: 'Votre contrôle',
+    consentTtsRowControlDetail: 'Vous pouvez désactiver ElevenLabs à tout moment dans les réglages. Aucune donnée ne sera envoyée tant que la fonctionnalité est désactivée.',
+    consentTtsLink: "Politique de confidentialité d'ElevenLabs",
+    consentTtsAccept: "J'accepte",
+    consentTtsDecline: 'Refuser',
+    consentCloneTitle: 'Clonage vocal — Données biométriques',
+    consentCloneSubtitle: "Le clonage vocal envoie vos échantillons audio à un service tiers. Ces données sont considérées comme des données biométriques.",
+    consentCloneRowData: 'Données envoyées',
+    consentCloneRowDataDetail: 'Vos échantillons audio (enregistrements de votre voix) seront envoyés aux serveurs d\'ElevenLabs pour créer une voix clonée.',
+    consentCloneRowWho: 'Destinataire',
+    consentCloneRowWhoDetail: 'ElevenLabs, Inc. — service tiers de synthèse vocale et de clonage de voix.',
+    consentCloneRowProtect: 'Protection',
+    consentCloneRowProtectDetail: 'Ces données biométriques sont traitées selon la politique de confidentialité d\'ElevenLabs. Talkie ne conserve aucune copie des données envoyées.',
+    consentCloneRowControl: 'Votre contrôle',
+    consentCloneRowControlDetail: 'Le clonage est une action ponctuelle initiée par vous. Aucun échantillon n\'est envoyé automatiquement.',
+    consentCloneLink: "Politique de confidentialité d'ElevenLabs",
+    consentCloneAccept: "J'accepte",
+    consentCloneDecline: 'Refuser',
     // LLM prompts
     defaultPrompt: `Tu ES l'utilisateur de cette application (tu ne peux pas parler, tu utilises cette app pour communiquer). Un interlocuteur te parle. Génère 3 choses que TU pourrais lui répondre.
 RÈGLES :
@@ -1576,6 +1680,8 @@ FORMAT STRICT :
     voiceNamePlaceholder: 'Voice name',
     cloneBtn: 'Clone voice',
     testVoice: 'Test voice',
+    voiceCloneTitle: 'Voice Cloning',
+    settingsTitle: 'Settings',
     language: 'Language',
     languageDesc: 'Interface and response language',
     myInfo: 'My information',
@@ -1602,6 +1708,32 @@ FORMAT STRICT :
     fileTooLarge: 'File too large (max 5 MB)',
     elConsentMsg: 'By enabling ElevenLabs, your texts will be sent to ElevenLabs servers for speech synthesis. No data is stored by Talkie. Do you accept?',
     voiceCloneConsent: 'Voice cloning sends your audio samples to ElevenLabs. This biometric data is processed according to their privacy policy. Do you accept?',
+    consentTtsTitle: 'Data Sharing with ElevenLabs',
+    consentTtsSubtitle: 'By enabling ElevenLabs, some of your data will be sent to a third-party service for speech synthesis. Please read the information below carefully.',
+    consentTtsRowData: 'Data sent',
+    consentTtsRowDataDetail: 'The text of your messages will be sent to ElevenLabs servers to be converted into speech.',
+    consentTtsRowWho: 'Recipient',
+    consentTtsRowWhoDetail: 'ElevenLabs, Inc. — third-party speech synthesis and voice cloning service.',
+    consentTtsRowProtect: 'Protection',
+    consentTtsRowProtectDetail: 'ElevenLabs processes your data according to its privacy policy. Talkie does not retain any copy of the data sent.',
+    consentTtsRowControl: 'Your control',
+    consentTtsRowControlDetail: 'You can disable ElevenLabs at any time in settings. No data will be sent while the feature is disabled.',
+    consentTtsLink: 'ElevenLabs Privacy Policy',
+    consentTtsAccept: 'I agree',
+    consentTtsDecline: 'Decline',
+    consentCloneTitle: 'Voice Cloning — Biometric Data',
+    consentCloneSubtitle: 'Voice cloning sends your audio samples to a third-party service. This data is considered biometric data.',
+    consentCloneRowData: 'Data sent',
+    consentCloneRowDataDetail: 'Your audio samples (recordings of your voice) will be sent to ElevenLabs servers to create a cloned voice.',
+    consentCloneRowWho: 'Recipient',
+    consentCloneRowWhoDetail: 'ElevenLabs, Inc. — third-party speech synthesis and voice cloning service.',
+    consentCloneRowProtect: 'Protection',
+    consentCloneRowProtectDetail: 'This biometric data is processed according to ElevenLabs\' privacy policy. Talkie does not retain any copy of the data sent.',
+    consentCloneRowControl: 'Your control',
+    consentCloneRowControlDetail: 'Cloning is a one-time action initiated by you. No samples are sent automatically.',
+    consentCloneLink: 'ElevenLabs Privacy Policy',
+    consentCloneAccept: 'I agree',
+    consentCloneDecline: 'Decline',
     defaultPrompt: `You ARE the user of this app (you cannot speak, you use this app to communicate). Someone is talking to you. Generate 3 things YOU could reply to them.
 RULES:
 - Speak in the 1st person ("I"). NEVER refer to yourself in the 3rd person.
@@ -1692,6 +1824,42 @@ function refreshLegalIframes() {
       s.setAttribute('title', t('support'));
     }
   } catch (_) {}
+}
+
+// ─── Consent Modal Helper ───
+function showConsentModal(type) {
+  // type: 'tts' or 'clone'
+  const prefix = type === 'clone' ? 'consentClone' : 'consentTts';
+  $('consentTitle').textContent = t(prefix + 'Title');
+  $('consentSubtitle').textContent = t(prefix + 'Subtitle');
+  const svgData = '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
+  const svgWho = '<svg viewBox="0 0 24 24"><path d="M3 21V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H3z"/></svg>';
+  const svgShield = '<svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+  const svgHand = '<svg viewBox="0 0 24 24"><path d="M18 11V6a1 1 0 00-2 0v5m0 0V4a1 1 0 00-2 0v7m0 0V5a1 1 0 00-2 0v6m0 0V7a1 1 0 00-2 0v9a5 5 0 005 5h1a5 5 0 005-5v-4a1 1 0 00-2 0v2"/></svg>';
+  const rows = [
+    { icon: svgData, title: t(prefix + 'RowData'), detail: t(prefix + 'RowDataDetail') },
+    { icon: svgWho, title: t(prefix + 'RowWho'), detail: t(prefix + 'RowWhoDetail') },
+    { icon: svgShield, title: t(prefix + 'RowProtect'), detail: t(prefix + 'RowProtectDetail') },
+    { icon: svgHand, title: t(prefix + 'RowControl'), detail: t(prefix + 'RowControlDetail') },
+  ];
+  $('consentRows').innerHTML = rows.map(r =>
+    `<div class="consent-row"><div class="consent-row-icon">${r.icon}</div><div class="consent-row-text"><div class="consent-row-title">${r.title}</div><div class="consent-row-detail">${r.detail}</div></div></div>`
+  ).join('');
+  $('consentLink').textContent = t(prefix + 'Link');
+  $('consentAcceptBtn').textContent = t(prefix + 'Accept');
+  $('consentDeclineBtn').textContent = t(prefix + 'Decline');
+  $('consentOverlay').classList.add('active');
+  return new Promise(resolve => {
+    function cleanup() {
+      $('consentAcceptBtn').removeEventListener('click', onAccept);
+      $('consentDeclineBtn').removeEventListener('click', onDecline);
+      $('consentOverlay').classList.remove('active');
+    }
+    function onAccept() { cleanup(); resolve(true); }
+    function onDecline() { cleanup(); resolve(false); }
+    $('consentAcceptBtn').addEventListener('click', onAccept);
+    $('consentDeclineBtn').addEventListener('click', onDecline);
+  });
 }
 
 function applyStaticTranslations() {
@@ -2146,6 +2314,41 @@ function showView(id) {
   else console.error('[Talkie] View not found: view-' + id);
 }
 
+// Voice cloning only mode — called from native settings "Clonage vocal (avancé)"
+function showVoiceCloningOnly() {
+  showView('settings');
+  // Hide all sections except dev section
+  document.querySelectorAll('#view-settings .settings-scroll > .settings-section').forEach(s => {
+    if (s.id === 'devSection') {
+      s.classList.add('visible');
+      s.style.display = '';
+    } else {
+      s.style.display = 'none';
+    }
+  });
+  // Hide reset button and version box
+  const resetSection = $('deleteAllDataBtn')?.closest('.settings-section');
+  if (resetSection) resetSection.style.display = 'none';
+  $('versionBox').style.display = 'none';
+  // Update title
+  const titleEl = document.querySelector('#view-settings .settings-title');
+  if (titleEl) titleEl.textContent = t('voiceCloneTitle') || (currentLang === 'fr' ? 'Clonage vocal' : 'Voice Cloning');
+  // Override back button to restore everything
+  _voiceCloningOnly = true;
+  renderSamples();
+}
+let _voiceCloningOnly = false;
+function _exitVoiceCloningOnly() {
+  _voiceCloningOnly = false;
+  // Restore all hidden sections
+  document.querySelectorAll('#view-settings .settings-scroll > .settings-section').forEach(s => {
+    s.style.display = '';
+  });
+  $('versionBox').style.display = '';
+  const titleEl = document.querySelector('#view-settings .settings-title');
+  if (titleEl) titleEl.textContent = t('settingsTitle') || (currentLang === 'fr' ? 'Réglages' : 'Settings');
+}
+
 safeClick('settingsBtn', () => {
   stopListening();
   try {
@@ -2155,7 +2358,11 @@ safeClick('settingsBtn', () => {
     loadSettings(); showView('settings');
   }
 });
-safeClick('backFromSettingsBtn', () => { showView('suggestions'); if (userHasInteracted) startListening(); });
+safeClick('backFromSettingsBtn', () => {
+  if (_voiceCloningOnly) _exitVoiceCloningOnly();
+  showView('suggestions');
+  if (userHasInteracted) startListening();
+});
 safeClick('btnKeyboard', () => switchToManual());
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
 safeClick('btnCloseManual', () => switchToSuggestions());
@@ -2900,7 +3107,8 @@ $('cloneBtn').onclick = async () => {
   if (!state.samples.length || !state.elApiKey) return;
   // Voice cloning consent — biometric data sent to ElevenLabs
   if (!localStorage.getItem('talkie_voice_clone_consent')) {
-    if (!confirm(t('voiceCloneConsent'))) return;
+    const accepted = await showConsentModal('clone');
+    if (!accepted) return;
     localStorage.setItem('talkie_voice_clone_consent', '1');
   }
   $('cloneBtn').disabled = true; $('cloneBtn').textContent = t('cloningInProgress');
@@ -3078,13 +3286,11 @@ $('appleVoiceToggleBtn').onclick = () => {
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   save();
 };
-$('useElevenLabsToggleBtn').onclick = () => {
+$('useElevenLabsToggleBtn').onclick = async () => {
   if (!state.useElevenLabs && !localStorage.getItem('talkie_el_consent')) {
-    if (confirm(t('elConsentMsg'))) {
-      localStorage.setItem('talkie_el_consent', '1');
-    } else {
-      return;
-    }
+    const accepted = await showConsentModal('tts');
+    if (!accepted) return;
+    localStorage.setItem('talkie_el_consent', '1');
   }
   state.useElevenLabs = !state.useElevenLabs;
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);

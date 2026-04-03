@@ -87,44 +87,88 @@ strong { color: var(--text); font-weight: 600; }
 </head>
 <body>
 <h1>Politique de confidentialité</h1>
-<div class="date">Dernière mise à jour : mars 2026</div>
+<div class="date">Dernière mise à jour : avril 2026</div>
 
 <p>Talkie est une application d'aide à la communication pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler. Votre vie privée est notre priorité.</p>
 
-<h2>Données collectées</h2>
+<h2>1. Données collectées et méthodes de collecte</h2>
 <ul>
-  <li><strong>Nom d'utilisateur</strong> — stocké uniquement sur votre appareil, utilisé pour personnaliser les suggestions.</li>
-  <li><strong>Transcriptions de conversations</strong> — stockées uniquement sur votre appareil (20 derniers échanges maximum). Jamais transmises à un serveur externe.</li>
-  <li><strong>Mémoire du patient</strong> — notes personnelles stockées localement, utilisées pour contextualiser les suggestions IA.</li>
-  <li><strong>Clé API ElevenLabs</strong> — fournie par l'utilisateur, stockée de manière sécurisée dans le trousseau iOS (Keychain). Utilisée uniquement pour les appels à l'API ElevenLabs.</li>
-  <li><strong>Échantillons vocaux</strong> — stockés localement. Envoyés à ElevenLabs uniquement lors du clonage vocal, à l'initiative de l'utilisateur.</li>
+  <li><strong>Nom d'utilisateur</strong> — saisi par l'utilisateur lors de la configuration. Stocké uniquement sur votre appareil (localStorage), utilisé pour personnaliser les suggestions IA.</li>
+  <li><strong>Transcriptions de conversations</strong> — générées automatiquement par la reconnaissance vocale sur l'appareil. Stockées uniquement sur votre appareil (localStorage, 20 derniers échanges maximum). Jamais transmises à un serveur externe.</li>
+  <li><strong>Mémoire du patient</strong> — notes personnelles saisies manuellement par l'utilisateur. Stockées localement (localStorage), utilisées pour contextualiser les suggestions IA.</li>
+  <li><strong>Mémoire apprise</strong> — informations extraites automatiquement de vos conversations par le modèle IA sur l'appareil. Stockées localement (localStorage). Vous pouvez les consulter, modifier ou supprimer à tout moment.</li>
+  <li><strong>Clé API ElevenLabs</strong> — fournie volontairement par l'utilisateur dans les réglages avancés. Stockée de manière sécurisée dans le trousseau iOS (Keychain). Utilisée uniquement pour authentifier les appels à l'API ElevenLabs.</li>
+  <li><strong>Échantillons vocaux</strong> — enregistrés par l'utilisateur via le microphone ou importés depuis des fichiers audio. Stockés localement sur l'appareil. Envoyés à ElevenLabs uniquement lors du clonage vocal, à l'initiative explicite de l'utilisateur et après consentement.</li>
+  <li><strong>Données audio (microphone)</strong> — captées en temps réel par le microphone pour la reconnaissance vocale (Web Speech API). L'audio est traité sur l'appareil et n'est jamais enregistré, stocké ni transmis à un serveur externe.</li>
 </ul>
 
-<h2>Services tiers</h2>
+<h2>2. Utilisation des données</h2>
+<p>Chaque type de donnée est utilisé exclusivement aux fins suivantes :</p>
 <ul>
-  <li><strong>ElevenLabs</strong> (optionnel) — synthèse vocale et clonage de voix. Lorsque vous activez cette fonctionnalité, votre consentement explicite est requis. Le texte à prononcer et/ou les échantillons vocaux sont envoyés aux serveurs d'ElevenLabs. Aucune donnée n'est conservée par Talkie. Consultez la <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">politique de confidentialité d'ElevenLabs</a>.</li>
-  <li><strong>Apple Intelligence</strong> (iOS 26+) — génération de suggestions de réponse. Le traitement est effectué entièrement sur votre appareil. Aucune donnée ne quitte votre iPhone/iPad.</li>
+  <li><strong>Nom d'utilisateur</strong> — personnalisation des réponses IA générées sur l'appareil.</li>
+  <li><strong>Transcriptions et mémoire</strong> — fournir un contexte conversationnel au modèle IA sur l'appareil (Apple Intelligence) pour générer des suggestions de réponse pertinentes.</li>
+  <li><strong>Clé API ElevenLabs</strong> — authentifier les requêtes de synthèse vocale et de clonage vocal auprès d'ElevenLabs.</li>
+  <li><strong>Texte des messages</strong> — lorsque ElevenLabs est activé, le texte à prononcer est envoyé aux serveurs d'ElevenLabs pour être converti en audio (synthèse vocale).</li>
+  <li><strong>Échantillons vocaux</strong> — lorsque le clonage vocal est initié par l'utilisateur, les échantillons audio sont envoyés aux serveurs d'ElevenLabs pour créer une voix clonée.</li>
+  <li><strong>Données audio du microphone</strong> — transcription de la parole en texte, traitée localement sur l'appareil.</li>
 </ul>
 
-<h2>Ce que nous ne faisons PAS</h2>
+<h2>3. Partage avec des tiers</h2>
+<h3>ElevenLabs, Inc. (optionnel — activé uniquement par l'utilisateur)</h3>
+<p>ElevenLabs est le seul service tiers avec lequel des données personnelles peuvent être partagées. Ce partage est <strong>entièrement optionnel</strong> et nécessite :</p>
 <ul>
-  <li>Aucun serveur backend — toutes les données restent sur votre appareil.</li>
+  <li>L'activation manuelle de la fonctionnalité par l'utilisateur dans les réglages.</li>
+  <li>Le consentement explicite de l'utilisateur via un écran dédié <strong>avant</strong> tout envoi de données.</li>
+</ul>
+<p><strong>Données partagées avec ElevenLabs :</strong></p>
+<ul>
+  <li>Le texte des messages à prononcer (pour la synthèse vocale).</li>
+  <li>Les échantillons audio de votre voix (pour le clonage vocal uniquement).</li>
+</ul>
+<p>Talkie ne conserve aucune copie des données envoyées à ElevenLabs. ElevenLabs traite ces données conformément à sa propre <a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">politique de confidentialité</a>, qui prévoit des protections équivalentes en matière de sécurité et de confidentialité des données.</p>
+
+<h3>Apple Intelligence (iOS 26+)</h3>
+<p>Les suggestions de réponse sont générées par Apple Intelligence, un modèle IA exécuté <strong>entièrement sur votre appareil</strong>. Aucune donnée ne quitte votre iPhone ou iPad pour ce traitement. Apple n'a pas accès à vos conversations ni à votre mémoire.</p>
+
+<h3>Aucun autre tiers</h3>
+<p>En dehors d'ElevenLabs (si activé par l'utilisateur), Talkie ne partage, ne vend et ne transmet aucune donnée personnelle à quelque tiers que ce soit.</p>
+
+<h2>4. Données biométriques et faciales</h2>
+<p>Talkie <strong>n'accède pas à la caméra</strong> de votre appareil et <strong>ne collecte aucune donnée faciale</strong> ni donnée d'identification biométrique faciale. L'application n'utilise ni ARKit, ni la caméra TrueDepth, ni le framework Vision, ni aucune technologie de reconnaissance ou de suivi facial. Les seules données biométriques potentiellement traitées sont les échantillons vocaux envoyés à ElevenLabs pour le clonage vocal, uniquement avec votre consentement explicite.</p>
+
+<h2>5. Conservation des données</h2>
+<ul>
+  <li><strong>Nom d'utilisateur</strong> — conservé sur l'appareil jusqu'à suppression manuelle par l'utilisateur.</li>
+  <li><strong>Transcriptions de conversations</strong> — les 20 derniers échanges sont conservés sur l'appareil. Les échanges plus anciens sont automatiquement supprimés.</li>
+  <li><strong>Mémoire du patient et mémoire apprise</strong> — conservées sur l'appareil jusqu'à suppression manuelle par l'utilisateur.</li>
+  <li><strong>Clé API ElevenLabs</strong> — conservée dans le trousseau iOS jusqu'à suppression manuelle par l'utilisateur.</li>
+  <li><strong>Échantillons vocaux</strong> — conservés localement jusqu'à suppression manuelle. Lors de l'envoi à ElevenLabs pour le clonage, les données sont traitées selon la politique de conservation d'ElevenLabs.</li>
+  <li><strong>Données audio du microphone</strong> — traitées en temps réel et non enregistrées. Aucune conservation.</li>
+</ul>
+
+<h2>6. Ce que nous ne faisons PAS</h2>
+<ul>
+  <li>Aucun serveur backend — toutes les données restent sur votre appareil (sauf envoi optionnel à ElevenLabs).</li>
   <li>Aucune collecte d'analytics ou de télémétrie.</li>
   <li>Aucune publicité.</li>
   <li>Aucun suivi d'activité entre applications.</li>
-  <li>Aucune vente ou partage de données avec des tiers.</li>
+  <li>Aucune vente ou partage de données avec des tiers (hors ElevenLabs si activé).</li>
+  <li>Aucun accès à la caméra ni collecte de données faciales.</li>
 </ul>
 
-<h2>Microphone</h2>
-<p>Talkie utilise le microphone pour la reconnaissance vocale (Web Speech API). L'audio est traité sur votre appareil et n'est jamais enregistré ni transmis à un serveur externe.</p>
+<h2>7. Microphone</h2>
+<p>Talkie utilise le microphone exclusivement pour la reconnaissance vocale (Web Speech API). L'audio est traité sur votre appareil en temps réel et n'est jamais enregistré, stocké ni transmis à un serveur externe.</p>
 
-<h2>Suppression des données</h2>
-<p>Vous pouvez supprimer toutes vos données à tout moment depuis les réglages de l'application (section « Données personnelles »). Cette action supprime l'historique, la mémoire, les échantillons vocaux et la clé API du trousseau.</p>
+<h2>8. Suppression des données</h2>
+<p>Vous pouvez supprimer toutes vos données à tout moment depuis les réglages de l'application (section « Données personnelles »). Cette action supprime l'historique des conversations, la mémoire, les échantillons vocaux et la clé API du trousseau iOS. La suppression est immédiate et irréversible.</p>
 
-<h2>Enfants</h2>
+<h2>9. Enfants</h2>
 <p>Talkie n'est pas destinée aux enfants de moins de 13 ans.</p>
 
-<h2>Contact</h2>
+<h2>10. Modifications de cette politique</h2>
+<p>Nous pouvons mettre à jour cette politique de confidentialité. La date de dernière mise à jour sera modifiée en conséquence. Nous vous encourageons à consulter régulièrement cette page.</p>
+
+<h2>11. Contact</h2>
 <p>Pour toute question relative à la confidentialité, contactez-nous à : <a href="mailto:samuelgracio@gmail.com">samuelgracio@gmail.com</a></p>
 </body>
 </html>

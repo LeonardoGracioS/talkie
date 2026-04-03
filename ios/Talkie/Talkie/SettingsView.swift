@@ -290,14 +290,14 @@ struct SettingsView: View {
             } message: {
                 Text(vm.lang == "fr" ? "Toutes vos données seront supprimées. Cette action est irréversible." : "All your data will be deleted. This action is irreversible.")
             }
-            .alert("ElevenLabs", isPresented: $showELConsent) {
-                Button(vm.lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}
-                Button(vm.lang == "fr" ? "Accepter" : "Accept") {
+            .sheet(isPresented: $showELConsent) {
+                ElevenLabsConsentView(lang: vm.lang) {
                     vm.hasELConsent = true
                     vm.useElevenLabs = true
+                    showELConsent = false
+                } onDecline: {
+                    showELConsent = false
                 }
-            } message: {
-                Text(vm.lang == "fr" ? "En activant ElevenLabs, vos textes seront envoyés aux serveurs d'ElevenLabs pour la synthèse vocale. Aucune donnée n'est conservée par Talkie." : "By enabling ElevenLabs, your text will be sent to ElevenLabs servers for speech synthesis. No data is stored by Talkie.")
             }
         }
     }
@@ -512,54 +512,118 @@ struct PrivacyPolicyNativeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if vm.lang == "fr" {
-                    LegalDate("Derniere mise a jour : mars 2026")
+                    LegalDate("Derniere mise a jour : avril 2026")
                     LegalParagraph("Talkie est une application d\u{2019}aide a la communication pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultes a parler. Votre vie privee est notre priorite.")
-                    LegalHeading("Donnees collectees")
-                    LegalBullet("Nom d\u{2019}utilisateur", detail: "stocke uniquement sur votre appareil, utilise pour personnaliser les suggestions.")
-                    LegalBullet("Transcriptions de conversations", detail: "stockees uniquement sur votre appareil (20 derniers echanges maximum). Jamais transmises a un serveur externe.")
-                    LegalBullet("Memoire du patient", detail: "notes personnelles stockees localement, utilisees pour contextualiser les suggestions IA.")
-                    LegalBullet("Cle API ElevenLabs", detail: "fournie par l\u{2019}utilisateur, stockee de maniere securisee dans le trousseau iOS (Keychain). Utilisee uniquement pour les appels a l\u{2019}API ElevenLabs.")
-                    LegalBullet("Echantillons vocaux", detail: "stockes localement. Envoyes a ElevenLabs uniquement lors du clonage vocal, a l\u{2019}initiative de l\u{2019}utilisateur.")
-                    LegalHeading("Services tiers")
-                    LegalBullet("ElevenLabs (optionnel)", detail: "synthese vocale et clonage de voix. Lorsque vous activez cette fonctionnalite, votre consentement explicite est requis. Le texte a prononcer et/ou les echantillons vocaux sont envoyes aux serveurs d\u{2019}ElevenLabs. Aucune donnee n\u{2019}est conservee par Talkie.")
-                    LegalBullet("Apple Intelligence (iOS 26+)", detail: "generation de suggestions de reponse. Le traitement est effectue entierement sur votre appareil. Aucune donnee ne quitte votre iPhone/iPad.")
-                    LegalHeading("Ce que nous ne faisons PAS")
-                    LegalBullet("Aucun serveur backend \u{2014} toutes les donnees restent sur votre appareil.")
+
+                    LegalHeading("1. Donnees collectees et methodes de collecte")
+                    LegalBullet("Nom d\u{2019}utilisateur", detail: "saisi par l\u{2019}utilisateur lors de la configuration. Stocke uniquement sur votre appareil (localStorage), utilise pour personnaliser les suggestions IA.")
+                    LegalBullet("Transcriptions de conversations", detail: "generees automatiquement par la reconnaissance vocale sur l\u{2019}appareil. Stockees uniquement sur votre appareil (localStorage, 20 derniers echanges maximum). Jamais transmises a un serveur externe.")
+                    LegalBullet("Memoire du patient", detail: "notes personnelles saisies manuellement par l\u{2019}utilisateur. Stockees localement (localStorage), utilisees pour contextualiser les suggestions IA.")
+                    LegalBullet("Memoire apprise", detail: "informations extraites automatiquement de vos conversations par le modele IA sur l\u{2019}appareil. Stockees localement. Vous pouvez les consulter, modifier ou supprimer a tout moment.")
+                    LegalBullet("Cle API ElevenLabs", detail: "fournie volontairement par l\u{2019}utilisateur dans les reglages avances. Stockee de maniere securisee dans le trousseau iOS (Keychain).")
+                    LegalBullet("Echantillons vocaux", detail: "enregistres par l\u{2019}utilisateur via le microphone ou importes. Stockes localement. Envoyes a ElevenLabs uniquement lors du clonage vocal, apres consentement explicite.")
+                    LegalBullet("Donnees audio (microphone)", detail: "captees en temps reel pour la reconnaissance vocale. Traitees sur l\u{2019}appareil, jamais enregistrees ni transmises.")
+
+                    LegalHeading("2. Utilisation des donnees")
+                    LegalBullet("Nom d\u{2019}utilisateur", detail: "personnalisation des reponses IA generees sur l\u{2019}appareil.")
+                    LegalBullet("Transcriptions et memoire", detail: "fournir un contexte conversationnel au modele IA sur l\u{2019}appareil (Apple Intelligence) pour generer des suggestions pertinentes.")
+                    LegalBullet("Cle API ElevenLabs", detail: "authentifier les requetes de synthese vocale et de clonage vocal aupres d\u{2019}ElevenLabs.")
+                    LegalBullet("Texte des messages", detail: "lorsque ElevenLabs est active, le texte a prononcer est envoye aux serveurs d\u{2019}ElevenLabs pour la synthese vocale.")
+                    LegalBullet("Echantillons vocaux", detail: "lorsque le clonage vocal est initie, les echantillons audio sont envoyes aux serveurs d\u{2019}ElevenLabs pour creer une voix clonee.")
+                    LegalBullet("Donnees audio du microphone", detail: "transcription de la parole en texte, traitee localement sur l\u{2019}appareil.")
+
+                    LegalHeading("3. Partage avec des tiers")
+                    LegalSubheading("ElevenLabs, Inc. (optionnel)")
+                    LegalParagraph("ElevenLabs est le seul service tiers avec lequel des donnees personnelles peuvent etre partagees. Ce partage est entierement optionnel et necessite l\u{2019}activation manuelle par l\u{2019}utilisateur et son consentement explicite avant tout envoi de donnees.")
+                    LegalParagraph("Donnees partagees : le texte des messages a prononcer (synthese vocale) et les echantillons audio de votre voix (clonage vocal). Talkie ne conserve aucune copie des donnees envoyees. ElevenLabs traite ces donnees conformement a sa politique de confidentialite, qui prevoit des protections equivalentes.")
+                    LegalSubheading("Apple Intelligence (iOS 26+)")
+                    LegalParagraph("Les suggestions de reponse sont generees entierement sur votre appareil. Aucune donnee ne quitte votre iPhone/iPad. Apple n\u{2019}a pas acces a vos conversations.")
+                    LegalParagraph("En dehors d\u{2019}ElevenLabs (si active), Talkie ne partage, ne vend et ne transmet aucune donnee personnelle a quelque tiers que ce soit.")
+
+                    LegalHeading("4. Donnees biometriques et faciales")
+                    LegalParagraph("Talkie n\u{2019}accede pas a la camera de votre appareil et ne collecte aucune donnee faciale ni donnee d\u{2019}identification biometrique faciale. L\u{2019}application n\u{2019}utilise ni ARKit, ni la camera TrueDepth, ni le framework Vision, ni aucune technologie de reconnaissance ou de suivi facial. Les seules donnees biometriques potentiellement traitees sont les echantillons vocaux envoyes a ElevenLabs pour le clonage vocal, uniquement avec votre consentement explicite.")
+
+                    LegalHeading("5. Conservation des donnees")
+                    LegalBullet("Nom d\u{2019}utilisateur", detail: "conserve sur l\u{2019}appareil jusqu\u{2019}a suppression manuelle.")
+                    LegalBullet("Transcriptions", detail: "les 20 derniers echanges sont conserves. Les plus anciens sont automatiquement supprimes.")
+                    LegalBullet("Memoire du patient et memoire apprise", detail: "conservees jusqu\u{2019}a suppression manuelle.")
+                    LegalBullet("Cle API ElevenLabs", detail: "conservee dans le trousseau iOS jusqu\u{2019}a suppression manuelle.")
+                    LegalBullet("Echantillons vocaux", detail: "conserves localement jusqu\u{2019}a suppression manuelle. Lors de l\u{2019}envoi a ElevenLabs, les donnees sont traitees selon leur politique de conservation.")
+                    LegalBullet("Donnees audio du microphone", detail: "traitees en temps reel et non enregistrees. Aucune conservation.")
+
+                    LegalHeading("6. Ce que nous ne faisons PAS")
+                    LegalBullet("Aucun serveur backend \u{2014} toutes les donnees restent sur votre appareil (sauf envoi optionnel a ElevenLabs).")
                     LegalBullet("Aucune collecte d\u{2019}analytics ou de telemetrie.")
                     LegalBullet("Aucune publicite.")
                     LegalBullet("Aucun suivi d\u{2019}activite entre applications.")
-                    LegalBullet("Aucune vente ou partage de donnees avec des tiers.")
-                    LegalHeading("Microphone")
-                    LegalParagraph("Talkie utilise le microphone pour la reconnaissance vocale. L\u{2019}audio est traite sur votre appareil et n\u{2019}est jamais enregistre ni transmis a un serveur externe.")
-                    LegalHeading("Suppression des donnees")
-                    LegalParagraph("Vous pouvez supprimer toutes vos donnees a tout moment depuis les reglages de l\u{2019}application (section \u{00AB} Donnees personnelles \u{00BB}). Cette action supprime l\u{2019}historique, la memoire, les echantillons vocaux et la cle API du trousseau.")
-                    LegalHeading("Enfants")
+                    LegalBullet("Aucune vente ou partage de donnees avec des tiers (hors ElevenLabs si active).")
+                    LegalBullet("Aucun acces a la camera ni collecte de donnees faciales.")
+
+                    LegalHeading("7. Microphone")
+                    LegalParagraph("Talkie utilise le microphone exclusivement pour la reconnaissance vocale. L\u{2019}audio est traite sur votre appareil en temps reel et n\u{2019}est jamais enregistre, stocke ni transmis a un serveur externe.")
+
+                    LegalHeading("8. Suppression des donnees")
+                    LegalParagraph("Vous pouvez supprimer toutes vos donnees a tout moment depuis les reglages de l\u{2019}application. Cette action supprime l\u{2019}historique, la memoire, les echantillons vocaux et la cle API du trousseau. La suppression est immediate et irreversible.")
+
+                    LegalHeading("9. Enfants")
                     LegalParagraph("Talkie n\u{2019}est pas destinee aux enfants de moins de 13 ans.")
                     LegalHeading("Contact")
                     LegalContact()
                 } else {
-                    LegalDate("Last updated: March 2026")
+                    LegalDate("Last updated: April 2026")
                     LegalParagraph("Talkie is a communication aid app for people living with ALS, people who are non-speaking, or who have difficulty speaking. Your privacy is our priority.")
-                    LegalHeading("Data we collect")
-                    LegalBullet("Username", detail: "stored only on your device, used to personalize suggestions.")
-                    LegalBullet("Conversation transcripts", detail: "stored only on your device (last 20 exchanges maximum). Never sent to an external server.")
-                    LegalBullet("Patient memory", detail: "personal notes stored locally, used to contextualize AI suggestions.")
-                    LegalBullet("ElevenLabs API key", detail: "provided by you, stored securely in the iOS Keychain. Used only for ElevenLabs API calls.")
-                    LegalBullet("Voice samples", detail: "stored locally. Sent to ElevenLabs only when you initiate voice cloning.")
-                    LegalHeading("Third-party services")
-                    LegalBullet("ElevenLabs (optional)", detail: "speech synthesis and voice cloning. When you enable this feature, your explicit consent is required. Text to speak and/or voice samples are sent to ElevenLabs servers. Talkie does not retain this data.")
-                    LegalBullet("Apple Intelligence (iOS 26+)", detail: "response suggestions. Processing is done entirely on your device. No data leaves your iPhone or iPad.")
-                    LegalHeading("What we do NOT do")
-                    LegalBullet("No backend server \u{2014} all data stays on your device.")
-                    LegalBullet("No analytics or telemetry.")
+
+                    LegalHeading("1. Data We Collect and How We Collect It")
+                    LegalBullet("Username", detail: "entered by the user during setup. Stored only on your device (localStorage), used to personalize AI suggestions.")
+                    LegalBullet("Conversation transcripts", detail: "automatically generated by on-device speech recognition. Stored only on your device (localStorage, last 20 exchanges maximum). Never sent to an external server.")
+                    LegalBullet("Patient memory", detail: "personal notes manually entered by the user. Stored locally (localStorage), used to contextualize AI suggestions.")
+                    LegalBullet("Learned memory", detail: "information automatically extracted from your conversations by the on-device AI model. Stored locally. You can view, edit, or delete it at any time.")
+                    LegalBullet("ElevenLabs API key", detail: "voluntarily provided by the user in advanced settings. Stored securely in the iOS Keychain.")
+                    LegalBullet("Voice samples", detail: "recorded by the user via the microphone or imported. Stored locally. Sent to ElevenLabs only when the user explicitly initiates voice cloning, after consent.")
+                    LegalBullet("Microphone audio data", detail: "captured in real time for speech recognition. Processed on-device, never recorded or transmitted.")
+
+                    LegalHeading("2. How We Use Your Data")
+                    LegalBullet("Username", detail: "personalizing AI responses generated on-device.")
+                    LegalBullet("Transcripts and memory", detail: "providing conversational context to the on-device AI model (Apple Intelligence) for relevant response suggestions.")
+                    LegalBullet("ElevenLabs API key", detail: "authenticating text-to-speech and voice cloning requests with ElevenLabs.")
+                    LegalBullet("Message text", detail: "when ElevenLabs is enabled, text to be spoken is sent to ElevenLabs servers for speech synthesis.")
+                    LegalBullet("Voice samples", detail: "when voice cloning is initiated, audio samples are sent to ElevenLabs servers to create a cloned voice.")
+                    LegalBullet("Microphone audio data", detail: "on-device speech-to-text transcription.")
+
+                    LegalHeading("3. Third-Party Data Sharing")
+                    LegalSubheading("ElevenLabs, Inc. (optional)")
+                    LegalParagraph("ElevenLabs is the only third-party service with which personal data may be shared. This sharing is entirely optional and requires manual activation by the user and explicit consent before any data is sent.")
+                    LegalParagraph("Data shared: the text of messages to be spoken (text-to-speech) and audio samples of your voice (voice cloning). Talkie does not retain any copy of data sent. ElevenLabs processes this data in accordance with its privacy policy, which provides equivalent protections.")
+                    LegalSubheading("Apple Intelligence (iOS 26+)")
+                    LegalParagraph("Response suggestions are generated entirely on your device. No data leaves your iPhone/iPad. Apple does not have access to your conversations.")
+                    LegalParagraph("Apart from ElevenLabs (if enabled), Talkie does not share, sell, or transmit any personal data to any third party.")
+
+                    LegalHeading("4. Biometric and Facial Data")
+                    LegalParagraph("Talkie does not access your device\u{2019}s camera and does not collect any facial data or facial biometric identification data. The app does not use ARKit, the TrueDepth camera, the Vision framework, or any facial recognition or tracking technology. The only biometric data potentially processed are voice samples sent to ElevenLabs for voice cloning, only with your explicit consent.")
+
+                    LegalHeading("5. Data Retention")
+                    LegalBullet("Username", detail: "retained on-device until manually deleted.")
+                    LegalBullet("Conversation transcripts", detail: "the last 20 exchanges are retained. Older exchanges are automatically deleted.")
+                    LegalBullet("Patient memory and learned memory", detail: "retained until manually deleted.")
+                    LegalBullet("ElevenLabs API key", detail: "retained in the iOS Keychain until manually deleted.")
+                    LegalBullet("Voice samples", detail: "retained locally until manually deleted. When sent to ElevenLabs, data is handled according to their retention policy.")
+                    LegalBullet("Microphone audio data", detail: "processed in real time and not recorded. No retention.")
+
+                    LegalHeading("6. What We Do NOT Do")
+                    LegalBullet("No backend server \u{2014} all data stays on your device (except optional sharing with ElevenLabs).")
+                    LegalBullet("No analytics or telemetry collection.")
                     LegalBullet("No advertising.")
                     LegalBullet("No cross-app tracking.")
-                    LegalBullet("No sale or sharing of data with third parties.")
-                    LegalHeading("Microphone")
-                    LegalParagraph("Talkie uses the microphone for speech recognition. Audio is processed on your device and is never recorded or sent to an external server.")
-                    LegalHeading("Deleting your data")
-                    LegalParagraph("You can delete all your data at any time from the app settings (Personal data section). This removes history, memory, voice samples, and the API key from the Keychain.")
-                    LegalHeading("Children")
+                    LegalBullet("No sale or sharing of data with third parties (except ElevenLabs if enabled).")
+                    LegalBullet("No camera access and no facial data collection.")
+
+                    LegalHeading("7. Microphone")
+                    LegalParagraph("Talkie uses the microphone exclusively for speech recognition. Audio is processed on your device in real time and is never recorded, stored, or transmitted to an external server.")
+
+                    LegalHeading("8. Deleting Your Data")
+                    LegalParagraph("You can delete all your data at any time from the app settings. This removes conversation history, memory, voice samples, and the API key from the iOS Keychain. Deletion is immediate and irreversible.")
+
+                    LegalHeading("9. Children")
                     LegalParagraph("Talkie is not intended for children under 13.")
                     LegalHeading("Contact")
                     LegalContact()
@@ -570,6 +634,133 @@ struct PrivacyPolicyNativeView: View {
         }
         .navigationTitle(vm.lang == "fr" ? "Confidentialite" : "Privacy Policy")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - ElevenLabs Consent View
+
+struct ElevenLabsConsentView: View {
+    let lang: String
+    var onAccept: () -> Void
+    var onDecline: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Image(systemName: "waveform.circle.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.tint)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 8)
+
+                    Text(lang == "fr" ? "Partage de donnees avec ElevenLabs" : "Data Sharing with ElevenLabs")
+                        .font(.title2.bold())
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+
+                    Text(lang == "fr"
+                        ? "En activant ElevenLabs, certaines de vos donnees seront envoyees a un service tiers pour la synthese vocale. Veuillez lire attentivement les informations ci-dessous."
+                        : "By enabling ElevenLabs, some of your data will be sent to a third-party service for speech synthesis. Please read the information below carefully.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 12) {
+                            consentRow(
+                                icon: "doc.text",
+                                title: lang == "fr" ? "Donnees envoyees" : "Data sent",
+                                detail: lang == "fr"
+                                    ? "Le texte de vos messages (pour la synthese vocale) et vos echantillons audio (pour le clonage vocal)."
+                                    : "The text of your messages (for text-to-speech) and your audio samples (for voice cloning)."
+                            )
+                            Divider()
+                            consentRow(
+                                icon: "building.2",
+                                title: lang == "fr" ? "Destinataire" : "Recipient",
+                                detail: lang == "fr"
+                                    ? "ElevenLabs, Inc. \u{2014} service tiers de synthese vocale et de clonage de voix."
+                                    : "ElevenLabs, Inc. \u{2014} third-party speech synthesis and voice cloning service."
+                            )
+                            Divider()
+                            consentRow(
+                                icon: "shield.checkered",
+                                title: lang == "fr" ? "Protection" : "Protection",
+                                detail: lang == "fr"
+                                    ? "ElevenLabs traite vos donnees conformement a sa politique de confidentialite. Talkie ne conserve aucune copie des donnees envoyees."
+                                    : "ElevenLabs processes your data according to its privacy policy. Talkie does not retain any copy of the data sent."
+                            )
+                            Divider()
+                            consentRow(
+                                icon: "hand.raised",
+                                title: lang == "fr" ? "Votre controle" : "Your control",
+                                detail: lang == "fr"
+                                    ? "Vous pouvez desactiver ElevenLabs a tout moment dans les reglages. Aucune donnee ne sera envoyee tant que la fonctionnalite est desactivee."
+                                    : "You can disable ElevenLabs at any time in settings. No data will be sent while the feature is disabled."
+                            )
+                        }
+                    }
+
+                    Button {
+                        if let url = URL(string: "https://elevenlabs.io/privacy") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "link")
+                            Text(lang == "fr" ? "Politique de confidentialite d\u{2019}ElevenLabs" : "ElevenLabs Privacy Policy")
+                        }
+                        .font(.subheadline)
+                    }
+
+                    VStack(spacing: 10) {
+                        Button {
+                            onAccept()
+                        } label: {
+                            Text(lang == "fr" ? "J\u{2019}accepte" : "I agree")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button {
+                            onDecline()
+                        } label: {
+                            Text(lang == "fr" ? "Refuser" : "Decline")
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.top, 8)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            .navigationTitle("ElevenLabs")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(lang == "fr" ? "Fermer" : "Close") { onDecline() }
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private func consentRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.tint)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }
 

@@ -710,7 +710,7 @@ struct WebAppView: UIViewRepresentable {
 
             vm.onOpenVoiceCloning = { [weak self] in
                 self?.syncSettingsToJS()
-                let js = "loadSettings(); showView('settings'); $('devSection').classList.add('visible');"
+                let js = "loadSettings(); showVoiceCloningOnly();"
                 self?.runJavaScript(js)
             }
 
