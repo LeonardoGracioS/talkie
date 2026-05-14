@@ -200,6 +200,7 @@ struct WebAppView: UIViewRepresentable {
         private var nativeAudioPlayer: AVAudioPlayer?
         private var nativeAudioEngine: AVAudioEngine?
         private var nativeAudioPlayerNode: AVAudioPlayerNode?
+        private var nativeAudioTimePitch: AVAudioUnitTimePitch?
         private var nativeAudioTempURL: URL?
         private var nativePlaybackId: String?
         private var nativeProgressTimer: Timer?
@@ -248,13 +249,17 @@ struct WebAppView: UIViewRepresentable {
                 logger.warning("Invalid or empty payload")
                 return
             }
+            // Playback rate from JS (1.0 = normal). Clamped — AVAudioUnitTimePitch supports
+            // 1/32 ... 32 but anything past 0.5–2.0 sounds artifact-y for speech.
+            let requestedRate = (body["rate"] as? Double).map { Float($0) } ?? 1.0
+            let rate = max(0.5, min(2.0, requestedRate))
             stopNativeTTSPlayback(notifyJS: false)
             WebAppView.reassertPlayAndRecordSession()
             try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
 
             // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
             // ElevenLabs MP3 being quieter than AVSpeechSynthesizer output.
-            if playElevenLabsBoosted(data: data, playbackId: playbackId) {
+            if playElevenLabsBoosted(data: data, playbackId: playbackId, rate: rate) {
                 return
             }
 
@@ -281,7 +286,7 @@ struct WebAppView: UIViewRepresentable {
         /// Plays ElevenLabs MP3 through AVAudioEngine so we can apply gain > 1.0
         /// (AVAudioPlayer.volume is clamped to 1.0). Returns false if engine setup fails;
         /// caller falls back to AVAudioPlayer.
-        private func playElevenLabsBoosted(data: Data, playbackId: String) -> Bool {
+        private func playElevenLabsBoosted(data: Data, playbackId: String, rate: Float) -> Bool {
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("talkie_tts_\(UUID().uuidString).mp3")
             do {
@@ -289,8 +294,13 @@ struct WebAppView: UIViewRepresentable {
                 let audioFile = try AVAudioFile(forReading: tempURL)
                 let engine = AVAudioEngine()
                 let playerNode = AVAudioPlayerNode()
+                let timePitch = AVAudioUnitTimePitch()
+                timePitch.rate = rate
                 engine.attach(playerNode)
-                engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
+                engine.attach(timePitch)
+                // Chain: player → time-pitch (changes speed without altering pitch) → mixer
+                engine.connect(playerNode, to: timePitch, format: audioFile.processingFormat)
+                engine.connect(timePitch, to: engine.mainMixerNode, format: audioFile.processingFormat)
                 engine.mainMixerNode.outputVolume = WebAppView.Coordinator.elevenLabsGain
                 engine.prepare()
                 try engine.start()
@@ -298,6 +308,7 @@ struct WebAppView: UIViewRepresentable {
                 nativePlaybackId = playbackId
                 nativeAudioEngine = engine
                 nativeAudioPlayerNode = playerNode
+                nativeAudioTimePitch = timePitch
                 nativeAudioTempURL = tempURL
 
                 // .dataPlayedBack fires when audio has actually finished playing through
@@ -327,6 +338,7 @@ struct WebAppView: UIViewRepresentable {
             nativeAudioEngine?.stop()
             nativeAudioPlayerNode = nil
             nativeAudioEngine = nil
+            nativeAudioTimePitch = nil
             if let url = nativeAudioTempURL {
                 try? FileManager.default.removeItem(at: url)
                 nativeAudioTempURL = nil
@@ -348,6 +360,7 @@ struct WebAppView: UIViewRepresentable {
             nativeAudioEngine?.stop()
             nativeAudioPlayerNode = nil
             nativeAudioEngine = nil
+            nativeAudioTimePitch = nil
             if let url = nativeAudioTempURL {
                 try? FileManager.default.removeItem(at: url)
                 nativeAudioTempURL = nil
@@ -372,6 +385,7 @@ struct WebAppView: UIViewRepresentable {
             nativeAudioEngine?.stop()
             nativeAudioPlayerNode = nil
             nativeAudioEngine = nil
+            nativeAudioTimePitch = nil
             if let url = nativeAudioTempURL {
                 try? FileManager.default.removeItem(at: url)
                 nativeAudioTempURL = nil
@@ -603,7 +617,11 @@ struct WebAppView: UIViewRepresentable {
                 // Use plain text utterance — never SSML
                 let utterance = AVSpeechUtterance(string: sanitized)
                 utterance.volume = 1.0
-                utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+                // Rate / pitch from JS (clamped to safe ranges); defaults preserved if missing.
+                let requestedRate = (body["rate"] as? Double).map { Float($0) } ?? Float(AVSpeechUtteranceDefaultSpeechRate)
+                utterance.rate = max(AVSpeechUtteranceMinimumSpeechRate, min(AVSpeechUtteranceMaximumSpeechRate, requestedRate))
+                let requestedPitch = (body["pitchMultiplier"] as? Double).map { Float($0) } ?? 1.0
+                utterance.pitchMultiplier = max(0.5, min(2.0, requestedPitch))
 
                 // Pick voice first, then speak — avoid Personal Voice if not available
                 let voice = AVSpeechSynthesisVoice(language: lang)
@@ -882,6 +900,15 @@ struct WebAppView: UIViewRepresentable {
             vm.onOledModeChanged = { [weak self] enabled in
                 let js = "window._setOledMode && window._setOledMode(\(enabled));"
                 self?.runJavaScript(js)
+            }
+
+            vm.onOpenProfilePage = { [weak self] in
+                // The sheet calls `dismiss()` before us. Give SwiftUI a tick to tear down
+                // the settings sheet before swapping to the in-app profile page, otherwise
+                // the page renders behind the dismissing sheet.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    self?.runJavaScript("window._openProfilePage && window._openProfilePage();")
+                }
             }
 
             AppState.shared.showSettings = true

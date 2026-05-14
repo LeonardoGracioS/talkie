@@ -363,6 +363,114 @@ html, body {
   text-align:center; line-height:1.5;
 }
 
+/* ─── Speaker picker sheet ─── */
+#speakerOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  z-index:201; display:none; align-items:flex-end; justify-content:center;
+}
+#speakerOverlay.active { display:flex; }
+.speaker-sheet {
+  background:var(--bg-card); border-radius:20px 20px 0 0;
+  width:100%; max-width:600px; max-height:80vh;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:20px 20px calc(var(--safe-bottom) + 20px);
+  animation:consentSlideUp .3s ease;
+}
+.speaker-sheet-title {
+  font:700 18px var(--font); color:var(--text); text-align:center; margin-bottom:14px;
+}
+.speaker-row {
+  display:flex; align-items:center; gap:12px;
+  padding:14px 12px;
+  border-radius:14px;
+  background:var(--bg);
+  margin-bottom:8px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .15s;
+}
+.speaker-row:active { background:var(--separator); }
+.speaker-row.selected {
+  background:var(--accent-soft);
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+.speaker-row .sp-info { flex:1; min-width:0; }
+.speaker-row .sp-name {
+  font:600 16px var(--font); color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.speaker-row .sp-relation {
+  font:400 13px var(--font); color:var(--text-secondary); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.speaker-row .sp-check {
+  width:22px; height:22px; flex-shrink:0; opacity:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235B6AF0'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+  background-size:contain; background-repeat:no-repeat;
+}
+.speaker-row.selected .sp-check { opacity:1; }
+.speaker-row .sp-remove {
+  border:none; background:none;
+  color:var(--text-tertiary); font:600 13px var(--font);
+  padding:6px 8px; cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.speaker-row .sp-remove:active { color:var(--text); }
+.speaker-add-btn {
+  width:100%; margin-top:12px; padding:14px;
+  border:1.5px dashed var(--separator); border-radius:14px;
+  background:transparent; color:var(--accent);
+  font:600 15px var(--font); cursor:pointer;
+}
+.speaker-add-btn:active { background:var(--accent-soft); }
+.speaker-close-btn {
+  width:100%; margin-top:10px; padding:14px;
+  border:none; border-radius:14px;
+  background:var(--separator); color:var(--text);
+  font:600 15px var(--font); cursor:pointer;
+}
+.speaker-close-btn:active { background:var(--bg); }
+
+/* ─── Voice controls (tone / speed / speaker) ─── */
+.voice-controls {
+  display:flex; gap:8px; flex-shrink:0;
+  margin:8px 0 4px;
+  flex-wrap:wrap;
+}
+.voice-pill {
+  flex:1 1 auto;
+  min-height:40px;
+  padding:8px 12px;
+  border:none; border-radius:20px;
+  background:var(--bg-card);
+  color:var(--text);
+  font:600 13px var(--font);
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  transition:transform .12s, background .2s;
+  -webkit-tap-highlight-color:transparent;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
+.voice-pill:active { transform:scale(0.95); }
+.voice-pill .vp-icon { font-size:16px; line-height:1; }
+.voice-pill .vp-label { font-size:13px; }
+.voice-pill.tone-warm { background:rgba(255,179,71,0.18); color:#C16E00; }
+.voice-pill.tone-firm { background:rgba(255,99,71,0.15); color:#B43A2A; }
+.voice-pill.speed-slow { background:rgba(91,106,240,0.15); color:#3F4FD1; }
+.voice-pill.speed-fast { background:rgba(52,199,133,0.18); color:var(--green); }
+.voice-pill.has-speaker { background:rgba(91,106,240,0.12); color:#3F4FD1; }
+body[data-app-theme="dark"] .voice-pill { background:var(--bg-card); color:var(--text); }
+body[data-app-theme="dark"] .voice-pill.tone-warm { background:rgba(255,179,71,0.20); color:#FFB347; }
+body[data-app-theme="dark"] .voice-pill.tone-firm { background:rgba(255,99,71,0.18); color:#FF7755; }
+body[data-app-theme="dark"] .voice-pill.speed-slow { background:rgba(120,135,255,0.18); color:#A4AFFF; }
+body[data-app-theme="dark"] .voice-pill.speed-fast { background:rgba(52,199,133,0.20); color:#5DD7A0; }
+body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,255,0.15); color:#A4AFFF; }
+
 /* ─── Soundboard (quick phrases) ─── */
 .soundboard-zone {
   flex-shrink:0;
@@ -734,6 +842,23 @@ html, body {
   cursor:pointer; margin-top:10px;
 }
 .settings-action-btn:active { background:var(--accent-glow); }
+
+/* Profile fields (in-app page) */
+.profile-field-label {
+  display:block; font:600 13px var(--font);
+  color:var(--text-secondary); margin:14px 0 6px;
+}
+.profile-field-input,
+.profile-field-textarea {
+  width:100%; padding:11px 13px;
+  background:var(--bg); border:1px solid var(--separator);
+  border-radius:var(--radius-sm);
+  font:500 14px var(--font); color:var(--text);
+  outline:none; transition:border-color .2s;
+}
+.profile-field-textarea { min-height:60px; resize:vertical; line-height:1.4; }
+.profile-field-input:focus,
+.profile-field-textarea:focus { border-color:var(--accent); }
 .settings-action-btn.danger {
   background:rgba(239,68,68,0.08); color:var(--red);
 }
@@ -1127,6 +1252,19 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
       </button>
     </div>
 
+    <!-- Voice control pills: tone, speed, current speaker -->
+    <div class="voice-controls" id="voiceControls">
+      <button class="voice-pill" id="tonePill" type="button" aria-label="Changer le ton de la voix">
+        <span class="vp-icon" id="toneIcon">😐</span><span class="vp-label" id="toneLabel">Neutre</span>
+      </button>
+      <button class="voice-pill" id="speedPill" type="button" aria-label="Changer la vitesse de parole">
+        <span class="vp-icon" id="speedIcon">⏱️</span><span class="vp-label" id="speedLabel">Normal</span>
+      </button>
+      <button class="voice-pill" id="speakerPill" type="button" aria-label="Choisir l'interlocuteur">
+        <span class="vp-icon">👤</span><span class="vp-label" id="speakerLabel">Interlocuteur</span>
+      </button>
+    </div>
+
     <!-- Listening indicator (tap to start/stop) -->
     <div class="listening-bar inactive" id="listeningBar" role="button" aria-label="Appuyez pour écouter la conversation">
       <div class="listening-dot"></div>
@@ -1347,6 +1485,16 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
   <button class="tts-stop-btn">Stop</button>
 </div>
 
+<!-- ═══ SPEAKER PICKER ═══ -->
+<div id="speakerOverlay">
+  <div class="speaker-sheet">
+    <div class="speaker-sheet-title" id="speakerSheetTitle">À qui parlez-vous ?</div>
+    <div id="speakerSheetList"></div>
+    <button type="button" class="speaker-add-btn" id="speakerAddBtn">+ Ajouter un interlocuteur</button>
+    <button type="button" class="speaker-close-btn" id="speakerCloseBtn">Fermer</button>
+  </div>
+</div>
+
 <!-- ═══ CONSENT MODAL ═══ -->
 <div id="consentOverlay">
   <div class="consent-sheet">
@@ -1407,6 +1555,53 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
     <p style="margin:0 0 10px; font-size:13px; color:var(--text-secondary);">Talkie apprend automatiquement des détails à partir de vos échanges.</p>
     <div id="learnedMemoryDisplay" style="background:var(--bg-card-hover); border:1px solid var(--separator); border-radius:12px; padding:14px; font-size:14px; color:var(--text); min-height:40px; white-space:pre-wrap; line-height:1.5;"></div>
     <button class="settings-action-btn" id="clearLearnedMemoryBtn" style="margin-top:12px;">Effacer la mémoire apprise</button>
+  </div>
+</div>
+
+<!-- Mon profil -->
+<div class="inapp-page" id="page-profile">
+  <div class="inapp-page-header">
+    <button class="inapp-page-back" onclick="closeInAppPage('profile')" aria-label="Retour">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="inapp-page-title" id="profilePageTitle">Mon profil</div>
+  </div>
+  <div class="inapp-page-content">
+    <p id="profilePageDesc" style="margin:0 0 14px; font-size:13px; color:var(--text-secondary);"></p>
+
+    <label class="profile-field-label" for="profileAge"></label>
+    <input class="profile-field-input" id="profileAge" type="text" inputmode="numeric" maxlength="3" />
+
+    <label class="profile-field-label" for="profileJob"></label>
+    <input class="profile-field-input" id="profileJob" type="text" maxlength="80" />
+
+    <label class="profile-field-label" for="profileInterests"></label>
+    <textarea class="profile-field-textarea" id="profileInterests" rows="3" maxlength="300"></textarea>
+
+    <label class="profile-field-label" for="profileFamily"></label>
+    <textarea class="profile-field-textarea" id="profileFamily" rows="3" maxlength="300"></textarea>
+
+    <label class="profile-field-label" for="profileStyle"></label>
+    <textarea class="profile-field-textarea" id="profileStyle" rows="2" maxlength="200"></textarea>
+
+    <label class="profile-field-label" for="profileValues"></label>
+    <textarea class="profile-field-textarea" id="profileValues" rows="2" maxlength="200"></textarea>
+
+    <label class="profile-field-label" for="profileAvoid"></label>
+    <textarea class="profile-field-textarea" id="profileAvoid" rows="2" maxlength="200"></textarea>
+
+    <label class="profile-field-label" for="profileFavorites"></label>
+    <textarea class="profile-field-textarea" id="profileFavorites" rows="2" maxlength="200"></textarea>
+
+    <button class="settings-action-btn" id="profileSaveBtn" style="margin-top:18px;">Enregistrer</button>
+
+    <h2 id="styleSummaryTitle" style="font-size:16px; margin:28px 0 6px;"></h2>
+    <p id="styleSummaryDesc" style="margin:0 0 10px; font-size:13px; color:var(--text-secondary);"></p>
+    <div id="styleSummaryDisplay" style="background:var(--bg-card-hover); border:1px solid var(--separator); border-radius:12px; padding:14px; font-size:14px; color:var(--text); min-height:40px; white-space:pre-wrap; line-height:1.5;"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="settings-action-btn" id="styleRefreshBtn" style="flex:1;"></button>
+      <button class="settings-action-btn" id="styleResetBtn" style="flex:1;"></button>
+    </div>
   </div>
 </div>
 
@@ -1602,6 +1797,46 @@ FORMAT STRICT :
     voiceCloned: 'Voix clonée !',
     describeProblem: 'Veuillez décrire le problème',
     llmUnavailable: 'Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.',
+    toneWarmLabel: 'Chaleureux',
+    toneNeutralLabel: 'Neutre',
+    toneFirmLabel: 'Ferme',
+    speedSlowLabel: 'Lent',
+    speedNormalLabel: 'Normal',
+    speedFastLabel: 'Rapide',
+    speakerNonePill: 'Interlocuteur',
+    speakerPickerTitle: 'À qui parlez-vous ?',
+    speakerPickerNone: 'Personne précise',
+    speakerAddNew: 'Ajouter un interlocuteur',
+    speakerNamePrompt: 'Nom de l\'interlocuteur',
+    speakerRelationshipPrompt: 'Relation (famille, médecin, ami…) — optionnel',
+    profileTitle: 'Mon profil',
+    profileDesc: 'Plus vous renseignez de détails, plus les suggestions vous ressembleront.',
+    profileAge: 'Âge',
+    profileJob: 'Métier (actuel ou passé)',
+    profileInterests: 'Centres d\'intérêt',
+    profileFamily: 'Famille et proches',
+    profileStyle: 'Style de communication (formel, familier, direct…)',
+    profileValues: 'Valeurs, traits de caractère',
+    profileAvoid: 'Sujets à éviter',
+    profileFavorites: 'Expressions favorites',
+    profileSave: 'Enregistrer',
+    profileSaved: 'Profil enregistré',
+    speakersTitle: 'Interlocuteurs',
+    speakersDesc: 'Ajoutez les personnes avec qui vous parlez souvent. Sélectionnez qui parle pour des suggestions adaptées.',
+    speakerRemove: 'Supprimer',
+    styleSummaryTitle: 'Style appris',
+    styleSummaryDesc: 'Talkie analyse les réponses que vous choisissez pour apprendre votre façon de parler.',
+    styleSummaryEmpty: 'Pas encore assez de données. Continuez à utiliser les suggestions.',
+    styleSummaryRefresh: 'Mettre à jour maintenant',
+    styleSummaryReset: 'Réinitialiser',
+    profileContextHeader: 'Profil personnel de l\'utilisateur :',
+    styleContextHeader: 'Style de communication appris de l\'utilisateur (à respecter) :',
+    currentSpeakerHeader: 'Interlocuteur actuel :',
+    toneHint: (tone) => {
+      if (tone === 'warm') return 'Ton souhaité : chaleureux, bienveillant, plus expressif. Adapte le vocabulaire.';
+      if (tone === 'firm') return 'Ton souhaité : ferme, assuré, direct. Phrases plus courtes et tranchées.';
+      return 'Ton souhaité : neutre et naturel.';
+    },
     soundboardLabel: 'Réponses rapides',
     suggestionsHeading: 'Vos réponses',
     suggestionsEmptyLine1: 'Les suggestions apparaîtront ici',
@@ -1768,6 +2003,46 @@ STRICT FORMAT:
     voiceCloned: 'Voice cloned!',
     describeProblem: 'Please describe the problem',
     llmUnavailable: 'Apple Intelligence unavailable. Enable it in Settings → Apple Intelligence.',
+    toneWarmLabel: 'Warm',
+    toneNeutralLabel: 'Neutral',
+    toneFirmLabel: 'Firm',
+    speedSlowLabel: 'Slow',
+    speedNormalLabel: 'Normal',
+    speedFastLabel: 'Fast',
+    speakerNonePill: 'Speaker',
+    speakerPickerTitle: 'Who are you talking to?',
+    speakerPickerNone: 'No one specific',
+    speakerAddNew: 'Add a speaker',
+    speakerNamePrompt: 'Speaker name',
+    speakerRelationshipPrompt: 'Relationship (family, doctor, friend…) — optional',
+    profileTitle: 'My profile',
+    profileDesc: 'The more details you provide, the more the suggestions will sound like you.',
+    profileAge: 'Age',
+    profileJob: 'Job (current or past)',
+    profileInterests: 'Interests',
+    profileFamily: 'Family and loved ones',
+    profileStyle: 'Communication style (formal, casual, direct…)',
+    profileValues: 'Values, personality traits',
+    profileAvoid: 'Topics to avoid',
+    profileFavorites: 'Favorite expressions',
+    profileSave: 'Save',
+    profileSaved: 'Profile saved',
+    speakersTitle: 'Speakers',
+    speakersDesc: 'Add people you talk with often. Pick who is speaking for tailored suggestions.',
+    speakerRemove: 'Remove',
+    styleSummaryTitle: 'Learned style',
+    styleSummaryDesc: 'Talkie analyzes the replies you pick to learn how you speak.',
+    styleSummaryEmpty: 'Not enough data yet. Keep using suggestions.',
+    styleSummaryRefresh: 'Refresh now',
+    styleSummaryReset: 'Reset',
+    profileContextHeader: 'User personal profile:',
+    styleContextHeader: 'Learned communication style of the user (must be respected):',
+    currentSpeakerHeader: 'Current speaker:',
+    toneHint: (tone) => {
+      if (tone === 'warm') return 'Requested tone: warm, kind, more expressive. Adapt the vocabulary.';
+      if (tone === 'firm') return 'Requested tone: firm, assertive, direct. Shorter, sharper sentences.';
+      return 'Requested tone: neutral and natural.';
+    },
     soundboardLabel: 'Quick phrases',
     suggestionsHeading: 'Your replies',
     suggestionsEmptyLine1: 'Suggestions will appear here',
@@ -2071,6 +2346,347 @@ let lastInterlocutorText = '';
 let conversationHistory = [];
 let isSpeaking = false;
 
+// ─── Voice controls (tone / speed / speaker) ───
+const TONE_CYCLE = ['neutral', 'warm', 'firm'];
+const SPEED_CYCLE = ['normal', 'slow', 'fast'];
+const TONE_ICONS = { neutral: '😐', warm: '😊', firm: '😤' };
+const SPEED_ICONS = { slow: '🐢', normal: '⏱️', fast: '⚡' };
+
+function _toneIndex() { return Math.max(0, TONE_CYCLE.indexOf(state.tone || 'neutral')); }
+function _speedIndex() { return Math.max(0, SPEED_CYCLE.indexOf(state.speed || 'normal')); }
+function currentTone() { return state.tone || 'neutral'; }
+function currentSpeed() { return state.speed || 'normal'; }
+
+/** Returns { stability, similarity_boost, style, use_speaker_boost } for ElevenLabs. */
+function elevenLabsVoiceSettings(tone) {
+  switch (tone) {
+    case 'warm':
+      return { stability: 0.4, similarity_boost: 0.85, style: 0.65, use_speaker_boost: true };
+    case 'firm':
+      return { stability: 0.7, similarity_boost: 0.85, style: 0.3, use_speaker_boost: true };
+    default:
+      return { stability: 0.6, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true };
+  }
+}
+
+/** Rate multiplier (1.0 = normal) applied to the native AVAudioUnitTimePitch. */
+function speedToRate(speed) {
+  if (speed === 'slow') return 0.85;
+  if (speed === 'fast') return 1.25;
+  return 1.0;
+}
+
+/** AVSpeechUtterance rate: default ≈ 0.5 on iOS. */
+function speedToAppleRate(speed) {
+  if (speed === 'slow') return 0.42;
+  if (speed === 'fast') return 0.58;
+  return 0.5;
+}
+
+function tonePitchMultiplier(tone) {
+  if (tone === 'warm') return 1.07;
+  if (tone === 'firm') return 0.93;
+  return 1.0;
+}
+
+/** SpeechSynthesisUtterance rate (1.0 default, ~0.5-2.0 useful range). */
+function speedToWebRate(speed) {
+  if (speed === 'slow') return 0.8;
+  if (speed === 'fast') return 1.2;
+  return 1.0;
+}
+
+function _label(key) {
+  try { return (I18N[currentLang] || I18N.fr)[key] || key; } catch (_) { return key; }
+}
+
+function renderVoiceControls() {
+  const toneIcon = document.getElementById('toneIcon');
+  const toneLabel = document.getElementById('toneLabel');
+  const tonePill = document.getElementById('tonePill');
+  const speedIcon = document.getElementById('speedIcon');
+  const speedLabel = document.getElementById('speedLabel');
+  const speedPill = document.getElementById('speedPill');
+  const speakerPill = document.getElementById('speakerPill');
+  const speakerLabel = document.getElementById('speakerLabel');
+  if (!tonePill || !speedPill || !speakerPill) return;
+
+  const tone = currentTone();
+  toneIcon.textContent = TONE_ICONS[tone] || '😐';
+  toneLabel.textContent = _label(tone === 'warm' ? 'toneWarmLabel' : tone === 'firm' ? 'toneFirmLabel' : 'toneNeutralLabel');
+  tonePill.classList.remove('tone-warm', 'tone-firm');
+  if (tone === 'warm') tonePill.classList.add('tone-warm');
+  if (tone === 'firm') tonePill.classList.add('tone-firm');
+
+  const speed = currentSpeed();
+  speedIcon.textContent = SPEED_ICONS[speed] || '⏱️';
+  speedLabel.textContent = _label(speed === 'slow' ? 'speedSlowLabel' : speed === 'fast' ? 'speedFastLabel' : 'speedNormalLabel');
+  speedPill.classList.remove('speed-slow', 'speed-fast');
+  if (speed === 'slow') speedPill.classList.add('speed-slow');
+  if (speed === 'fast') speedPill.classList.add('speed-fast');
+
+  const sp = currentSpeakerObj();
+  if (sp) {
+    speakerLabel.textContent = sp.name;
+    speakerPill.classList.add('has-speaker');
+  } else {
+    speakerLabel.textContent = _label('speakerNonePill');
+    speakerPill.classList.remove('has-speaker');
+  }
+}
+
+function cycleTone() {
+  state.tone = TONE_CYCLE[(_toneIndex() + 1) % TONE_CYCLE.length];
+  save();
+  renderVoiceControls();
+}
+
+function cycleSpeed() {
+  state.speed = SPEED_CYCLE[(_speedIndex() + 1) % SPEED_CYCLE.length];
+  save();
+  renderVoiceControls();
+}
+
+function currentSpeakerObj() {
+  if (!state.currentSpeakerId) return null;
+  return (state.speakers || []).find(s => s.id === state.currentSpeakerId) || null;
+}
+
+function _genSpeakerId() {
+  return 'sp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function setCurrentSpeaker(id) {
+  state.currentSpeakerId = id || null;
+  save();
+  renderVoiceControls();
+}
+
+function addSpeaker(name, relationship) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return null;
+  const speaker = {
+    id: _genSpeakerId(),
+    name: trimmed.slice(0, 40),
+    relationship: (relationship || '').trim().slice(0, 60),
+    createdAt: Date.now(),
+  };
+  state.speakers = (state.speakers || []).concat(speaker);
+  save();
+  return speaker;
+}
+
+function removeSpeaker(id) {
+  state.speakers = (state.speakers || []).filter(s => s.id !== id);
+  if (state.currentSpeakerId === id) state.currentSpeakerId = null;
+  save();
+}
+
+function openSpeakerPicker() {
+  const overlay = document.getElementById('speakerOverlay');
+  const list = document.getElementById('speakerSheetList');
+  const titleEl = document.getElementById('speakerSheetTitle');
+  const addBtn = document.getElementById('speakerAddBtn');
+  const closeBtn = document.getElementById('speakerCloseBtn');
+  if (!overlay || !list) return;
+  titleEl.textContent = t('speakerPickerTitle');
+  addBtn.textContent = '+ ' + t('speakerAddNew');
+  closeBtn.textContent = currentLang === 'fr' ? 'Fermer' : 'Close';
+
+  function render() {
+    list.innerHTML = '';
+    const items = [{ id: null, name: t('speakerPickerNone'), relationship: '' }]
+      .concat(state.speakers || []);
+    items.forEach(sp => {
+      const row = document.createElement('div');
+      row.className = 'speaker-row' + (sp.id === (state.currentSpeakerId || null) ? ' selected' : '');
+      const info = document.createElement('div');
+      info.className = 'sp-info';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'sp-name';
+      nameEl.textContent = sp.name;
+      info.appendChild(nameEl);
+      if (sp.relationship) {
+        const rel = document.createElement('div');
+        rel.className = 'sp-relation';
+        rel.textContent = sp.relationship;
+        info.appendChild(rel);
+      }
+      row.appendChild(info);
+      const check = document.createElement('div');
+      check.className = 'sp-check';
+      row.appendChild(check);
+      if (sp.id) {
+        const rm = document.createElement('button');
+        rm.type = 'button';
+        rm.className = 'sp-remove';
+        rm.textContent = t('speakerRemove');
+        rm.onclick = (e) => {
+          e.stopPropagation();
+          removeSpeaker(sp.id);
+          render();
+          renderVoiceControls();
+        };
+        row.appendChild(rm);
+      }
+      row.onclick = () => {
+        setCurrentSpeaker(sp.id);
+        closeSpeakerPicker();
+      };
+      list.appendChild(row);
+    });
+  }
+  render();
+
+  addBtn.onclick = () => {
+    const name = prompt(t('speakerNamePrompt'));
+    if (!name || !name.trim()) return;
+    const rel = prompt(t('speakerRelationshipPrompt')) || '';
+    const sp = addSpeaker(name, rel);
+    if (sp) {
+      setCurrentSpeaker(sp.id);
+      render();
+    }
+  };
+  closeBtn.onclick = closeSpeakerPicker;
+  overlay.onclick = (e) => { if (e.target === overlay) closeSpeakerPicker(); };
+  overlay.classList.add('active');
+}
+
+function closeSpeakerPicker() {
+  const overlay = document.getElementById('speakerOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+// ─── Profile (Phase 3) ───
+const PROFILE_FIELDS = [
+  { key: 'age',        labelKey: 'profileAge' },
+  { key: 'job',        labelKey: 'profileJob' },
+  { key: 'interests',  labelKey: 'profileInterests' },
+  { key: 'family',     labelKey: 'profileFamily' },
+  { key: 'style',      labelKey: 'profileStyle' },
+  { key: 'values',     labelKey: 'profileValues' },
+  { key: 'avoid',      labelKey: 'profileAvoid' },
+  { key: 'favorites',  labelKey: 'profileFavorites' },
+];
+
+function buildProfileLines() {
+  const p = state.profile || {};
+  const lines = [];
+  PROFILE_FIELDS.forEach(f => {
+    const v = (p[f.key] || '').trim();
+    if (!v) return;
+    const label = t(f.labelKey);
+    lines.push(`- ${label} : ${v}`);
+  });
+  return lines.join('\n');
+}
+
+function loadProfilePage() {
+  const p = state.profile || {};
+  PROFILE_FIELDS.forEach(f => {
+    const inp = document.getElementById('profile' + f.key.charAt(0).toUpperCase() + f.key.slice(1));
+    if (inp) inp.value = p[f.key] || '';
+  });
+  // Labels (i18n)
+  const title = document.getElementById('profilePageTitle');
+  const desc = document.getElementById('profilePageDesc');
+  if (title) title.textContent = t('profileTitle');
+  if (desc) desc.textContent = t('profileDesc');
+  PROFILE_FIELDS.forEach(f => {
+    const lab = document.querySelector(`label[for="profile${f.key.charAt(0).toUpperCase() + f.key.slice(1)}"]`);
+    if (lab) lab.textContent = t(f.labelKey);
+  });
+  const saveBtn = document.getElementById('profileSaveBtn');
+  if (saveBtn) saveBtn.textContent = t('profileSave');
+  const stTitle = document.getElementById('styleSummaryTitle');
+  const stDesc = document.getElementById('styleSummaryDesc');
+  const stRefresh = document.getElementById('styleRefreshBtn');
+  const stReset = document.getElementById('styleResetBtn');
+  if (stTitle) stTitle.textContent = t('styleSummaryTitle');
+  if (stDesc) stDesc.textContent = t('styleSummaryDesc');
+  if (stRefresh) stRefresh.textContent = t('styleSummaryRefresh');
+  if (stReset) stReset.textContent = t('styleSummaryReset');
+  const stDisplay = document.getElementById('styleSummaryDisplay');
+  if (stDisplay) stDisplay.textContent = state.styleSummary || t('styleSummaryEmpty');
+}
+
+function saveProfileFromPage() {
+  const next = {};
+  PROFILE_FIELDS.forEach(f => {
+    const inp = document.getElementById('profile' + f.key.charAt(0).toUpperCase() + f.key.slice(1));
+    if (inp) next[f.key] = (inp.value || '').trim();
+  });
+  state.profile = next;
+  save();
+  showToast(t('profileSaved'));
+}
+
+window._openProfilePage = function() {
+  loadProfilePage();
+  openInAppPage('profile');
+};
+
+// ─── Style learning ───
+const STYLE_PICKED_MAX = 50;
+const STYLE_SUMMARY_THRESHOLD = 10;
+
+function recordSuggestionPick(text) {
+  if (!text || typeof text !== 'string') return;
+  if (!state.suggestionStats) state.suggestionStats = { picked: [], pickedSinceLastSummary: 0 };
+  const entry = {
+    t: text.trim().slice(0, 200),
+    l: text.trim().length,
+    tone: currentTone(),
+    speakerId: state.currentSpeakerId || null,
+    ts: Date.now(),
+  };
+  state.suggestionStats.picked.push(entry);
+  if (state.suggestionStats.picked.length > STYLE_PICKED_MAX) {
+    state.suggestionStats.picked = state.suggestionStats.picked.slice(-STYLE_PICKED_MAX);
+  }
+  state.suggestionStats.pickedSinceLastSummary = (state.suggestionStats.pickedSinceLastSummary || 0) + 1;
+  save();
+  if (state.suggestionStats.pickedSinceLastSummary >= STYLE_SUMMARY_THRESHOLD) {
+    // Best-effort, fire-and-forget; gated by LLM availability.
+    void refreshStyleSummary();
+  }
+}
+
+async function refreshStyleSummary() {
+  if (!llmAvailable) return;
+  const picked = (state.suggestionStats && state.suggestionStats.picked) || [];
+  if (picked.length < 5) {
+    showToast(t('styleSummaryEmpty'));
+    return;
+  }
+  const corpus = picked.slice(-30).map((p, i) => `${i + 1}. ${p.t}`).join('\n');
+  const sys = currentLang === 'fr'
+    ? "Tu es un analyste linguistique. À partir d'un corpus de phrases que l'utilisateur a choisi de dire, rédige un court résumé (5 à 8 puces, max 80 mots au total) de son style de communication : longueur typique, registre (familier/soutenu/direct), tonalité, vocabulaire récurrent, tournures favorites. Pas d'analyse psychologique, uniquement le style. Réponds en français, sans préambule."
+    : "You are a linguistic analyst. From the corpus of replies the user chose to say, write a short summary (5-8 bullets, max 80 words total) of their communication style: typical length, register (casual/formal/direct), tone, recurring vocabulary, favorite turns of phrase. No psychological analysis, just style. Reply in English, no preamble.";
+  try {
+    const out = await callNativeLLM(sys, corpus);
+    if (out && out.trim()) {
+      state.styleSummary = out.trim();
+      state.suggestionStats.pickedSinceLastSummary = 0;
+      save();
+      const display = document.getElementById('styleSummaryDisplay');
+      if (display) display.textContent = state.styleSummary;
+      console.log('[Talkie] Style summary refreshed.');
+    }
+  } catch (e) {
+    console.warn('[Talkie] Style summary refresh failed:', e);
+  }
+}
+
+function resetStyleLearning() {
+  state.styleSummary = '';
+  state.suggestionStats = { picked: [], pickedSinceLastSummary: 0 };
+  save();
+  const display = document.getElementById('styleSummaryDisplay');
+  if (display) display.textContent = t('styleSummaryEmpty');
+}
+
 // ─── Soundboard (quick phrases) ───
 const DEFAULT_QUICK_PHRASES = {
   fr: [
@@ -2167,7 +2783,15 @@ function loadState() {
       }
       delete s.useLocalTTS;
       if (s.oledMode === undefined) s.oledMode = false;
-      if (!s.quickPhrases) s.quickPhrases = [];      return s;
+      if (!s.quickPhrases) s.quickPhrases = [];
+      if (!s.tone) s.tone = 'neutral';
+      if (!s.speed) s.speed = 'normal';
+      if (!s.speakers) s.speakers = [];
+      if (s.currentSpeakerId === undefined) s.currentSpeakerId = null;
+      if (!s.profile) s.profile = {};
+      if (!s.styleSummary) s.styleSummary = '';
+      if (!s.suggestionStats) s.suggestionStats = { picked: [], pickedSinceLastSummary: 0 };
+      return s;
     }
   } catch {}
   // Migrate from old Echo versions
@@ -2195,6 +2819,10 @@ function loadState() {
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
+    tone: 'neutral', speed: 'normal',
+    speakers: [], currentSpeakerId: null,
+    profile: {}, styleSummary: '',
+    suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
   };
 }
 
@@ -2213,11 +2841,23 @@ function addToHistory(text, isUser) {
     text: text.trim(), isUser,
     time: new Date().toLocaleTimeString(loc, { hour:'2-digit', minute:'2-digit' })
   };
+  // Tag interlocutor turns with the active speaker so the LLM sees who said what.
+  if (!isUser && state.currentSpeakerId) {
+    entry.speakerId = state.currentSpeakerId;
+  }
   state.history.push(entry);
   if (state.history.length > 20) state.history = state.history.slice(-20);
   conversationHistory = state.history;
   save();
   maybeExtractMemory();
+}
+
+function speakerLabelForEntry(entry) {
+  if (entry.isUser) return t('historyMe');
+  if (!entry.speakerId) return t('historyOther');
+  const sp = (state.speakers || []).find(s => s.id === entry.speakerId);
+  if (!sp) return t('historyOther');
+  return sp.relationship ? `${sp.name} (${sp.relationship})` : sp.name;
 }
 
 // ─── Auto-memory extraction ───
@@ -2489,6 +3129,7 @@ function speakSuggestion(text, cardIndex) {
   showTTSOverlay();
   addToHistory(text, true);
   maybeExtractMemory();
+  recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
     hideTTSOverlay();
     if (wasListening) startListening();
@@ -2502,6 +3143,7 @@ function speakManual() {
   if (wasListening) stopListening();
   addToHistory(text, true);
   showTTSOverlay();
+  recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
     hideTTSOverlay();
     $('manualInput').value = '';
@@ -2617,7 +3259,10 @@ async function playElevenLabsBlob(blob) {
       };
       // Ne pas déduire la fin depuis la progression (durée / position imprécises → coupure trop tôt).
       window._nativeTTSProgress = () => {};
-      window.webkit.messageHandlers.playTTSFromData.postMessage({ playbackId, base64: b64 });
+      window.webkit.messageHandlers.playTTSFromData.postMessage({
+        playbackId, base64: b64,
+        rate: speedToRate(currentSpeed())
+      });
       return;
     } catch (e) {
       console.warn('[Talkie] native TTS encode failed', e);
@@ -2650,7 +3295,11 @@ function speakApplePersonalVoice(text) {
     _onTTSDone();
   };
   try {
-    window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({ text, requestId: rid, lang: getLangCode() });
+    window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({
+      text, requestId: rid, lang: getLangCode(),
+      rate: speedToAppleRate(currentSpeed()),
+      pitchMultiplier: tonePitchMultiplier(currentTone())
+    });
   } catch(e) {
     console.error('Failed native speech', e);
     speakLocal(text);
@@ -2661,8 +3310,8 @@ function speakLocal(text) {
   stopPlaybackOnly();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = getLangCode();
-  utterance.rate = 0.9;
-  utterance.pitch = 1.0;
+  utterance.rate = 0.9 * speedToWebRate(currentSpeed());
+  utterance.pitch = tonePitchMultiplier(currentTone());
   const voices = speechSynthesis.getVoices();
   const langPrefix = currentLang;
   const localVoice = voices.find(v => v.lang.startsWith(langPrefix) && !v.name.includes('Siri'))
@@ -2754,7 +3403,7 @@ async function fetchTTSAudio(text) {
     headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
     body: JSON.stringify({
       text, model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.6, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true }
+      voice_settings: elevenLabsVoiceSettings(currentTone())
     })
   });
   if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
@@ -3031,7 +3680,7 @@ async function fetchSuggestions(interlocutorText) {
   showSuggestionLoading();
 
   const ctx = state.history.slice(-8).map(m =>
-    `${m.isUser ? t('historyMe') : t('historyOther')}: ${m.text}`
+    `${speakerLabelForEntry(m)}: ${m.text}`
   ).join('\n');
 
   // Filter inappropriate input
@@ -3051,6 +3700,22 @@ async function fetchSuggestions(interlocutorText) {
   if (state.userName) {
     sys += `\n${t('userNameCtx')} ${state.userName}.`;
   }
+  // Structured profile (Phase 3) — short bullets only.
+  const profileLines = buildProfileLines();
+  if (profileLines) sys += `\n\n${t('profileContextHeader')}\n${profileLines}`;
+  // Learned style summary built from accepted suggestions.
+  if (state.styleSummary && state.styleSummary.trim()) {
+    sys += `\n\n${t('styleContextHeader')}\n${state.styleSummary.trim()}`;
+  }
+  // Active speaker hint so the LLM tailors register/tone.
+  const sp = currentSpeakerObj();
+  if (sp) {
+    const relStr = sp.relationship ? ` (${sp.relationship})` : '';
+    sys += `\n\n${t('currentSpeakerHeader')} ${sp.name}${relStr}`;
+  }
+  // Tone hint so the LLM adapts wording (the audio engine handles the literal voice).
+  const toneHint = t('toneHint')(currentTone());
+  if (toneHint) sys += `\n${toneHint}`;
   sys += `\n\n${t('recentHistory')}\n${ctx}`;
   sys += `\n\n${t('llmOutputLanguage')}`;
 
@@ -3223,6 +3888,18 @@ $('memoryPageBtn').onclick = () => {
 };
 $('advancedPageBtn').onclick = () => openInAppPage('advanced');
 
+// Profile page (Phase 3)
+safeClick('profileSaveBtn', saveProfileFromPage);
+safeClick('styleRefreshBtn', () => {
+  showToast(currentLang === 'fr' ? 'Analyse en cours…' : 'Analyzing…');
+  void refreshStyleSummary();
+});
+safeClick('styleResetBtn', () => {
+  if (confirm(currentLang === 'fr' ? 'Réinitialiser le style appris ?' : 'Reset the learned style?')) {
+    resetStyleLearning();
+  }
+});
+
 // Report form
 $('reportSendBtn').onclick = () => {
   const text = $('reportTextarea').value.trim();
@@ -3392,6 +4069,11 @@ conversationHistory = state.history || [];
 // renderSoundboard is defined after the first applyStaticTranslations() runs at
 // boot, so the soundboard otherwise stays empty until a later i18n refresh.
 renderSoundboard();
+renderVoiceControls();
+// Voice pills — defined here because the buttons are part of the suggestions view.
+safeClick('tonePill', cycleTone);
+safeClick('speedPill', cycleSpeed);
+safeClick('speakerPill', function() { if (typeof openSpeakerPicker === 'function') openSpeakerPicker(); });
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)

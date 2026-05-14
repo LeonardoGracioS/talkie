@@ -83,6 +83,7 @@ class SettingsViewModel: ObservableObject {
     var onLanguageChanged: ((String) -> Void)?
     var onQuickPhrasesChanged: (([QuickPhrase]) -> Void)?
     var onOledModeChanged: ((Bool) -> Void)?
+    var onOpenProfilePage: (() -> Void)?
 }
 
 // MARK: - Settings View
@@ -121,6 +122,15 @@ struct SettingsView: View {
                         MemoryView(memory: $vm.memory, learnedMemory: $vm.learnedMemory, lang: vm.lang, onClearLearnedMemory: vm.onClearLearnedMemory)
                     } label: {
                         Label(vm.lang == "fr" ? "Mémoire IA" : "AI Memory", systemImage: "brain")
+                    }
+
+                    Button {
+                        // Dismiss the sheet, then ask the web layer to open its richer
+                        // profile form (structured fields + learned style summary).
+                        dismiss()
+                        vm.onOpenProfilePage?()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Mon profil" : "My profile", systemImage: "person.text.rectangle")
                     }
 
                     Toggle(isOn: $vm.useApplePersonalVoice) {
