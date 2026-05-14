@@ -227,6 +227,7 @@ html, body {
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   transition:box-shadow .3s;
+  position:relative;
 }
 .context-label {
   font:700 13px var(--font);
@@ -234,6 +235,19 @@ html, body {
   color:var(--accent);
   margin-bottom:6px;
 }
+.context-reset-btn {
+  position:absolute; top:10px; right:10px;
+  width:32px; height:32px; padding:0;
+  background:rgba(91,106,240,0.12);
+  color:var(--accent);
+  border:none; border-radius:16px;
+  font:700 18px/1 var(--font); cursor:pointer;
+  display:none; align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .12s, background .2s;
+}
+.context-reset-btn.visible { display:flex; }
+.context-reset-btn:active { transform:scale(0.9); background:rgba(91,106,240,0.22); }
 .context-text {
   font-weight:600; font-size:1.25rem; line-height:1.35; font-family:var(--font);
   color:var(--text);
@@ -363,6 +377,47 @@ html, body {
   text-align:center; line-height:1.5;
 }
 
+/* ─── Tone picker sheet ─── */
+#toneOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  z-index:202; display:none; align-items:flex-end; justify-content:center;
+}
+#toneOverlay.active { display:flex; }
+.tone-sheet {
+  background:var(--bg-card); border-radius:20px 20px 0 0;
+  width:100%; max-width:600px; max-height:80vh;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:20px 20px calc(var(--safe-bottom) + 20px);
+  animation:consentSlideUp .3s ease;
+}
+.tone-grid {
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+  margin-bottom:14px;
+}
+.tone-tile {
+  min-height:90px;
+  padding:14px 8px;
+  border:1.5px solid var(--separator);
+  border-radius:14px;
+  background:var(--bg);
+  color:var(--text);
+  font:600 13px var(--font);
+  cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .12s, background .2s, border-color .2s;
+}
+.tone-tile:active { transform:scale(0.95); background:var(--bg-card-hover); }
+.tone-tile.selected {
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  box-shadow:inset 0 0 0 1px var(--accent);
+  color:var(--accent);
+}
+.tone-tile .tt-icon { font-size:28px; line-height:1; }
+.tone-tile .tt-label { font-size:13px; }
+
 /* ─── Speaker picker sheet ─── */
 #speakerOverlay {
   position:fixed; inset:0;
@@ -459,16 +514,22 @@ html, body {
 .voice-pill:active { transform:scale(0.95); }
 .voice-pill .vp-icon { font-size:16px; line-height:1; }
 .voice-pill .vp-label { font-size:13px; }
-.voice-pill.tone-warm { background:rgba(255,179,71,0.18); color:#C16E00; }
-.voice-pill.tone-firm { background:rgba(255,99,71,0.15); color:#B43A2A; }
-.voice-pill.speed-slow { background:rgba(91,106,240,0.15); color:#3F4FD1; }
-.voice-pill.speed-fast { background:rgba(52,199,133,0.18); color:var(--green); }
+.voice-pill.tone-warm   { background:rgba(255,179,71,0.18); color:#C16E00; }
+.voice-pill.tone-joyful { background:rgba(255,210,80,0.22); color:#A06A00; }
+.voice-pill.tone-firm   { background:rgba(255,99,71,0.15);  color:#B43A2A; }
+.voice-pill.tone-sad    { background:rgba(91,106,240,0.14); color:#3F4FD1; }
+.voice-pill.tone-calm   { background:rgba(120,200,200,0.18); color:#2A7878; }
+.voice-pill.speed-slow  { background:rgba(91,106,240,0.15); color:#3F4FD1; }
+.voice-pill.speed-fast  { background:rgba(52,199,133,0.18); color:var(--green); }
 .voice-pill.has-speaker { background:rgba(91,106,240,0.12); color:#3F4FD1; }
 body[data-app-theme="dark"] .voice-pill { background:var(--bg-card); color:var(--text); }
-body[data-app-theme="dark"] .voice-pill.tone-warm { background:rgba(255,179,71,0.20); color:#FFB347; }
-body[data-app-theme="dark"] .voice-pill.tone-firm { background:rgba(255,99,71,0.18); color:#FF7755; }
-body[data-app-theme="dark"] .voice-pill.speed-slow { background:rgba(120,135,255,0.18); color:#A4AFFF; }
-body[data-app-theme="dark"] .voice-pill.speed-fast { background:rgba(52,199,133,0.20); color:#5DD7A0; }
+body[data-app-theme="dark"] .voice-pill.tone-warm   { background:rgba(255,179,71,0.20); color:#FFB347; }
+body[data-app-theme="dark"] .voice-pill.tone-joyful { background:rgba(255,210,80,0.24); color:#FFD250; }
+body[data-app-theme="dark"] .voice-pill.tone-firm   { background:rgba(255,99,71,0.18); color:#FF7755; }
+body[data-app-theme="dark"] .voice-pill.tone-sad    { background:rgba(120,135,255,0.18); color:#A4AFFF; }
+body[data-app-theme="dark"] .voice-pill.tone-calm   { background:rgba(120,200,200,0.20); color:#7CE0E0; }
+body[data-app-theme="dark"] .voice-pill.speed-slow  { background:rgba(120,135,255,0.18); color:#A4AFFF; }
+body[data-app-theme="dark"] .voice-pill.speed-fast  { background:rgba(52,199,133,0.20); color:#5DD7A0; }
 body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,255,0.15); color:#A4AFFF; }
 
 /* ─── Soundboard (quick phrases) ─── */
@@ -1274,6 +1335,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 
     <!-- Context zone -->
     <div class="context-zone">
+      <button type="button" class="context-reset-btn" id="contextResetBtn" aria-label="Réinitialiser le contexte">✕</button>
       <div class="context-label">L'interlocuteur dit</div>
       <div class="context-text empty" id="contextText">En attente de parole...</div>
     </div>
@@ -1483,6 +1545,15 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
     <div class="tts-overlay-text">En train de parler…</div>
   </div>
   <button class="tts-stop-btn">Stop</button>
+</div>
+
+<!-- ═══ TONE PICKER ═══ -->
+<div id="toneOverlay">
+  <div class="tone-sheet">
+    <div class="speaker-sheet-title" id="toneSheetTitle">Choisir le ton</div>
+    <div class="tone-grid" id="toneSheetList"></div>
+    <button type="button" class="speaker-close-btn" id="toneCloseBtn">Fermer</button>
+  </div>
 </div>
 
 <!-- ═══ SPEAKER PICKER ═══ -->
@@ -1800,6 +1871,10 @@ FORMAT STRICT :
     toneWarmLabel: 'Chaleureux',
     toneNeutralLabel: 'Neutre',
     toneFirmLabel: 'Ferme',
+    toneJoyfulLabel: 'Enjoué',
+    toneSadLabel: 'Doux',
+    toneCalmLabel: 'Calme',
+    tonePickerTitle: 'Choisir le ton',
     speedSlowLabel: 'Lent',
     speedNormalLabel: 'Normal',
     speedFastLabel: 'Rapide',
@@ -1833,9 +1908,14 @@ FORMAT STRICT :
     styleContextHeader: 'Style de communication appris de l\'utilisateur (à respecter) :',
     currentSpeakerHeader: 'Interlocuteur actuel :',
     toneHint: (tone) => {
-      if (tone === 'warm') return 'Ton souhaité : chaleureux, bienveillant, plus expressif. Adapte le vocabulaire.';
-      if (tone === 'firm') return 'Ton souhaité : ferme, assuré, direct. Phrases plus courtes et tranchées.';
-      return 'Ton souhaité : neutre et naturel.';
+      switch (tone) {
+        case 'warm':   return 'Ton souhaité : chaleureux, bienveillant, plus expressif. Adapte le vocabulaire en conséquence.';
+        case 'joyful': return 'Ton souhaité : enjoué, énergique, optimiste. Vocabulaire pétillant, exclamations bienvenues.';
+        case 'firm':   return 'Ton souhaité : ferme, assuré, direct. Phrases courtes et tranchées, pas de relativisation.';
+        case 'sad':    return 'Ton souhaité : doux, pudique, parfois mélancolique. Tournures plus posées et nuancées.';
+        case 'calm':   return 'Ton souhaité : calme, apaisé, mesuré. Phrases simples, vocabulaire rassurant.';
+        default:       return 'Ton souhaité : neutre et naturel.';
+      }
     },
     soundboardLabel: 'Réponses rapides',
     suggestionsHeading: 'Vos réponses',
@@ -2006,6 +2086,10 @@ STRICT FORMAT:
     toneWarmLabel: 'Warm',
     toneNeutralLabel: 'Neutral',
     toneFirmLabel: 'Firm',
+    toneJoyfulLabel: 'Joyful',
+    toneSadLabel: 'Gentle',
+    toneCalmLabel: 'Calm',
+    tonePickerTitle: 'Pick a tone',
     speedSlowLabel: 'Slow',
     speedNormalLabel: 'Normal',
     speedFastLabel: 'Fast',
@@ -2039,9 +2123,14 @@ STRICT FORMAT:
     styleContextHeader: 'Learned communication style of the user (must be respected):',
     currentSpeakerHeader: 'Current speaker:',
     toneHint: (tone) => {
-      if (tone === 'warm') return 'Requested tone: warm, kind, more expressive. Adapt the vocabulary.';
-      if (tone === 'firm') return 'Requested tone: firm, assertive, direct. Shorter, sharper sentences.';
-      return 'Requested tone: neutral and natural.';
+      switch (tone) {
+        case 'warm':   return 'Requested tone: warm, kind, expressive. Adapt the vocabulary accordingly.';
+        case 'joyful': return 'Requested tone: joyful, energetic, upbeat. Lively wording, exclamations welcome.';
+        case 'firm':   return 'Requested tone: firm, assertive, direct. Short, sharp sentences with no hedging.';
+        case 'sad':    return 'Requested tone: gentle, restrained, sometimes wistful. Subtler, more measured phrasing.';
+        case 'calm':   return 'Requested tone: calm, soothing, measured. Simple sentences, reassuring vocabulary.';
+        default:       return 'Requested tone: neutral and natural.';
+      }
     },
     soundboardLabel: 'Quick phrases',
     suggestionsHeading: 'Your replies',
@@ -2347,57 +2436,79 @@ let conversationHistory = [];
 let isSpeaking = false;
 
 // ─── Voice controls (tone / speed / speaker) ───
-const TONE_CYCLE = ['neutral', 'warm', 'firm'];
+/**
+ * Per-tone profile. Each tone modulates THREE things at once for a perceptible
+ * change: ElevenLabs voice_settings (stability/style/similarity_boost), a pitch
+ * offset in cents fed to AVAudioUnitTimePitch (negative = deeper, positive =
+ * higher), and a rate offset multiplier on top of the user's speed setting.
+ */
+const TONE_PROFILES = {
+  neutral: { icon: '😐', el: { stability: 0.55, style: 0.4,  similarity_boost: 0.85 }, pitchCents: 0,    rateMul: 1.00, applePitch: 1.00 },
+  warm:    { icon: '😊', el: { stability: 0.30, style: 0.75, similarity_boost: 0.80 }, pitchCents: 80,   rateMul: 1.00, applePitch: 1.10 },
+  joyful:  { icon: '😄', el: { stability: 0.20, style: 0.90, similarity_boost: 0.80 }, pitchCents: 220,  rateMul: 1.07, applePitch: 1.25 },
+  firm:    { icon: '😤', el: { stability: 0.75, style: 0.25, similarity_boost: 0.90 }, pitchCents: -180, rateMul: 0.97, applePitch: 0.88 },
+  sad:     { icon: '😢', el: { stability: 0.55, style: 0.60, similarity_boost: 0.85 }, pitchCents: -260, rateMul: 0.88, applePitch: 0.82 },
+  calm:    { icon: '🤫', el: { stability: 0.90, style: 0.15, similarity_boost: 0.85 }, pitchCents: -60,  rateMul: 0.92, applePitch: 0.95 },
+};
+const TONE_ORDER = ['neutral', 'warm', 'joyful', 'firm', 'sad', 'calm'];
 const SPEED_CYCLE = ['normal', 'slow', 'fast'];
-const TONE_ICONS = { neutral: '😐', warm: '😊', firm: '😤' };
 const SPEED_ICONS = { slow: '🐢', normal: '⏱️', fast: '⚡' };
 
-function _toneIndex() { return Math.max(0, TONE_CYCLE.indexOf(state.tone || 'neutral')); }
 function _speedIndex() { return Math.max(0, SPEED_CYCLE.indexOf(state.speed || 'normal')); }
 function currentTone() { return state.tone || 'neutral'; }
 function currentSpeed() { return state.speed || 'normal'; }
+function toneProfile(tone) { return TONE_PROFILES[tone] || TONE_PROFILES.neutral; }
 
 /** Returns { stability, similarity_boost, style, use_speaker_boost } for ElevenLabs. */
 function elevenLabsVoiceSettings(tone) {
-  switch (tone) {
-    case 'warm':
-      return { stability: 0.4, similarity_boost: 0.85, style: 0.65, use_speaker_boost: true };
-    case 'firm':
-      return { stability: 0.7, similarity_boost: 0.85, style: 0.3, use_speaker_boost: true };
-    default:
-      return { stability: 0.6, similarity_boost: 0.85, style: 0.4, use_speaker_boost: true };
-  }
+  const p = toneProfile(tone).el;
+  return { stability: p.stability, similarity_boost: p.similarity_boost, style: p.style, use_speaker_boost: true };
 }
 
-/** Rate multiplier (1.0 = normal) applied to the native AVAudioUnitTimePitch. */
-function speedToRate(speed) {
-  if (speed === 'slow') return 0.85;
-  if (speed === 'fast') return 1.25;
-  return 1.0;
+/** Rate multiplier (1.0 = normal) applied to the native AVAudioUnitTimePitch.
+ *  Combines the user-selected speed AND the tone's intrinsic pacing. */
+function speedToRate(speed, tone) {
+  const base = speed === 'slow' ? 0.82 : speed === 'fast' ? 1.30 : 1.0;
+  const mul = toneProfile(tone || currentTone()).rateMul;
+  return Math.max(0.5, Math.min(2.0, base * mul));
+}
+
+/** Pitch shift in cents (TimePitch supports −2400…+2400). */
+function tonePitchCents(tone) {
+  return toneProfile(tone || currentTone()).pitchCents;
 }
 
 /** AVSpeechUtterance rate: default ≈ 0.5 on iOS. */
-function speedToAppleRate(speed) {
-  if (speed === 'slow') return 0.42;
-  if (speed === 'fast') return 0.58;
-  return 0.5;
+function speedToAppleRate(speed, tone) {
+  const base = speed === 'slow' ? 0.42 : speed === 'fast' ? 0.58 : 0.5;
+  const mul = toneProfile(tone || currentTone()).rateMul;
+  return Math.max(0.0, Math.min(1.0, base * mul));
 }
 
 function tonePitchMultiplier(tone) {
-  if (tone === 'warm') return 1.07;
-  if (tone === 'firm') return 0.93;
-  return 1.0;
+  return toneProfile(tone || currentTone()).applePitch;
 }
 
 /** SpeechSynthesisUtterance rate (1.0 default, ~0.5-2.0 useful range). */
-function speedToWebRate(speed) {
-  if (speed === 'slow') return 0.8;
-  if (speed === 'fast') return 1.2;
-  return 1.0;
+function speedToWebRate(speed, tone) {
+  const base = speed === 'slow' ? 0.8 : speed === 'fast' ? 1.2 : 1.0;
+  const mul = toneProfile(tone || currentTone()).rateMul;
+  return Math.max(0.5, Math.min(2.0, base * mul));
 }
 
 function _label(key) {
   try { return (I18N[currentLang] || I18N.fr)[key] || key; } catch (_) { return key; }
+}
+
+function _toneLabel(tone) {
+  switch (tone) {
+    case 'warm':    return _label('toneWarmLabel');
+    case 'joyful':  return _label('toneJoyfulLabel');
+    case 'firm':    return _label('toneFirmLabel');
+    case 'sad':     return _label('toneSadLabel');
+    case 'calm':    return _label('toneCalmLabel');
+    default:        return _label('toneNeutralLabel');
+  }
 }
 
 function renderVoiceControls() {
@@ -2412,11 +2523,10 @@ function renderVoiceControls() {
   if (!tonePill || !speedPill || !speakerPill) return;
 
   const tone = currentTone();
-  toneIcon.textContent = TONE_ICONS[tone] || '😐';
-  toneLabel.textContent = _label(tone === 'warm' ? 'toneWarmLabel' : tone === 'firm' ? 'toneFirmLabel' : 'toneNeutralLabel');
-  tonePill.classList.remove('tone-warm', 'tone-firm');
-  if (tone === 'warm') tonePill.classList.add('tone-warm');
-  if (tone === 'firm') tonePill.classList.add('tone-firm');
+  toneIcon.textContent = toneProfile(tone).icon;
+  toneLabel.textContent = _toneLabel(tone);
+  tonePill.classList.remove('tone-warm', 'tone-firm', 'tone-joyful', 'tone-sad', 'tone-calm');
+  if (tone !== 'neutral') tonePill.classList.add('tone-' + tone);
 
   const speed = currentSpeed();
   speedIcon.textContent = SPEED_ICONS[speed] || '⏱️';
@@ -2435,10 +2545,38 @@ function renderVoiceControls() {
   }
 }
 
-function cycleTone() {
-  state.tone = TONE_CYCLE[(_toneIndex() + 1) % TONE_CYCLE.length];
+function setTone(tone) {
+  if (!TONE_PROFILES[tone]) return;
+  state.tone = tone;
   save();
   renderVoiceControls();
+}
+
+function openTonePicker() {
+  const overlay = document.getElementById('toneOverlay');
+  const list = document.getElementById('toneSheetList');
+  const titleEl = document.getElementById('toneSheetTitle');
+  const closeBtn = document.getElementById('toneCloseBtn');
+  if (!overlay || !list) return;
+  titleEl.textContent = _label('tonePickerTitle');
+  closeBtn.textContent = currentLang === 'fr' ? 'Fermer' : 'Close';
+  list.innerHTML = '';
+  TONE_ORDER.forEach(tone => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'tone-tile' + (tone === currentTone() ? ' selected' : '');
+    row.innerHTML = `<span class="tt-icon">${toneProfile(tone).icon}</span><span class="tt-label">${_toneLabel(tone)}</span>`;
+    row.onclick = () => { setTone(tone); closeTonePicker(); };
+    list.appendChild(row);
+  });
+  closeBtn.onclick = closeTonePicker;
+  overlay.onclick = (e) => { if (e.target === overlay) closeTonePicker(); };
+  overlay.classList.add('active');
+}
+
+function closeTonePicker() {
+  const overlay = document.getElementById('toneOverlay');
+  if (overlay) overlay.classList.remove('active');
 }
 
 function cycleSpeed() {
@@ -3007,6 +3145,7 @@ safeClick('btnKeyboard', () => switchToManual());
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
 safeClick('btnCloseManual', () => switchToSuggestions());
 safeClick('btnRefresh', () => refreshSuggestions());
+safeClick('contextResetBtn', () => resetSuggestionContext());
 safeClick('btnSpeak', () => speakManual());
 safeClick('listeningBar', () => {
   userHasInteracted = true;
@@ -3038,13 +3177,21 @@ function refreshSuggestions() {
 // ─── Context zone ───
 function updateContextDisplay(text, isInterim) {
   const el = $('contextText');
+  const resetBtn = $('contextResetBtn');
   if (!text) {
     el.textContent = t('contextEmpty');
     el.className = 'context-text empty';
+    if (resetBtn) resetBtn.classList.remove('visible');
     return;
   }
   el.textContent = text;
   el.className = isInterim ? 'context-text interim' : 'context-text';
+  // Reveal the reset button only when a real phrase is being shown, not the
+  // interim partial transcript (would be jumpy and tempt false taps).
+  if (resetBtn) {
+    if (isInterim) resetBtn.classList.remove('visible');
+    else resetBtn.classList.add('visible');
+  }
 }
 
 // ─── Suggestions ───
@@ -3261,7 +3408,8 @@ async function playElevenLabsBlob(blob) {
       window._nativeTTSProgress = () => {};
       window.webkit.messageHandlers.playTTSFromData.postMessage({
         playbackId, base64: b64,
-        rate: speedToRate(currentSpeed())
+        rate: speedToRate(currentSpeed(), currentTone()),
+        pitchCents: tonePitchCents(currentTone())
       });
       return;
     } catch (e) {
@@ -3297,7 +3445,7 @@ function speakApplePersonalVoice(text) {
   try {
     window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({
       text, requestId: rid, lang: getLangCode(),
-      rate: speedToAppleRate(currentSpeed()),
+      rate: speedToAppleRate(currentSpeed(), currentTone()),
       pitchMultiplier: tonePitchMultiplier(currentTone())
     });
   } catch(e) {
@@ -3310,7 +3458,7 @@ function speakLocal(text) {
   stopPlaybackOnly();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = getLangCode();
-  utterance.rate = 0.9 * speedToWebRate(currentSpeed());
+  utterance.rate = 0.9 * speedToWebRate(currentSpeed(), currentTone());
   utterance.pitch = tonePitchMultiplier(currentTone());
   const voices = speechSynthesis.getVoices();
   const langPrefix = currentLang;
@@ -3672,11 +3820,19 @@ function isInappropriate(text) {
   return false;
 }
 
+let _currentSuggestionGen = 0;
+let _currentSuggestionText = '';
+
 async function fetchSuggestions(interlocutorText) {
   if (!llmAvailable || !state.llmEnabled) {
     clearSuggestionCards();
     return;
   }
+  // Each call gets a generation tag; we discard responses that arrive after a newer
+  // call has been started (otherwise a slow response to an old phrase overwrites the
+  // fresh one and the UI "loops" on an outdated message).
+  const myGen = ++_currentSuggestionGen;
+  _currentSuggestionText = interlocutorText;
   showSuggestionLoading();
 
   const ctx = state.history.slice(-8).map(m =>
@@ -3726,6 +3882,10 @@ async function fetchSuggestions(interlocutorText) {
 
   try {
     const content = await callNativeLLM(sys, prompt);
+    if (myGen !== _currentSuggestionGen) {
+      console.log('[Talkie] Discarding stale suggestion response (gen', myGen, 'vs', _currentSuggestionGen, ')');
+      return;
+    }
     const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready)/i;
     const _labelRe = /^(directe|pragmatique|sociale|émotive|émotiv|relance|nuance|autre|option\s*\d|social|emotive|follow.?up)\s*[:–—-]\s*/i;
     const suggestions = content.split('\n')
@@ -3736,10 +3896,24 @@ async function fetchSuggestions(interlocutorText) {
     if (suggestions.length) renderSuggestionCards(suggestions);
     else clearSuggestionCards();
   } catch(e) {
+    if (myGen !== _currentSuggestionGen) return; // stale failure too — ignore
     console.error('LLM:', e);
     clearSuggestionCards();
     showToast(t('suggestionsUnavailable'));
   }
+}
+
+/** Manual escape hatch: clears any in-flight suggestion, the displayed phrase
+ *  and the suggestions zone. Useful when the LLM "loops" on an old message. */
+function resetSuggestionContext() {
+  _currentSuggestionGen++;
+  _currentSuggestionText = '';
+  lastInterlocutorText = '';
+  refreshCount = 0;
+  interimBuf = '';
+  updateContextDisplay('', false);
+  clearSuggestionCards();
+  showToast(currentLang === 'fr' ? 'Contexte réinitialisé' : 'Context reset');
 }
 
 // ─── Voice Cloning ───
@@ -4071,7 +4245,7 @@ conversationHistory = state.history || [];
 renderSoundboard();
 renderVoiceControls();
 // Voice pills — defined here because the buttons are part of the suggestions view.
-safeClick('tonePill', cycleTone);
+safeClick('tonePill', openTonePicker);
 safeClick('speedPill', cycleSpeed);
 safeClick('speakerPill', function() { if (typeof openSpeakerPicker === 'function') openSpeakerPicker(); });
 showView('suggestions');

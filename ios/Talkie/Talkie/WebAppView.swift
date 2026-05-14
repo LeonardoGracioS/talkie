@@ -253,13 +253,18 @@ struct WebAppView: UIViewRepresentable {
             // 1/32 ... 32 but anything past 0.5–2.0 sounds artifact-y for speech.
             let requestedRate = (body["rate"] as? Double).map { Float($0) } ?? 1.0
             let rate = max(0.5, min(2.0, requestedRate))
+            // Pitch shift in cents (-2400 ... +2400). Used to color the tone (deeper /
+            // higher) without changing speed — TimePitch handles rate and pitch
+            // independently. Conservative cap to avoid metallic artifacts.
+            let requestedPitchCents = (body["pitchCents"] as? Double).map { Float($0) } ?? 0
+            let pitchCents = max(-600, min(600, requestedPitchCents))
             stopNativeTTSPlayback(notifyJS: false)
             WebAppView.reassertPlayAndRecordSession()
             try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
 
             // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
             // ElevenLabs MP3 being quieter than AVSpeechSynthesizer output.
-            if playElevenLabsBoosted(data: data, playbackId: playbackId, rate: rate) {
+            if playElevenLabsBoosted(data: data, playbackId: playbackId, rate: rate, pitchCents: pitchCents) {
                 return
             }
 
@@ -286,7 +291,7 @@ struct WebAppView: UIViewRepresentable {
         /// Plays ElevenLabs MP3 through AVAudioEngine so we can apply gain > 1.0
         /// (AVAudioPlayer.volume is clamped to 1.0). Returns false if engine setup fails;
         /// caller falls back to AVAudioPlayer.
-        private func playElevenLabsBoosted(data: Data, playbackId: String, rate: Float) -> Bool {
+        private func playElevenLabsBoosted(data: Data, playbackId: String, rate: Float, pitchCents: Float) -> Bool {
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("talkie_tts_\(UUID().uuidString).mp3")
             do {
@@ -296,6 +301,7 @@ struct WebAppView: UIViewRepresentable {
                 let playerNode = AVAudioPlayerNode()
                 let timePitch = AVAudioUnitTimePitch()
                 timePitch.rate = rate
+                timePitch.pitch = pitchCents
                 engine.attach(playerNode)
                 engine.attach(timePitch)
                 // Chain: player → time-pitch (changes speed without altering pitch) → mixer
