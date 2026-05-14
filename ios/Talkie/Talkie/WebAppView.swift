@@ -209,7 +209,7 @@ struct WebAppView: UIViewRepresentable {
 
         /// Gain applied to ElevenLabs MP3 playback. ElevenLabs audio is quieter than
         /// AVSpeechSynthesizer output — boost via the mixer (>1.0 only supported by AVAudioEngine).
-        private static let elevenLabsGain: Float = 2.5
+        private static let elevenLabsGain: Float = 4.0
 
         override init() {
             super.init()
@@ -300,7 +300,10 @@ struct WebAppView: UIViewRepresentable {
                 nativeAudioPlayerNode = playerNode
                 nativeAudioTempURL = tempURL
 
-                playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
+                // .dataPlayedBack fires when audio has actually finished playing through
+                // the output, not just when the engine consumed the buffer — avoids cutting
+                // off the tail of short phrases (the default callback fires too early).
+                playerNode.scheduleFile(audioFile, at: nil, completionCallbackType: .dataPlayedBack) { [weak self] _ in
                     DispatchQueue.main.async {
                         guard let self else { return }
                         // Ignore late callback if a newer playback has started.

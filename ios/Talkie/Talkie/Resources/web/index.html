@@ -3389,6 +3389,9 @@ function checkLLMAvailability() {
 speechSynthesis.getVoices();
 window.speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
 conversationHistory = state.history || [];
+// renderSoundboard is defined after the first applyStaticTranslations() runs at
+// boot, so the soundboard otherwise stays empty until a later i18n refresh.
+renderSoundboard();
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
