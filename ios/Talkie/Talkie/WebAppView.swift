@@ -75,6 +75,11 @@ struct WebAppView: UIViewRepresentable {
         // Without this, iOS switches to "playback" mode after TTS and blocks the mic
         Self.configureAudioSession()
 
+        // Kick off the diarizer model download/load in the background so the first
+        // listening session doesn't have to wait. Safe to call repeatedly — it's a
+        // no-op once loaded.
+        DiarizationManager.shared.prepare()
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -681,8 +686,20 @@ struct WebAppView: UIViewRepresentable {
             if message.name == "micStatusUpdate" {
                 if let body = message.body as? [String: Any],
                    let listening = body["listening"] as? Bool {
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
                         MicState.shared.isListening = listening
+                        // Wire diarization to the same lifecycle as the web Speech
+                        // Recognition: start it when we begin listening, stop it on
+                        // pause. This keeps the input tap from running unnecessarily.
+                        if listening {
+                            DiarizationManager.shared.onSpeakerChange = { [weak self] fluidId, startSec in
+                                let js = "window._diarizationSpeakerChange && window._diarizationSpeakerChange('\(fluidId)', \(startSec));"
+                                self?.runJavaScript(js)
+                            }
+                            DiarizationManager.shared.start()
+                        } else {
+                            DiarizationManager.shared.stop()
+                        }
                     }
                 }
                 return

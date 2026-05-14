@@ -11,10 +11,16 @@ settings:
     DEVELOPMENT_TEAM: "Z75997FG3P"
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio
+    from: "0.14.5"
 targets:
   Talkie:
     type: application
     platform: iOS
+    dependencies:
+      - package: FluidAudio
     sources:
       - path: Talkie
         excludes:
@@ -30,7 +36,7 @@ targets:
     settings:
       base:
         MARKETING_VERSION: "2.2.0"
-        CURRENT_PROJECT_VERSION: "9"
+        CURRENT_PROJECT_VERSION: "10"
         PRODUCT_BUNDLE_IDENTIFIER: com.leonardogracios.talkie
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"

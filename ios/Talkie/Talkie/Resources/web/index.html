@@ -1834,25 +1834,24 @@ const I18N = {
     consentCloneAccept: "J'accepte",
     consentCloneDecline: 'Refuser',
     // LLM prompts
-    defaultPrompt: `Tu ES l'utilisateur de cette application (tu ne peux pas parler, tu utilises cette app pour communiquer). Un interlocuteur te parle. Génère 3 choses que TU pourrais lui répondre.
-RÈGLES :
-- Parle à la 1ère personne ("Je"). Ne parle JAMAIS de toi à la 3ème personne.
-- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.
-- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.
-- Ton naturel et humain. INTERDICTION d'utiliser des labels ("Option 1 :", "Réponse :", etc.).
-- INTERDICTION des phrases d'assistant ("Comment puis-je vous aider ?", "Voici des options").
-- Utilise la "Mémoire IA" (tes informations personnelles) pour personnaliser (tes goûts, ton prénom, tes proches).
+    defaultPrompt: `Tu ES l'utilisateur (paralysé, tu utilises cette app pour parler). On te parle. Tu donnes 3 choses que TU pourrais répondre, là, maintenant.
+RÈGLES ABSOLUES :
+- BREF. Maximum 15 mots par réponse. Souvent 3 à 8 mots suffisent.
+- Réponds DIRECTEMENT à ce qui vient d'être dit, pas à un message ancien.
+- 1re personne ("Je"). Jamais en 3e personne sur toi-même.
+- Trois réponses différentes : (1) directe/factuelle, (2) chaleureuse/émotive, (3) une qui relance ou nuance.
+- Naturel, humain. INTERDIT : "Option", "Réponse :", "Voici", "Bien sûr", "Je peux vous aider".
 FORMAT STRICT :
-- Exactement 3 phrases, UNE PAR LIGNE
-- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction
-- Pas de numérotation, pas de tiret, pas de guillemets`,
+- Exactement 3 lignes, UNE phrase par ligne.
+- Commence directement, sans préambule.
+- Pas de numéro, pas de tiret, pas de guillemets, pas de label.`,
     memoryContext: 'Informations personnelles sur l\'utilisateur (à utiliser pour personnaliser les réponses) :',
     userNameCtx: "L'utilisateur s'appelle",
     recentHistory: 'Historique récent :',
     historyMe: 'Moi',
     historyOther: 'Autre',
-    diversityHint: (n) => `\nATTENTION : l'utilisateur a demandé ${n} fois des alternatives. Propose des réponses TRÈS DIFFÉRENTES des précédentes. Si les précédentes étaient positives, propose du négatif ou nuancé. Si elles étaient longues, propose du court. Varie le ton (humour, sérieux, tendre, direct).`,
-    llmPrompt: (text, hint) => `L'interlocuteur dit : "${text}"${hint}\n\nPropose EXACTEMENT 3 réponses que je pourrais dire. Règles :\n- Les 3 réponses doivent être VARIÉES en ton et en opinion (positive, nuancée, négative ou déclinante)\n- Longueurs variées : une courte (< 10 mots), une moyenne, une plus détaillée\n- Naturelles, humaines, pas robotiques\n- UNE PAR LIGNE, pas de numéro, pas de tiret, pas de guillemets`,
+    diversityHint: (n) => `\nL'utilisateur veut d'autres options (essai ${n}). Propose 3 réponses différentes des précédentes, mais TOUJOURS pertinentes par rapport à la dernière phrase de l'interlocuteur. Pas de hors-sujet.`,
+    llmPrompt: (text, hint) => `Dernière phrase de l'interlocuteur (réponds À CETTE phrase, pas à autre chose) :\n"${text}"${hint}\n\nDonne 3 réponses possibles que JE peux dire maintenant.\n- Brèves (max 15 mots, idéalement 3 à 8).\n- Trois tons : (1) directe, (2) chaleureuse, (3) qui relance ou nuance.\n- UNE par ligne. Pas de numéro, pas de tiret, pas de guillemets, pas de label.`,
     memoryExtractSys: "Tu es un assistant qui extrait des informations personnelles à partir de conversations.",
     memoryExtractPrompt: (recent, current) => `Voici une conversation récente :\n${recent}\n\nMémoire apprise actuelle :\n${current || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur l'utilisateur (goûts, famille, métier, habitudes, opinions, lieux, prénoms de proches). Ajoute-les à la mémoire existante sans doublons. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`,
     memoryHistoryMe: 'Patient',
@@ -2049,25 +2048,24 @@ FORMAT STRICT :
     consentCloneLink: 'ElevenLabs Privacy Policy',
     consentCloneAccept: 'I agree',
     consentCloneDecline: 'Decline',
-    defaultPrompt: `You ARE the user of this app (you cannot speak, you use this app to communicate). Someone is talking to you. Generate 3 things YOU could reply to them.
-RULES:
-- Speak in the 1st person ("I"). NEVER refer to yourself in the 3rd person.
-- Match complexity: simple question → short answer, deep discussion → constructed sentences.
-- Vary tones: one direct response, one warm/emotive, one that continues the conversation.
-- Natural human tone. FORBIDDEN to use labels ("Option 1:", "Response:", etc.).
-- FORBIDDEN to use assistant-like phrasing ("How can I help you?", "Here are options").
-- Use "AI Memory" (your personal information) to personalize (your interests, your name, your loved ones).
+    defaultPrompt: `You ARE the user (paralyzed, you use this app to speak). Someone is talking to you. Give 3 things YOU could reply, right now.
+ABSOLUTE RULES:
+- BRIEF. Maximum 15 words per reply. Often 3 to 8 words is enough.
+- Reply DIRECTLY to what was just said, not to an older message.
+- 1st person ("I"). Never speak about yourself in the 3rd person.
+- Three different replies: (1) direct/factual, (2) warm/emotive, (3) one that follows up or nuances.
+- Natural, human. FORBIDDEN: "Option", "Reply:", "Here are", "Sure", "I can help".
 STRICT FORMAT:
-- Exactly 3 sentences, ONE PER LINE
-- START DIRECTLY with the first response, no introduction whatsoever
-- No numbering, no dashes, no quotes`,
+- Exactly 3 lines, ONE sentence per line.
+- Start directly, no preamble.
+- No numbering, no dashes, no quotes, no labels.`,
     memoryContext: 'Personal information about the user (use to personalize responses):',
     userNameCtx: 'The user\'s name is',
     recentHistory: 'Recent history:',
     historyMe: 'Me',
     historyOther: 'Other',
-    diversityHint: (n) => `\nATTENTION: the user has asked ${n} times for alternatives. Propose VERY DIFFERENT responses from the previous ones. If the previous ones were positive, propose negative or nuanced ones. If they were long, propose short ones. Vary the tone (humor, serious, tender, direct).`,
-    llmPrompt: (text, hint) => `The other person says: "${text}"${hint}\n\nPropose EXACTLY 3 responses I could say. Rules:\n- The 3 responses must be VARIED in tone and opinion (positive, nuanced, negative or declining)\n- Varied lengths: one short (< 10 words), one medium, one more detailed\n- Natural, human, not robotic\n- ONE PER LINE, no numbers, no dashes, no quotes`,
+    diversityHint: (n) => `\nThe user wants other options (try ${n}). Suggest 3 replies different from the previous ones, but STILL on-topic with the last thing said. No off-topic drift.`,
+    llmPrompt: (text, hint) => `Last thing the other person said (reply to THIS, not to anything else):\n"${text}"${hint}\n\nGive 3 possible replies I can say now.\n- Brief (max 15 words, ideally 3 to 8).\n- Three tones: (1) direct, (2) warm, (3) a follow-up or nuance.\n- ONE per line. No numbers, no dashes, no quotes, no labels.`,
     memoryExtractSys: 'You are an assistant that extracts personal information from conversations.',
     memoryExtractPrompt: (recent, current) => `Here is a recent conversation:\n${recent}\n\nCurrent learned memory:\n${current || '(empty)'}\n\nExtract NEW personal information about the user (interests, family, job, habits, opinions, places, names of loved ones). Add them to the existing memory without duplicates. If nothing new, respond exactly "NOTHING". Otherwise, respond ONLY with the updated memory (short text, bullet points).`,
     memoryHistoryMe: 'Patient',
@@ -2415,11 +2413,19 @@ setTimeout(() => {
 let state = loadState();
 currentLang = state.lang || detectLanguage();
 
-// Upgrade existing default prompts on load
+// Upgrade existing default prompts on load. Each entry is a previous shipped
+// default — if the user hasn't customized, we replace with the current default
+// so they get the latest improvements without manual reset.
 (function() {
-  const oldFR = "Tu génères 3 réponses que l'utilisateur pourrait dire à son interlocuteur. Tu parles EN TANT QUE l'utilisateur, pas en tant qu'assistant.\nRÈGLES :\n- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.\n- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.\n- Ton naturel et humain. INTERDICTION ABSOLUE d'utiliser des labels comme \"Directe :\", \"Autre :\", \"Option 1 :\", \"Sociale :\", \"Pragmatique :\" ou tout préfixe de catégorie avant les réponses.\n- INTERDICTION de formulations d'assistant (\"Comment puis-je vous aider ?\", \"Voici mes suggestions\", \"Je suis prêt\", \"Bien sûr\").\n- Utilise la \"Mémoire IA\" pour personnaliser (goûts, prénom, proches).\nFORMAT STRICT :\n- Exactement 3 phrases, UNE PAR LIGNE\n- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction\n- Pas de numérotation, pas de tiret, pas de guillemets, pas de label";
-  const oldEN = "You generate 3 responses the user could say to the person they're talking to. You speak AS the user, not as an assistant.\nRULES:\n- Match complexity: simple question → short answer, deep discussion → constructed sentences.\n- Vary tones: one direct response, one warm/emotive, one that continues the conversation.\n- Natural human tone. ABSOLUTELY FORBIDDEN to use labels like \"Direct:\", \"Other:\", \"Option 1:\", \"Social:\", \"Pragmatic:\" or any category prefix before responses.\n- FORBIDDEN to use assistant-like phrasing (\"How can I help you?\", \"Here are my suggestions\", \"I'm ready\", \"Sure\").\n- Use \"AI Memory\" to personalize (interests, name, loved ones).\nSTRICT FORMAT:\n- Exactly 3 sentences, ONE PER LINE\n- START DIRECTLY with the first response, no introduction whatsoever\n- No numbering, no dashes, no quotes, no labels";
-  if (state.systemPrompt === oldFR || state.systemPrompt === oldEN) {
+  const knownOlds = [
+    // v1 — original, very chatty
+    "Tu génères 3 réponses que l'utilisateur pourrait dire à son interlocuteur. Tu parles EN TANT QUE l'utilisateur, pas en tant qu'assistant.\nRÈGLES :\n- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.\n- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.\n- Ton naturel et humain. INTERDICTION ABSOLUE d'utiliser des labels comme \"Directe :\", \"Autre :\", \"Option 1 :\", \"Sociale :\", \"Pragmatique :\" ou tout préfixe de catégorie avant les réponses.\n- INTERDICTION de formulations d'assistant (\"Comment puis-je vous aider ?\", \"Voici mes suggestions\", \"Je suis prêt\", \"Bien sûr\").\n- Utilise la \"Mémoire IA\" pour personnaliser (goûts, prénom, proches).\nFORMAT STRICT :\n- Exactement 3 phrases, UNE PAR LIGNE\n- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction\n- Pas de numérotation, pas de tiret, pas de guillemets, pas de label",
+    "You generate 3 responses the user could say to the person they're talking to. You speak AS the user, not as an assistant.\nRULES:\n- Match complexity: simple question → short answer, deep discussion → constructed sentences.\n- Vary tones: one direct response, one warm/emotive, one that continues the conversation.\n- Natural human tone. ABSOLUTELY FORBIDDEN to use labels like \"Direct:\", \"Other:\", \"Option 1:\", \"Social:\", \"Pragmatic:\" or any category prefix before responses.\n- FORBIDDEN to use assistant-like phrasing (\"How can I help you?\", \"Here are my suggestions\", \"I'm ready\", \"Sure\").\n- Use \"AI Memory\" to personalize (interests, name, loved ones).\nSTRICT FORMAT:\n- Exactly 3 sentences, ONE PER LINE\n- START DIRECTLY with the first response, no introduction whatsoever\n- No numbering, no dashes, no quotes, no labels",
+    // v2 — shipped builds 5–9, still allowed "détaillée" / "more detailed"
+    `Tu ES l'utilisateur de cette application (tu ne peux pas parler, tu utilises cette app pour communiquer). Un interlocuteur te parle. Génère 3 choses que TU pourrais lui répondre.\nRÈGLES :\n- Parle à la 1ère personne ("Je"). Ne parle JAMAIS de toi à la 3ème personne.\n- Adapte la complexité : question simple → réponse courte, discussion profonde → phrases construites.\n- Varie les tons : une réponse directe, une chaleureuse/émotive, une qui relance la conversation.\n- Ton naturel et humain. INTERDICTION d'utiliser des labels ("Option 1 :", "Réponse :", etc.).\n- INTERDICTION des phrases d'assistant ("Comment puis-je vous aider ?", "Voici des options").\n- Utilise la "Mémoire IA" (tes informations personnelles) pour personnaliser (tes goûts, ton prénom, tes proches).\nFORMAT STRICT :\n- Exactement 3 phrases, UNE PAR LIGNE\n- COMMENCE DIRECTEMENT par la première réponse, sans aucune introduction\n- Pas de numérotation, pas de tiret, pas de guillemets`,
+    `You ARE the user of this app (you cannot speak, you use this app to communicate). Someone is talking to you. Generate 3 things YOU could reply to them.\nRULES:\n- Speak in the 1st person ("I"). NEVER refer to yourself in the 3rd person.\n- Match complexity: simple question → short answer, deep discussion → constructed sentences.\n- Vary tones: one direct response, one warm/emotive, one that continues the conversation.\n- Natural human tone. FORBIDDEN to use labels ("Option 1:", "Response:", etc.).\n- FORBIDDEN to use assistant-like phrasing ("How can I help you?", "Here are options").\n- Use "AI Memory" (your personal information) to personalize (your interests, your name, your loved ones).\nSTRICT FORMAT:\n- Exactly 3 sentences, ONE PER LINE\n- START DIRECTLY with the first response, no introduction whatsoever\n- No numbering, no dashes, no quotes`,
+  ];
+  if (knownOlds.indexOf(state.systemPrompt) >= 0) {
     state.systemPrompt = I18N[currentLang]?.defaultPrompt || I18N['fr'].defaultPrompt;
     save();
   }
@@ -2589,6 +2595,44 @@ function currentSpeakerObj() {
   if (!state.currentSpeakerId) return null;
   return (state.speakers || []).find(s => s.id === state.currentSpeakerId) || null;
 }
+
+// ─── Native diarization bridge ───
+// The native layer runs FluidAudio in parallel with the WebKit speech recognizer.
+// Every time the active voice changes, it calls _diarizationSpeakerChange with
+// a stable per-session id. We map those ids to speakers in our list, creating
+// auto-labels ("Locuteur 1", etc.) on first sight, then make the matching
+// speaker the active one so the next captured phrase is tagged correctly.
+const _fluidToTalkie = {};
+
+function _autoSpeakerName(n) {
+  return (currentLang === 'fr' ? 'Locuteur ' : 'Speaker ') + n;
+}
+
+function _countAutoSpeakers() {
+  const re = currentLang === 'fr' ? /^Locuteur (\d+)$/ : /^Speaker (\d+)$/;
+  let max = 0;
+  (state.speakers || []).forEach(sp => {
+    const m = re.exec(sp.name || '');
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return max;
+}
+
+window._diarizationSpeakerChange = function(fluidId, startSec) {
+  if (!fluidId) return;
+  let talkieId = _fluidToTalkie[fluidId];
+  if (!talkieId) {
+    const n = _countAutoSpeakers() + 1;
+    const sp = addSpeaker(_autoSpeakerName(n), '');
+    if (!sp) return;
+    talkieId = sp.id;
+    _fluidToTalkie[fluidId] = talkieId;
+    console.log('[Talkie] New speaker detected:', fluidId, '→', sp.name);
+  }
+  if (state.currentSpeakerId !== talkieId) {
+    setCurrentSpeaker(talkieId);
+  }
+};
 
 function _genSpeakerId() {
   return 'sp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3875,6 +3919,16 @@ async function fetchSuggestions(interlocutorText) {
   sys += `\n\n${t('recentHistory')}\n${ctx}`;
   sys += `\n\n${t('llmOutputLanguage')}`;
 
+  // Hard cap on the system prompt — Apple's on-device model has a tight context,
+  // and a bloated prompt is the #1 reason for off-topic / hallucinated replies.
+  // We keep the head (rules + memory + profile) and trim the middle if needed.
+  const SYS_MAX = 4500;
+  if (sys.length > SYS_MAX) {
+    const keep = Math.floor(SYS_MAX * 0.6);
+    const tail = sys.slice(sys.length - (SYS_MAX - keep));
+    sys = sys.slice(0, keep) + '\n…\n' + tail;
+  }
+
   // Diversity instructions
   const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
 
@@ -3888,10 +3942,23 @@ async function fetchSuggestions(interlocutorText) {
     }
     const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready)/i;
     const _labelRe = /^(directe|pragmatique|sociale|émotive|émotiv|relance|nuance|autre|option\s*\d|social|emotive|follow.?up)\s*[:–—-]\s*/i;
+    // Belt-and-braces brevity guard: if the model returns a 50-word ramble,
+    // keep only the first sentence so the card stays tappable.
+    const MAX_WORDS = 22;
+    function trimToOneIdea(s) {
+      // Cut at the first hard sentence boundary (.!? followed by space or end).
+      const m = s.match(/^(.+?[.!?…])(\s|$)/);
+      const first = m ? m[1] : s;
+      const words = first.split(/\s+/);
+      if (words.length <= MAX_WORDS) return first.trim();
+      return words.slice(0, MAX_WORDS).join(' ').replace(/[,;:\-—]\s*$/, '') + '…';
+    }
     const suggestions = content.split('\n')
       .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
       .map(s => s.replace(_labelRe, '').trim())
       .filter(s => s.length > 2 && !isInappropriate(s) && !_preambleRe.test(s))
+      .map(trimToOneIdea)
+      .filter(s => s.length > 1)
       .slice(0, 3);
     if (suggestions.length) renderSuggestionCards(suggestions);
     else clearSuggestionCards();
