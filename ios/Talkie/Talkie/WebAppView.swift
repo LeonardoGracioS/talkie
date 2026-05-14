@@ -198,11 +198,18 @@ struct WebAppView: UIViewRepresentable {
 
         /// ElevenLabs MP3 played natively so WebKit never owns playback — fixes mic + SpeechRecognition after TTS.
         private var nativeAudioPlayer: AVAudioPlayer?
+        private var nativeAudioEngine: AVAudioEngine?
+        private var nativeAudioPlayerNode: AVAudioPlayerNode?
+        private var nativeAudioTempURL: URL?
         private var nativePlaybackId: String?
         private var nativeProgressTimer: Timer?
         private var nativeSynthesizer = AVSpeechSynthesizer()
         private var nativeSpeechCallbackId: String?
         private var nativeSpeechStartTimer: Timer?
+
+        /// Gain applied to ElevenLabs MP3 playback. ElevenLabs audio is quieter than
+        /// AVSpeechSynthesizer output — boost via the mixer (>1.0 only supported by AVAudioEngine).
+        private static let elevenLabsGain: Float = 2.5
 
         override init() {
             super.init()
@@ -225,6 +232,9 @@ struct WebAppView: UIViewRepresentable {
         deinit {
             nativeProgressTimer?.invalidate()
             nativeAudioPlayer?.stop()
+            nativeAudioPlayerNode?.stop()
+            nativeAudioEngine?.stop()
+            if let url = nativeAudioTempURL { try? FileManager.default.removeItem(at: url) }
             let nc = NotificationCenter.default
             for o in audioSessionObservers { nc.removeObserver(o) }
         }
@@ -241,6 +251,14 @@ struct WebAppView: UIViewRepresentable {
             stopNativeTTSPlayback(notifyJS: false)
             WebAppView.reassertPlayAndRecordSession()
             try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+
+            // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
+            // ElevenLabs MP3 being quieter than AVSpeechSynthesizer output.
+            if playElevenLabsBoosted(data: data, playbackId: playbackId) {
+                return
+            }
+
+            // Fallback: AVAudioPlayer at unity gain (no boost possible).
             do {
                 let player = try AVAudioPlayer(data: data)
                 player.delegate = self
@@ -260,10 +278,77 @@ struct WebAppView: UIViewRepresentable {
             }
         }
 
+        /// Plays ElevenLabs MP3 through AVAudioEngine so we can apply gain > 1.0
+        /// (AVAudioPlayer.volume is clamped to 1.0). Returns false if engine setup fails;
+        /// caller falls back to AVAudioPlayer.
+        private func playElevenLabsBoosted(data: Data, playbackId: String) -> Bool {
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("talkie_tts_\(UUID().uuidString).mp3")
+            do {
+                try data.write(to: tempURL)
+                let audioFile = try AVAudioFile(forReading: tempURL)
+                let engine = AVAudioEngine()
+                let playerNode = AVAudioPlayerNode()
+                engine.attach(playerNode)
+                engine.connect(playerNode, to: engine.mainMixerNode, format: audioFile.processingFormat)
+                engine.mainMixerNode.outputVolume = WebAppView.Coordinator.elevenLabsGain
+                engine.prepare()
+                try engine.start()
+
+                nativePlaybackId = playbackId
+                nativeAudioEngine = engine
+                nativeAudioPlayerNode = playerNode
+                nativeAudioTempURL = tempURL
+
+                playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        // Ignore late callback if a newer playback has started.
+                        guard self.nativePlaybackId == playbackId else { return }
+                        self.finishEnginePlayback(playbackId: playbackId, success: true)
+                    }
+                }
+                playerNode.play()
+                return true
+            } catch {
+                logger.error("AVAudioEngine setup failed: \(error.localizedDescription) — falling back to AVAudioPlayer")
+                try? FileManager.default.removeItem(at: tempURL)
+                return false
+            }
+        }
+
+        private func finishEnginePlayback(playbackId: String, success: Bool) {
+            nativeProgressTimer?.invalidate()
+            nativeProgressTimer = nil
+            nativeAudioPlayerNode?.stop()
+            nativeAudioEngine?.stop()
+            nativeAudioPlayerNode = nil
+            nativeAudioEngine = nil
+            if let url = nativeAudioTempURL {
+                try? FileManager.default.removeItem(at: url)
+                nativeAudioTempURL = nil
+            }
+            nativePlaybackId = nil
+            WebAppView.reassertPlayAndRecordSession()
+            let errArg = success ? "null" : "'playback_failed'"
+            let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(playbackId)', \(errArg));"
+            DispatchQueue.main.async { [weak self] in
+                self?.runJavaScript(js)
+            }
+        }
+
         private func failNativeTTS(playbackId: String, code: String) {
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
             nativeAudioPlayer = nil
+            nativeAudioPlayerNode?.stop()
+            nativeAudioEngine?.stop()
+            nativeAudioPlayerNode = nil
+            nativeAudioEngine = nil
+            if let url = nativeAudioTempURL {
+                try? FileManager.default.removeItem(at: url)
+                nativeAudioTempURL = nil
+            }
             nativePlaybackId = nil
             WebAppView.reassertPlayAndRecordSession()
             let js = "window._nativeTTSPlayback && window._nativeTTSPlayback('\(playbackId)', '\(code)');"
@@ -280,6 +365,14 @@ struct WebAppView: UIViewRepresentable {
             nativeSpeechStartTimer = nil
             nativeAudioPlayer?.stop()
             nativeAudioPlayer = nil
+            nativeAudioPlayerNode?.stop()
+            nativeAudioEngine?.stop()
+            nativeAudioPlayerNode = nil
+            nativeAudioEngine = nil
+            if let url = nativeAudioTempURL {
+                try? FileManager.default.removeItem(at: url)
+                nativeAudioTempURL = nil
+            }
             let id = nativePlaybackId
             nativePlaybackId = nil
 
@@ -393,7 +486,9 @@ struct WebAppView: UIViewRepresentable {
                       let type = info[AVAudioSessionInterruptionTypeKey] as? UInt,
                       type == AVAudioSession.InterruptionType.ended.rawValue else { return }
                 // Don't reassert while actively playing — the player manages the session
-                guard self?.nativeAudioPlayer == nil, self?.nativeSynthesizer.isSpeaking != true else { return }
+                guard self?.nativeAudioPlayer == nil,
+                      self?.nativeAudioEngine == nil,
+                      self?.nativeSynthesizer.isSpeaking != true else { return }
                 WebAppView.reassertPlayAndRecordSession()
             })
         }
@@ -414,9 +509,26 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "checkLLMAvailability" {
                 Task { @MainActor [weak self] in
-                    // `LanguageModelSession` n'a pas d'init throwing dans le SDK actuel — la dispo réelle se joue à `respond`.
-                    let available = true
-                    let js = "window._llmAvailabilityCallback(\(available));"
+                    let model = SystemLanguageModel.default
+                    let (available, reason): (Bool, String) = {
+                        switch model.availability {
+                        case .available:
+                            return (true, "")
+                        case .unavailable(let r):
+                            let code: String
+                            switch r {
+                            case .deviceNotEligible: code = "device_not_eligible"
+                            case .appleIntelligenceNotEnabled: code = "apple_intelligence_disabled"
+                            case .modelNotReady: code = "model_not_ready"
+                            @unknown default: code = "unavailable"
+                            }
+                            return (false, code)
+                        @unknown default:
+                            return (false, "unavailable")
+                        }
+                    }()
+                    logger.info("Apple Intelligence availability: \(available, privacy: .public) reason=\(reason, privacy: .public)")
+                    let js = "window._llmAvailabilityCallback(\(available), '\(reason)');"
                     self?.runJavaScript(js)
                 }
                 return
@@ -582,7 +694,40 @@ struct WebAppView: UIViewRepresentable {
         @MainActor
         func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
             guard let webView else { return }
-            let instructions = systemPrompt
+
+            // Verify availability before attempting — surfaces accurate errors on devices
+            // where Apple Intelligence is disabled, downloading, or the model isn't ready.
+            switch SystemLanguageModel.default.availability {
+            case .available:
+                break
+            case .unavailable(let reason):
+                let code: String
+                switch reason {
+                case .deviceNotEligible: code = "device_not_eligible"
+                case .appleIntelligenceNotEnabled: code = "apple_intelligence_disabled"
+                case .modelNotReady: code = "model_not_ready"
+                @unknown default: code = "unavailable"
+                }
+                logger.warning("LLM unavailable: \(code, privacy: .public)")
+                let js = "window._llmCallback('\(requestId)', null, '\(code)');"
+                _ = try? await webView.evaluateJavaScript(js)
+                return
+            @unknown default:
+                let js = "window._llmCallback('\(requestId)', null, 'unavailable');"
+                _ = try? await webView.evaluateJavaScript(js)
+                return
+            }
+
+            // Cap instructions length — the on-device model has a tight context window
+            // and oversized system prompts (heavy memory + history) silently fail on
+            // some devices. Trim from the front so the most recent history survives.
+            let maxInstructions = 6000
+            let instructions: String = {
+                if systemPrompt.count <= maxInstructions { return systemPrompt }
+                let tail = systemPrompt.suffix(maxInstructions)
+                return String(tail)
+            }()
+
             do {
                 let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
@@ -598,7 +743,9 @@ struct WebAppView: UIViewRepresentable {
                     logger.error("Failed to send LLM result to web: \(error.localizedDescription)")
                 }
             } catch {
+                logger.error("LanguageModelSession.respond failed: \(String(describing: error), privacy: .public)")
                 let errMsg = error.localizedDescription
+                    .replacingOccurrences(of: "\\", with: "\\\\")
                     .replacingOccurrences(of: "'", with: "\\'")
                 let js = "window._llmCallback('\(requestId)', null, '\(errMsg)');"
                 do {

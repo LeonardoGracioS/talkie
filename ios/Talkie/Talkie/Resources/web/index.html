@@ -3334,11 +3334,45 @@ $('clearLearnedMemoryBtn').onclick = () => {
 
 // ─── LLM Availability ───
 let llmAvailable = false;
-window._llmAvailabilityCallback = function(available) {
-  llmAvailable = available;
-  console.log('[Talkie] LLM available:', available);
+let _llmRetryTimer = null;
+let _llmLastReason = '';
+function _llmReasonMessage(reason) {
+  const fr = currentLang === 'fr';
+  switch (reason) {
+    case 'device_not_eligible':
+      return fr
+        ? "Apple Intelligence n'est pas pris en charge sur cet appareil."
+        : 'Apple Intelligence is not supported on this device.';
+    case 'apple_intelligence_disabled':
+      return fr
+        ? 'Activez Apple Intelligence dans Réglages → Apple Intelligence et Siri.'
+        : 'Enable Apple Intelligence in Settings → Apple Intelligence & Siri.';
+    case 'model_not_ready':
+      return fr
+        ? "Apple Intelligence finalise le téléchargement du modèle. Réessayez dans quelques minutes (l'app vérifiera automatiquement)."
+        : 'Apple Intelligence is finishing the model download. It will retry automatically in a few minutes.';
+    default:
+      return t('llmUnavailable');
+  }
+}
+window._llmAvailabilityCallback = function(available, reason) {
+  const wasAvailable = llmAvailable;
+  llmAvailable = !!available;
+  _llmLastReason = reason || '';
+  console.log('[Talkie] LLM available:', available, 'reason:', reason);
   if (!available) {
-    showToast(t('llmUnavailable'), 5000);
+    showToast(_llmReasonMessage(reason), 6000);
+    // model_not_ready can resolve on its own — poll every 60 s.
+    if (reason === 'model_not_ready' && !_llmRetryTimer) {
+      _llmRetryTimer = setInterval(() => {
+        try { window.webkit?.messageHandlers?.checkLLMAvailability?.postMessage('check'); } catch(_) {}
+      }, 60000);
+    }
+  } else {
+    if (_llmRetryTimer) { clearInterval(_llmRetryTimer); _llmRetryTimer = null; }
+    if (!wasAvailable) {
+      showToast(currentLang === 'fr' ? 'Suggestions activées' : 'Suggestions enabled', 2500);
+    }
   }
 };
 
@@ -3347,7 +3381,7 @@ function checkLLMAvailability() {
     window.webkit?.messageHandlers?.checkLLMAvailability?.postMessage('check');
   } catch(_) {
     // Not running in native container — assume no LLM
-    window._llmAvailabilityCallback(false);
+    window._llmAvailabilityCallback(false, 'no_bridge');
   }
 }
 
