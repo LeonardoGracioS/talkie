@@ -13,6 +13,7 @@
 		5B1398A1EC221724DFE01AE2 /* web in Resources */ = {isa = PBXBuildFile; fileRef = 1B2266128EF4F9554C689C8F /* web */; };
 		5FD54401E294587DF14C9088 /* DiarizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB2D800E62EE8C416EDE46F /* DiarizationManager.swift */; };
 		67A5249D6D764042BF21594F /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = E488AD1F887CCD0880A88457 /* FluidAudio */; };
+		9457AD9A2E0A7E3049D95F80 /* CallModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263EF0998874FA9386188D2F /* CallModeManager.swift */; };
 		A000C45F60E9FF9EA7982BF1 /* TalkieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0426D57ECBB419694D3263 /* TalkieApp.swift */; };
 		F33CE4580393952A335322A0 /* WebAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 905A42CA21CA00086495C57D /* WebAppView.swift */; };
 /* End PBXBuildFile section */
@@ -20,6 +21,7 @@
 /* Begin PBXFileReference section */
 		1B0426D57ECBB419694D3263 /* TalkieApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkieApp.swift; sourceTree = "<group>"; };
 		1B2266128EF4F9554C689C8F /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = Talkie/Resources/web; sourceTree = SOURCE_ROOT; };
+		263EF0998874FA9386188D2F /* CallModeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallModeManager.swift; sourceTree = "<group>"; };
 		2BABB2A599587B53D1C8F8E6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4B75E3E0455652CC37551EED /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5BB2D800E62EE8C416EDE46F /* DiarizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiarizationManager.swift; sourceTree = "<group>"; };
@@ -53,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				2BABB2A599587B53D1C8F8E6 /* Assets.xcassets */,
+				263EF0998874FA9386188D2F /* CallModeManager.swift */,
 				5BB2D800E62EE8C416EDE46F /* DiarizationManager.swift */,
 				4B75E3E0455652CC37551EED /* PrivacyInfo.xcprivacy */,
 				681CC499C4474C7D8C77D65D /* SettingsView.swift */,
@@ -148,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9457AD9A2E0A7E3049D95F80 /* CallModeManager.swift in Sources */,
 				5FD54401E294587DF14C9088 /* DiarizationManager.swift in Sources */,
 				3F910FBB606FFED662052AD7 /* SettingsView.swift in Sources */,
 				A000C45F60E9FF9EA7982BF1 /* TalkieApp.swift in Sources */,
@@ -229,7 +233,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Talkie;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Talkie a besoin du micro pour écouter les conversations et transcrire la parole.";
@@ -312,7 +316,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Talkie;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Talkie a besoin du micro pour écouter les conversations et transcrire la parole.";
