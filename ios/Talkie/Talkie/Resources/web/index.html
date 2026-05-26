@@ -182,6 +182,39 @@ html, body {
 }
 .listening-bar.inactive .listening-dot { background:var(--accent); animation:none; }
 .listening-bar.inactive .listening-text { color:var(--accent); font-weight:700; }
+
+/* ─── Call mode (active phone call) ─── */
+.call-mode-banner {
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  margin-bottom:10px;
+  border-radius:var(--radius-sm);
+  background:linear-gradient(135deg, rgba(255,59,48,0.14) 0%, rgba(255,149,0,0.12) 100%);
+  border:1px solid rgba(255,59,48,0.22);
+  color:var(--text);
+  font:600 13px/1.45 var(--font);
+  flex-shrink:0;
+}
+.call-mode-banner .cm-icon { font-size:18px; flex-shrink:0; }
+body.call-mode .call-mode-banner { display:flex; }
+body.call-mode .listening-bar.inactive {
+  background:rgba(255,149,0,0.14);
+  border:1px dashed rgba(255,149,0,0.35);
+}
+body.call-mode .listening-bar.inactive .listening-text { color:#C25E00; }
+body.call-mode .listening-bar:not(.inactive) {
+  background:rgba(255,149,0,0.18);
+}
+body.call-mode .listening-bar:not(.inactive) .listening-dot,
+body.call-mode .listening-bar:not(.inactive) .listening-waves i { background:#FF9500; }
+body[data-app-theme="dark"].call-mode .listening-bar.inactive .listening-text { color:#FFB347; }
+body[data-app-theme="dark"].call-mode .call-mode-banner {
+  background:linear-gradient(135deg, rgba(255,99,71,0.18) 0%, rgba(255,179,71,0.12) 100%);
+  border-color:rgba(255,149,0,0.28);
+}
+
 .listening-dot {
   width:10px; height:10px; border-radius:50%;
   background:var(--green); flex-shrink:0;
@@ -626,9 +659,10 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
   z-index:80;
   display:flex; align-items:center; justify-content:center; gap:10px;
   transform:translateY(100%);
-  transition:transform .3s ease;
+  transition:transform .2s ease;
+  pointer-events:none;
 }
-#ttsOverlay.active { transform:translateY(0); }
+#ttsOverlay.active { transform:translateY(0); pointer-events:auto; }
 .tts-overlay-content {
   display:flex; align-items:center; gap:10px;
 }
@@ -1152,6 +1186,129 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
   box-shadow:none; margin-top:10px;
 }
 
+/* ─── Landscape layout (iPhone / iPad horizontal) ─── */
+@media (orientation: landscape) {
+  html { font-size: clamp(16px, 1.05vw + 14px, 19px); }
+
+  #view-suggestions {
+    display: grid;
+    grid-template-columns: minmax(240px, 42vw) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+    gap: 6px 14px;
+    align-content: stretch;
+    padding:
+      calc(var(--safe-top) + 6px)
+      max(14px, env(safe-area-inset-right, 0px))
+      calc(var(--safe-bottom) + 6px)
+      max(14px, env(safe-area-inset-left, 0px));
+  }
+
+  #view-suggestions .top-bar { grid-column: 1 / -1; padding-bottom: 0; }
+  #view-suggestions .voice-controls { grid-column: 1 / -1; }
+  #view-suggestions .call-mode-banner { grid-column: 1 / -1; margin-bottom: 0; padding: 8px 12px; font-size: 12px; }
+  #view-suggestions .listening-bar {
+    grid-column: 1;
+    grid-row: 4;
+    margin-bottom: 0;
+    padding: 10px 12px;
+    min-height: 44px;
+    align-self: start;
+  }
+  #view-suggestions .context-zone {
+    grid-column: 1;
+    grid-row: 5;
+    margin-bottom: 0;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 14px;
+  }
+  #view-suggestions .suggestions-label {
+    grid-column: 2;
+    grid-row: 4;
+    align-self: end;
+    margin-bottom: 4px;
+  }
+  #view-suggestions .suggestions-zone {
+    grid-column: 2;
+    grid-row: 5;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 10px;
+  }
+  #view-suggestions .ai-attribution {
+    grid-column: 2;
+    grid-row: 6;
+    margin-top: 0;
+    padding: 0 4px;
+  }
+  #view-suggestions .soundboard-zone {
+    grid-column: 1 / -1;
+    grid-row: 7;
+    padding-top: 4px;
+  }
+  #view-suggestions .controls-zone {
+    grid-column: 1 / -1;
+    grid-row: 8;
+    padding-top: 8px;
+    gap: 12px;
+  }
+
+  .settings-btn { width: 48px; height: 48px; }
+  .suggestion-card {
+    min-height: 56px;
+    padding: 12px 44px 12px 14px;
+    font-size: 1.05rem;
+  }
+  .suggestion-card.empty,
+  .suggestion-card.loading { min-height: 56px; }
+  .control-btn { min-height: 48px; font-size: 15px; }
+  .soundboard-btn { min-width: 52px; min-height: 48px; padding: 6px 10px; }
+  .soundboard-btn .sb-emoji { font-size: 18px; }
+  .context-text { font-size: 1.05rem; }
+  .listening-text { font-size: 14px; }
+
+  #view-manual {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 34vw);
+    grid-template-rows: auto 1fr;
+    gap: 10px 14px;
+    padding:
+      calc(var(--safe-top) + 8px)
+      max(14px, env(safe-area-inset-right, 0px))
+      calc(var(--safe-bottom) + 8px)
+      max(14px, env(safe-area-inset-left, 0px));
+  }
+  #view-manual.active { display: grid; }
+  #view-manual .manual-header { grid-column: 1 / -1; padding-bottom: 0; }
+  #view-manual .manual-input-wrap { grid-column: 1; grid-row: 2; min-height: 0; }
+  #view-manual .manual-speak-btn {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 0;
+    margin-bottom: 0;
+    align-self: stretch;
+    min-height: 0;
+  }
+
+  #ttsOverlay { padding-bottom: calc(var(--safe-bottom) + 4px); }
+  #toast { bottom: calc(var(--safe-bottom) + 72px); }
+
+  .onb-page.active {
+    max-height: 100%;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: calc(var(--safe-top) + 16px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 420px) {
+  html { font-size: 15px; }
+  #view-suggestions .voice-controls { gap: 6px; }
+  .voice-pill { min-height: 34px; padding: 6px 10px; }
+  .suggestion-card { min-height: 48px; padding-top: 10px; padding-bottom: 10px; }
+}
+
 /* ─── Dark mode overrides ─── */
 @media (prefers-color-scheme: dark) {
   #toast { background:var(--bg-card); color:var(--text); }
@@ -1334,6 +1491,12 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
       </button>
     </div>
 
+    <!-- Call mode banner (visible during phone / FaceTime audio calls) -->
+    <div class="call-mode-banner" id="callModeBanner" role="status" aria-live="polite">
+      <span class="cm-icon">📞</span>
+      <span id="callModeBannerText">Appel en cours — activez le haut-parleur pour que votre interlocuteur entende Talkie</span>
+    </div>
+
     <!-- Listening indicator (tap to start/stop) -->
     <div class="listening-bar inactive" id="listeningBar" role="button" aria-label="Appuyez pour écouter la conversation">
       <div class="listening-dot"></div>
@@ -1424,6 +1587,13 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
               <span class="desc">Informations retenues pour personnaliser les réponses</span>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row">
+            <div class="label">
+              <span class="name">Suggestions IA</span>
+              <span class="desc">Générer 3 réponses avec Apple Intelligence (sur l'appareil)</span>
+            </div>
+            <button class="toggle" id="aiSuggestionsToggleBtn" role="switch" aria-label="Suggestions IA"></button>
           </div>
           <div class="settings-row">
             <div class="label">
@@ -1722,7 +1892,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
      ═══════════════════════════════════════════ -->
 <script>
 
-const BUILD_VERSION = 'v2.2.0';
+const BUILD_VERSION = 'v3.0.0';
 
 // ─── i18n ───
 const I18N = {
@@ -1841,6 +2011,21 @@ const I18N = {
     consentCloneLink: "Politique de confidentialité d'ElevenLabs",
     consentCloneAccept: "J'accepte",
     consentCloneDecline: 'Refuser',
+    consentAiTitle: 'Suggestions IA — Apple Intelligence',
+    consentAiSubtitle: "Talkie utilise Apple Intelligence sur votre appareil pour générer des suggestions de réponse. Avant d'envoyer des données au modèle IA, veuillez lire les informations ci-dessous.",
+    consentAiRowData: 'Données utilisées',
+    consentAiRowDataDetail: "Transcriptions récentes, mémoire IA, profil personnel (âge, métier, centres d'intérêt…), nom d'utilisateur et historique des conversations (20 derniers échanges max).",
+    consentAiRowWho: 'Traitement',
+    consentAiRowWhoDetail: "Apple Intelligence (modèle IA intégré à iOS) — traitement entièrement sur votre iPhone/iPad. Aucune donnée n'est envoyée à ElevenLabs ni à un autre service tiers pour cette fonctionnalité.",
+    consentAiRowProtect: 'Protection',
+    consentAiRowProtectDetail: "Les données restent sur l'appareil. Talkie ne conserve pas de copie sur un serveur externe. Vous pouvez consulter ou supprimer la mémoire IA à tout moment dans les réglages.",
+    consentAiRowControl: 'Votre contrôle',
+    consentAiRowControlDetail: "Vous pouvez refuser ou désactiver les suggestions IA à tout moment dans Réglages → Apple Intelligence. Sans consentement, Talkie fonctionne toujours (écoute, saisie manuelle, synthèse vocale locale).",
+    consentAiLink: 'Politique de confidentialité de Talkie',
+    consentAiAccept: "J'accepte",
+    consentAiDecline: 'Refuser',
+    aiSuggestions: 'Suggestions IA',
+    aiSuggestionsDesc: 'Générer 3 réponses avec Apple Intelligence (sur l\'appareil)',
     // LLM prompts
     defaultPrompt: `Tu ES l'utilisateur (paralysé, tu utilises cette app pour parler). On te parle. Tu donnes 3 choses que TU pourrais répondre, là, maintenant.
 RÈGLES ABSOLUES :
@@ -1872,6 +2057,12 @@ FORMAT STRICT :
     micDeniedDetail: 'Accès micro refusé — vérifiez les réglages',
     micUnavailable: 'Micro inaccessible',
     micStartFailed: 'Impossible de démarrer le micro',
+    callModeBanner: 'Appel en cours — activez le haut-parleur pour que votre interlocuteur entende Talkie',
+    callModeActive: 'Mode appel activé — prononcez via le haut-parleur',
+    callModeEnded: 'Appel terminé',
+    callModeListening: 'Écoute pendant l\'appel…',
+    callModeListenRetry: 'Appuyez pour réessayer l\'écoute',
+    callModeListenLimited: 'Écoute indisponible pendant l\'appel — utilisez Écrire ou le clavier',
     voiceCloned: 'Voix clonée !',
     describeProblem: 'Veuillez décrire le problème',
     llmUnavailable: 'Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.',
@@ -2056,6 +2247,21 @@ FORMAT STRICT :
     consentCloneLink: 'ElevenLabs Privacy Policy',
     consentCloneAccept: 'I agree',
     consentCloneDecline: 'Decline',
+    consentAiTitle: 'AI Suggestions — Apple Intelligence',
+    consentAiSubtitle: 'Talkie uses Apple Intelligence on your device to generate response suggestions. Before sending data to the AI model, please read the information below.',
+    consentAiRowData: 'Data used',
+    consentAiRowDataDetail: 'Recent transcripts, AI memory, personal profile (age, job, interests…), username, and conversation history (last 20 exchanges max).',
+    consentAiRowWho: 'Processing',
+    consentAiRowWhoDetail: 'Apple Intelligence (iOS on-device AI model). Data is processed entirely on your iPhone/iPad. No data is sent to ElevenLabs or any other third-party service for this feature.',
+    consentAiRowProtect: 'Protection',
+    consentAiRowProtectDetail: 'Data stays on your device. Talkie does not store a copy on an external server. You can view or delete AI memory at any time in settings.',
+    consentAiRowControl: 'Your control',
+    consentAiRowControlDetail: 'You can decline or disable AI suggestions at any time in Settings → Apple Intelligence. Without consent, Talkie still works (listening, manual input, local speech).',
+    consentAiLink: 'Talkie Privacy Policy',
+    consentAiAccept: 'I agree',
+    consentAiDecline: 'Decline',
+    aiSuggestions: 'AI suggestions',
+    aiSuggestionsDesc: 'Generate 3 replies with Apple Intelligence (on-device)',
     defaultPrompt: `You ARE the user (paralyzed, you use this app to speak). Someone is talking to you. Give 3 things YOU could reply, right now.
 ABSOLUTE RULES:
 - BRIEF. Maximum 15 words per reply. Often 3 to 8 words is enough.
@@ -2086,6 +2292,12 @@ STRICT FORMAT:
     micDeniedDetail: 'Microphone access denied — check settings',
     micUnavailable: 'Microphone unavailable',
     micStartFailed: 'Could not start microphone',
+    callModeBanner: 'Call in progress — use speakerphone so the other person hears Talkie',
+    callModeActive: 'Call mode — speak through the speaker',
+    callModeEnded: 'Call ended',
+    callModeListening: 'Listening during call…',
+    callModeListenRetry: 'Tap to retry listening',
+    callModeListenLimited: 'Listening unavailable during call — use Write or keyboard',
     voiceCloned: 'Voice cloned!',
     describeProblem: 'Please describe the problem',
     llmUnavailable: 'Apple Intelligence unavailable. Enable it in Settings → Apple Intelligence.',
@@ -2197,9 +2409,82 @@ function refreshLegalIframes() {
 }
 
 // ─── Consent Modal Helper ───
+function hasAiConsent() {
+  return !!localStorage.getItem(AI_CONSENT_KEY);
+}
+
+function hasElConsent() {
+  return !!localStorage.getItem(EL_CONSENT_KEY);
+}
+
+async function ensureAiConsent() {
+  if (hasAiConsent()) return true;
+  if (localStorage.getItem(AI_CONSENT_DECLINED_KEY)) return false;
+
+  if (window.webkit?.messageHandlers?.requestAiConsent) {
+    return new Promise((resolve) => {
+      window._aiConsentCallback = (accepted) => {
+        window._aiConsentCallback = null;
+        if (accepted) {
+          localStorage.setItem(AI_CONSENT_KEY, '1');
+          localStorage.removeItem(AI_CONSENT_DECLINED_KEY);
+          state.llmEnabled = true;
+          save();
+          const btn = $('aiSuggestionsToggleBtn');
+          if (btn) btn.classList.add('active');
+          const attr = $('aiAttribution');
+          if (attr && llmAvailable) attr.style.display = 'block';
+        } else {
+          localStorage.setItem(AI_CONSENT_DECLINED_KEY, '1');
+          state.llmEnabled = false;
+          save();
+          const btn = $('aiSuggestionsToggleBtn');
+          if (btn) btn.classList.remove('active');
+        }
+        resolve(!!accepted);
+      };
+      try {
+        window.webkit.messageHandlers.requestAiConsent.postMessage({
+          lang: currentLang || state.lang || 'fr'
+        });
+      } catch (_) {
+        window._aiConsentCallback = null;
+        resolve(false);
+      }
+    });
+  }
+
+  // Fallback hors conteneur natif (tests web uniquement)
+  const accepted = await showConsentModal('ai');
+  if (accepted) {
+    localStorage.setItem(AI_CONSENT_KEY, '1');
+    localStorage.removeItem(AI_CONSENT_DECLINED_KEY);
+    state.llmEnabled = true;
+    save();
+    const btn = $('aiSuggestionsToggleBtn');
+    if (btn) btn.classList.add('active');
+    const attr = $('aiAttribution');
+    if (attr && llmAvailable) attr.style.display = 'block';
+  } else {
+    localStorage.setItem(AI_CONSENT_DECLINED_KEY, '1');
+    state.llmEnabled = false;
+    save();
+    const btn = $('aiSuggestionsToggleBtn');
+    if (btn) btn.classList.remove('active');
+  }
+  return accepted;
+}
+
+async function ensureElConsent() {
+  if (hasElConsent()) return true;
+  const accepted = await showConsentModal('tts');
+  if (accepted) localStorage.setItem(EL_CONSENT_KEY, '1');
+  return accepted;
+}
+
 function showConsentModal(type) {
-  // type: 'tts' or 'clone'
-  const prefix = type === 'clone' ? 'consentClone' : 'consentTts';
+  // type: 'tts', 'clone', or 'ai'
+  const prefix = type === 'clone' ? 'consentClone' : type === 'ai' ? 'consentAi' : 'consentTts';
   $('consentTitle').textContent = t(prefix + 'Title');
   $('consentSubtitle').textContent = t(prefix + 'Subtitle');
   const svgData = '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
@@ -2216,6 +2501,7 @@ function showConsentModal(type) {
     `<div class="consent-row"><div class="consent-row-icon">${r.icon}</div><div class="consent-row-text"><div class="consent-row-title">${r.title}</div><div class="consent-row-detail">${r.detail}</div></div></div>`
   ).join('');
   $('consentLink').textContent = t(prefix + 'Link');
+  $('consentLink').href = type === 'ai' ? legalUrl('privacy') : 'https://elevenlabs.io/privacy';
   $('consentAcceptBtn').textContent = t(prefix + 'Accept');
   $('consentDeclineBtn').textContent = t(prefix + 'Decline');
   $('consentOverlay').classList.add('active');
@@ -2262,6 +2548,7 @@ function applyStaticTranslations() {
   if (tipEl) tipEl.innerHTML = '💡 <strong>' + (currentLang === 'fr' ? 'Conseil :' : 'Tip:') + '</strong> ' + t('onbTip');
   // Main UI
   setText(el('listeningText'), 'tapToListen');
+  setText(el('callModeBannerText'), 'callModeBanner');
   setText(q('.context-label'), 'contextLabel');
   setText(el('contextText'), 'contextEmpty');
   setText(el('suggestionsLabel'), 'suggestionsHeading');
@@ -2323,6 +2610,10 @@ function applyStaticTranslations() {
   setText(el('langSectionTitle'), 'language');
   setText(el('langLabel'), 'language');
   setText(el('langDesc'), 'languageDesc');
+  const aiRow = el('aiSuggestionsToggleBtn')?.closest('.settings-row');
+  setText(aiRow?.querySelector('.name'), 'aiSuggestions');
+  setText(aiRow?.querySelector('.desc'), 'aiSuggestionsDesc');
+  if (el('aiSuggestionsToggleBtn')) el('aiSuggestionsToggleBtn').setAttribute('aria-label', t('aiSuggestions'));
   const elRow = el('useElevenLabsToggleBtn')?.closest('.settings-row');
   setText(elRow?.querySelector('.name'), 'useElevenLabs');
   setText(elRow?.querySelector('.desc'), 'elevenLabsDesc');
@@ -2381,6 +2672,10 @@ window.onerror = function(msg, src, line) {
 };
 
 const DB_KEY = 'talkie_v1';
+const AI_CONSENT_KEY = 'talkie_ai_consent';
+const EL_CONSENT_KEY = 'talkie_el_consent';
+const VOICE_CLONE_CONSENT_KEY = 'talkie_voice_clone_consent';
+const AI_CONSENT_DECLINED_KEY = 'talkie_ai_consent_declined';
 function getDefaultPrompt() { return t('defaultPrompt'); }
 const SAFETY_PREFIX = "";
 const EL_DEFAULT_KEY = '';
@@ -2880,7 +3175,7 @@ function recordSuggestionPick(text) {
 }
 
 async function refreshStyleSummary() {
-  if (!llmAvailable) return;
+  if (!llmAvailable || !hasAiConsent() || state.llmEnabled === false) return;
   const picked = (state.suggestionStats && state.suggestionStats.picked) || [];
   if (picked.length < 5) {
     showToast(t('styleSummaryEmpty'));
@@ -2959,15 +3254,12 @@ function renderSoundboard() {
 }
 
 function speakSoundboardPhrase(text) {
-  if (isSpeaking) return;
   userHasInteracted = true;
   stopListening();
-  showTTSOverlay();
   addToHistory(text, true);
-  speakTextWithCallback(text, function() {
-    hideTTSOverlay();
-    startListening();
-  });
+  speakTextWithCallback(text, () => {
+    if (!_ttsPlayActive && !_ttsPlayQueue.length) startListening();
+  }, false);
 }
 
 window._updateQuickPhrases = function(phrasesJSON) {
@@ -3005,7 +3297,17 @@ function loadState() {
       // Migrate old useLocalTTS to new fields
       if (s.useApplePersonalVoice === undefined) s.useApplePersonalVoice = false;
       if (s.useElevenLabs === undefined) {
-        s.useElevenLabs = (s.useLocalTTS === false && s.voiceId && s.elApiKey);
+        s.useElevenLabs = (s.useLocalTTS === false && s.voiceId && s.elApiKey && localStorage.getItem(EL_CONSENT_KEY));
+      }
+      if (s.llmEnabled === undefined) {
+        s.llmEnabled = true;
+      } else if (
+        s.llmEnabled === false
+        && !localStorage.getItem(AI_CONSENT_DECLINED_KEY)
+        && !localStorage.getItem(AI_CONSENT_KEY)
+      ) {
+        // Réactive les suggestions si elles avaient été coupées silencieusement par une MAJ intermédiaire.
+        s.llmEnabled = true;
       }
       delete s.useLocalTTS;
       if (s.oledMode === undefined) s.oledMode = false;
@@ -3031,9 +3333,8 @@ function loadState() {
           elApiKey: old.elApiKey || EL_DEFAULT_KEY,
           voiceId: old.voiceId || DEFAULT_VOICE_ID,
           samples: old.samples || [],
+          useElevenLabs: (old.useLocalTTS === false && old.voiceId && old.elApiKey && localStorage.getItem(EL_CONSENT_KEY)),
           llmEnabled: old.llmEnabled !== false,
-          useApplePersonalVoice: false,
-          useElevenLabs: (old.useLocalTTS === false && old.voiceId && old.elApiKey),
           history: [],
         };
       }
@@ -3093,7 +3394,7 @@ async function maybeExtractMemory() {
   _memoryExtractionPending++;
   if (_memoryExtractionPending < 5) return;
   _memoryExtractionPending = 0;
-  if (!state.llmEnabled) return;
+  if (!state.llmEnabled || !hasAiConsent()) return;
 
   const recent = state.history.slice(-10).map(m =>
     `${m.isUser ? t('memoryHistoryMe') : t('memoryHistoryOther')}: ${m.text}`
@@ -3125,6 +3426,74 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s; re
 
 function resetNativeAudioSession() {
   try { window.webkit?.messageHandlers?.resetAudioSession?.postMessage('reset'); } catch (_) {}
+}
+
+function prepareCallModeTTS() {
+  if (!callModeActive) return;
+  try { window.webkit?.messageHandlers?.prepareCallModeTTS?.postMessage({}); } catch (_) {}
+}
+
+// ─── Call mode (phone / FaceTime audio call) ───
+let callModeActive = false;
+let wasListeningBeforeCall = false;
+let callModeListenAttempts = 0;
+let callModeListenRetryTimer = null;
+const CALL_MODE_LISTEN_MAX = 10;
+
+window._callModeChanged = function(active) {
+  const wasInCall = callModeActive;
+  callModeActive = !!active;
+  document.body.classList.toggle('call-mode', callModeActive);
+  const banner = $('callModeBanner');
+  if (banner) banner.style.display = callModeActive ? 'flex' : 'none';
+  if (callModeActive) {
+    wasListeningBeforeCall = isListening;
+    stopAudio();
+    if (isListening) stopListening();
+    clearTimeout(callModeListenRetryTimer);
+    callModeListenRetryTimer = null;
+    callModeListenAttempts = 0;
+    showToast(t('callModeActive'), 3500);
+    // Do NOT auto-start mic/STT here — iOS kills apps that grab audio during calls.
+  } else {
+    clearTimeout(callModeListenRetryTimer);
+    callModeListenRetryTimer = null;
+    callModeListenAttempts = 0;
+    if (isListening) stopListening();
+    updateListeningUI(false);
+    if (wasInCall) {
+      showToast(t('callModeEnded'), 2200);
+      if (wasListeningBeforeCall && !isSpeaking) startListening();
+    }
+    wasListeningBeforeCall = false;
+  }
+};
+
+function scheduleCallModeListenRetry() {
+  if (!callModeActive) return;
+  if (callModeListenAttempts >= CALL_MODE_LISTEN_MAX) {
+    stopListening();
+    showToast(t('callModeListenLimited'), 4500);
+    return;
+  }
+  callModeListenAttempts++;
+  clearTimeout(callModeListenRetryTimer);
+  callModeListenRetryTimer = setTimeout(() => {
+    if (!callModeActive || isSpeaking) return;
+    tryCallModeListening();
+  }, 1500 + callModeListenAttempts * 400);
+}
+
+function tryCallModeListening() {
+  if (!callModeActive || isSpeaking) return;
+  resetNativeAudioSession();
+  startListening({ callMode: true });
+}
+
+/** Reprend l'écoute après TTS — jamais automatique pendant un appel (iOS). */
+function resumeListeningAfterTTS() {
+  if (callModeActive) return;
+  startListening();
 }
 
 // ─── Keychain Bridge ───
@@ -3237,6 +3606,11 @@ safeClick('contextResetBtn', () => resetSuggestionContext());
 safeClick('btnSpeak', () => speakManual());
 safeClick('listeningBar', () => {
   userHasInteracted = true;
+  if (callModeActive) {
+    if (isListening) stopListening();
+    else tryCallModeListening();
+    return;
+  }
   if (isListening) stopListening(); else startListening();
 });
 
@@ -3361,40 +3735,35 @@ function hideTTSOverlay() {
 // Stop button on TTS bar — manual interrupt
 document.querySelector('.tts-stop-btn').addEventListener('click', () => {
   stopAudio();
-  hideTTSOverlay();
-  if (_ttsResumeMicAfter) startListening();
+  if (_ttsResumeMicAfter) resumeListeningAfterTTS();
 });
 
 // ─── Speak suggestion ───
 function speakSuggestion(text, cardIndex) {
-  if (isSpeaking) return;
   userHasInteracted = true;
   const card = $('suggestionCard' + cardIndex);
   if (card) card.classList.add('speaking');
   const wasListening = isListening;
   if (wasListening) stopListening();
-  showTTSOverlay();
   addToHistory(text, true);
   maybeExtractMemory();
   recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
-    hideTTSOverlay();
-    if (wasListening) startListening();
+    document.querySelectorAll('.suggestion-card.speaking').forEach(c => c.classList.remove('speaking'));
+    if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
   }, wasListening);
 }
 
 function speakManual() {
   const text = $('manualInput').value.trim();
-  if (!text || isSpeaking) return;
+  if (!text) return;
   const wasListening = isListening;
   if (wasListening) stopListening();
   addToHistory(text, true);
-  showTTSOverlay();
   recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
-    hideTTSOverlay();
     $('manualInput').value = '';
-    switchToSuggestions(wasListening);
+    switchToSuggestions(wasListening && !_ttsPlayActive && !_ttsPlayQueue.length);
   }, wasListening);
 }
 
@@ -3420,10 +3789,14 @@ let _ttsResumeMicAfter = true;
 /** File d'attente pour les morceaux de texte long (TTS séquentiel). */
 let _ttsChunkQueue = null;
 let _ttsFinalCallback = null;
+/** File d'attente des phrases à prononcer (évite chevauchements / volume / bandeau). */
+const _ttsPlayQueue = [];
+let _ttsPlayActive = false;
+let _ttsPlayGen = 0;
 
-/** Durée max de sécurité proportionnelle à la longueur du texte (jusqu'à 5 min). */
+/** Durée max de sécurité proportionnelle à la longueur du texte (jusqu'à 3 min). */
 function estimateTtsDurationMs(text) {
-  return Math.min(300000, Math.max(20000, text.length * 85 + 5000));
+  return Math.min(180000, Math.max(2000, text.length * 70 + 1200));
 }
 
 /** Découpe un texte long aux limites de phrase pour fiabiliser AVSpeech / Web Speech / ElevenLabs. */
@@ -3466,9 +3839,11 @@ function _ttsMaxChunkLen() {
 }
 
 function _speakTtsChunk(text) {
+  if (callModeActive) prepareCallModeTTS();
   if (state.useElevenLabs && state.voiceId && state.elApiKey) {
     playTTS(text);
-  } else if (state.useApplePersonalVoice) {
+  } else if (window.webkit?.messageHandlers?.speakApplePersonalVoice) {
+    // AVSpeech natif : fin de lecture fiable (Web Speech iOS laisse speaking=true ~1–2 s).
     speakApplePersonalVoice(text);
   } else {
     speakLocal(text);
@@ -3488,7 +3863,48 @@ function _advanceTtsChunk() {
   if (done) done();
 }
 
+function _finishTtsJob(onDone) {
+  clearTimeout(_ttsSafetyTimer);
+  _ttsChunkQueue = null;
+  _ttsFinalCallback = null;
+  _ttsCallback = null;
+  _ttsPlayActive = false;
+  resetNativeAudioSession();
+  if (onDone) onDone();
+  if (_ttsPlayQueue.length) {
+    _pumpTtsQueue();
+  } else {
+    hideTTSOverlay();
+  }
+}
+
+function _pumpTtsQueue() {
+  if (_ttsPlayActive || !_ttsPlayQueue.length) {
+    if (!_ttsPlayActive && !_ttsPlayQueue.length) hideTTSOverlay();
+    return;
+  }
+  const job = _ttsPlayQueue.shift();
+  _ttsPlayActive = true;
+  _ttsPlayGen++;
+  const gen = _ttsPlayGen;
+  showTTSOverlay();
+  _speakTextNow(job.text, () => {
+    if (gen !== _ttsPlayGen) return;
+    _finishTtsJob(job.onDone);
+  }, job.resumeMicAfter);
+}
+
 function speakTextWithCallback(text, onDone, resumeMicAfter = true) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) {
+    if (onDone) onDone();
+    return;
+  }
+  _ttsPlayQueue.push({ text: trimmed, onDone, resumeMicAfter });
+  _pumpTtsQueue();
+}
+
+function _speakTextNow(text, onDone, resumeMicAfter = true) {
   _ttsResumeMicAfter = resumeMicAfter;
   const trimmed = String(text || '').trim();
   if (!trimmed) {
@@ -3496,16 +3912,14 @@ function speakTextWithCallback(text, onDone, resumeMicAfter = true) {
     return;
   }
 
+  stopPlaybackOnly();
+
   clearTimeout(_ttsSafetyTimer);
   _ttsSafetyTimer = setTimeout(() => {
-    if (isSpeaking) {
-      console.warn('[Talkie] TTS safety timeout');
-      _ttsChunkQueue = null;
-      _ttsFinalCallback = null;
-      stopAudio();
-      hideTTSOverlay();
-      if (_ttsResumeMicAfter) startListening();
-    }
+    if (!_ttsPlayActive) return;
+    console.warn('[Talkie] TTS safety timeout');
+    stopPlaybackOnly();
+    if (onDone) onDone();
   }, estimateTtsDurationMs(trimmed));
 
   const chunks = splitTextForTTS(trimmed, _ttsMaxChunkLen());
@@ -3527,12 +3941,7 @@ function _onTTSDone() {
   clearTimeout(_nativeTTSNearEndTimer);
   const cb = _ttsCallback;
   _ttsCallback = null;
-  resetNativeAudioSession();
   if (cb) cb();
-  // Mode mono-morceau : libérer le timer de sécurité. En mode multi-morceaux, _advanceTtsChunk s'en charge.
-  if (!_ttsChunkQueue?.length && !_ttsFinalCallback) {
-    clearTimeout(_ttsSafetyTimer);
-  }
 }
 
 async function playElevenLabsBlobHTML5(blob) {
@@ -3609,34 +4018,35 @@ let _speechPollTimer = null;
 let _speechSynthMaxTimer = null;
 
 function speakApplePersonalVoice(text) {
-  stopPlaybackOnly();
   const rid = 'sv_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+  const gen = _ttsPlayGen;
   currentAudio = { isNativeTTS: true, playbackId: rid };
   let _nativeSpeechDone = false;
 
   window._nativeSpeechCallback = (cbRid, err) => {
-    if (cbRid !== rid || _nativeSpeechDone) return;
+    if (cbRid !== rid || _nativeSpeechDone || gen !== _ttsPlayGen) return;
     _nativeSpeechDone = true;
     window._nativeSpeechCallback = null;
     currentAudio = null;
     if (err) {
       console.warn('[Talkie] Native speech error/cancelled:', err);
-      if (err !== 'cancelled') {
+      if (err !== 'cancelled' && gen === _ttsPlayGen) {
         speakLocal(text);
         return;
       }
     }
-    _onTTSDone();
+    if (gen === _ttsPlayGen) _onTTSDone();
   };
   try {
     window.webkit.messageHandlers.speakApplePersonalVoice.postMessage({
       text, requestId: rid, lang: getLangCode(),
       rate: speedToAppleRate(currentSpeed(), currentTone()),
-      pitchMultiplier: tonePitchMultiplier(currentTone())
+      pitchMultiplier: tonePitchMultiplier(currentTone()),
+      usePersonalVoice: !!state.useApplePersonalVoice
     });
   } catch(e) {
     console.error('Failed native speech', e);
-    speakLocal(text);
+    if (gen === _ttsPlayGen) speakLocal(text);
   }
 }
 
@@ -3654,7 +4064,8 @@ function speakLocal(text) {
   currentAudio = { isSpeechSynth: true, utterance };
 
   let done = false;
-  const estMs = Math.min(300000, Math.max(8000, text.length * 85));
+  let speechStarted = false;
+  const estMs = Math.min(120000, Math.max(1200, text.length * 80 + 600));
   let silentStreak = 0;
   const finish = () => {
     if (done) return;
@@ -3666,19 +4077,22 @@ function speakLocal(text) {
     _onTTSDone();
   };
 
+  utterance.onstart = () => { speechStarted = true; };
   utterance.onend = finish;
   utterance.onerror = finish;
 
-  // iOS WKWebView : onend souvent absent — exiger plusieurs ticks sans parole pour éviter les faux positifs.
+  // iOS WKWebView : onend souvent absent ; ne compter le silence qu'après le début réel.
   clearInterval(_speechPollTimer);
   _speechPollTimer = setInterval(() => {
-    if (!speechSynthesis.speaking && !speechSynthesis.pending) {
-      silentStreak++;
-      if (silentStreak >= 2) finish();
-    } else {
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      speechStarted = true;
       silentStreak = 0;
+      return;
     }
-  }, 150);
+    if (!speechStarted) return;
+    silentStreak++;
+    if (silentStreak >= 1) finish();
+  }, 80);
   clearTimeout(_speechSynthMaxTimer);
   _speechSynthMaxTimer = setTimeout(() => {
     if (!done) {
@@ -3718,10 +4132,14 @@ function stopPlaybackOnly() {
 function stopAudio(clearTtsCallback = true) {
   stopPlaybackOnly();
   if (clearTtsCallback) {
+    _ttsPlayQueue.length = 0;
+    _ttsPlayActive = false;
+    _ttsPlayGen++;
     _ttsCallback = null;
     _ttsChunkQueue = null;
     _ttsFinalCallback = null;
     clearTimeout(_ttsSafetyTimer);
+    hideTTSOverlay();
   }
 }
 
@@ -3737,6 +4155,9 @@ async function playTTS(text) {
 }
 
 async function fetchTTSAudio(text) {
+  if (!(await ensureElConsent())) {
+    throw new Error('ElevenLabs consent required');
+  }
   const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${state.voiceId}`, {
     method: 'POST',
     headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
@@ -3823,7 +4244,7 @@ function beginRecognition(sess) {
       lastInterlocutorText = text;
       refreshCount = 0;
       interimBuf = '';
-      if (state.llmEnabled) fetchSuggestions(lastInterlocutorText);
+      if (llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
       killRecognition();
       setTimeout(() => {
         if (micSession === sess && isListening) beginRecognition(sess);
@@ -3835,6 +4256,11 @@ function beginRecognition(sess) {
     console.warn('[Talkie] Recognition error:', e.error);
     if (micSession !== sess) return;
     if (e.error === 'no-speech' || e.error === 'aborted') return;
+    if (callModeActive && (e.error === 'audio-capture' || e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
+      stopListening();
+      scheduleCallModeListenRetry();
+      return;
+    }
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       showToast(t('micDeniedDetail'));
       stopListening();
@@ -3882,15 +4308,24 @@ function beginRecognition(sess) {
         console.log('[Talkie] Retry rec.start() called');
       } catch(e2) {
         console.error('[Talkie] Retry failed:', e2);
-        showToast(t('micStartFailed'));
+        showToast(callModeActive ? t('callModeListenLimited') : t('micStartFailed'));
         stopListening();
       }
     }, 600);
   }
 }
 
-function startListening() {
+function startListening(opts) {
   if (isSpeaking) { console.log('[Talkie] startListening blocked: isSpeaking'); return; }
+  // During a phone call, mic access is blocked by iOS — only allow explicit user retry.
+  if (callModeActive && !opts?.callMode) {
+    showToast(t('callModeListenLimited'), 3000);
+    return;
+  }
+  if (opts?.callMode) {
+    clearTimeout(callModeListenRetryTimer);
+    callModeListenRetryTimer = null;
+  }
   stopAudio();
   killRecognition();
   clearTimeout(phraseEndTimer);
@@ -3942,10 +4377,10 @@ function updateListeningUI(active) {
   const txt = $('listeningText');
   if (active) {
     bar.classList.remove('inactive');
-    txt.textContent = t('listening');
+    txt.textContent = callModeActive ? t('callModeListening') : t('listening');
   } else {
     bar.classList.add('inactive');
-    txt.textContent = t('tapToListen');
+    txt.textContent = callModeActive ? t('callModeListenRetry') : t('tapToListen');
   }
 }
 
@@ -3962,6 +4397,10 @@ window._llmCallback = function(rid, result, error) {
 
 function callNativeLLM(sys, prompt) {
   return new Promise((resolve, reject) => {
+    if (!hasAiConsent()) {
+      reject(new Error('AI consent required'));
+      return;
+    }
     const rid = 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
     _llmCallbacks[rid] = { resolve, reject };
     if (window.webkit?.messageHandlers?.llmRequest) {
@@ -4015,9 +4454,16 @@ let _currentSuggestionGen = 0;
 let _currentSuggestionText = '';
 
 async function fetchSuggestions(interlocutorText) {
-  if (!llmAvailable || !state.llmEnabled) {
+  if (!llmAvailable || state.llmEnabled === false) {
     clearSuggestionCards();
     return;
+  }
+  if (!hasAiConsent()) {
+    const accepted = await ensureAiConsent();
+    if (!accepted) {
+      clearSuggestionCards();
+      return;
+    }
   }
   // Each call gets a generation tag; we discard responses that arrive after a newer
   // call has been started (otherwise a slow response to an old phrase overwrites the
@@ -4159,10 +4605,10 @@ $('cloneBtn').onclick = async () => {
   const name = $('voiceNameInput').value.trim() || 'Talkie';
   if (!state.samples.length || !state.elApiKey) return;
   // Voice cloning consent — biometric data sent to ElevenLabs
-  if (!localStorage.getItem('talkie_voice_clone_consent')) {
+  if (!localStorage.getItem(VOICE_CLONE_CONSENT_KEY)) {
     const accepted = await showConsentModal('clone');
     if (!accepted) return;
-    localStorage.setItem('talkie_voice_clone_consent', '1');
+    localStorage.setItem(VOICE_CLONE_CONSENT_KEY, '1');
   }
   $('cloneBtn').disabled = true; $('cloneBtn').textContent = t('cloningInProgress');
   try {
@@ -4221,6 +4667,7 @@ function loadSettings() {
   $('settingsMemory').value = state.memory || '';
   $('learnedMemoryDisplay').textContent = state.learnedMemory || t('learnedEmpty');
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
+  $('aiSuggestionsToggleBtn').classList.toggle('active', state.llmEnabled && hasAiConsent());
   // Developer mode
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
   $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
@@ -4304,6 +4751,10 @@ $('reportSendBtn').onclick = () => {
 $('deleteAllDataBtn').onclick = () => {
   if (confirm(t('deleteConfirm'))) {
     keychainDelete('elApiKey');
+    localStorage.removeItem(AI_CONSENT_KEY);
+    localStorage.removeItem(AI_CONSENT_DECLINED_KEY);
+    localStorage.removeItem(EL_CONSENT_KEY);
+    localStorage.removeItem(VOICE_CLONE_CONSENT_KEY);
     localStorage.removeItem(DB_KEY);
     localStorage.removeItem('talkie_onboarded');
     // Also clean up old keys
@@ -4351,13 +4802,35 @@ $('appleVoiceToggleBtn').onclick = () => {
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   save();
 };
-$('useElevenLabsToggleBtn').onclick = async () => {
-  if (!state.useElevenLabs && !localStorage.getItem('talkie_el_consent')) {
-    const accepted = await showConsentModal('tts');
+$('aiSuggestionsToggleBtn').onclick = async () => {
+  if (!state.llmEnabled) {
+    if (!llmAvailable) {
+      showToast(_llmReasonMessage(_llmLastReason), 6000);
+      return;
+    }
+    const accepted = await ensureAiConsent();
     if (!accepted) return;
-    localStorage.setItem('talkie_el_consent', '1');
+    state.llmEnabled = true;
+    localStorage.removeItem(AI_CONSENT_DECLINED_KEY);
+    $('aiSuggestionsToggleBtn').classList.add('active');
+    save();
+    return;
   }
-  state.useElevenLabs = !state.useElevenLabs;
+  state.llmEnabled = false;
+  localStorage.removeItem(AI_CONSENT_KEY);
+  localStorage.setItem(AI_CONSENT_DECLINED_KEY, '1');
+  $('aiSuggestionsToggleBtn').classList.remove('active');
+  clearSuggestionCards();
+  save();
+};
+$('useElevenLabsToggleBtn').onclick = async () => {
+  if (!state.useElevenLabs) {
+    const accepted = await ensureElConsent();
+    if (!accepted) return;
+    state.useElevenLabs = true;
+  } else {
+    state.useElevenLabs = false;
+  }
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
   $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
   save();
@@ -4425,19 +4898,17 @@ window._llmAvailabilityCallback = function(available, reason) {
   llmAvailable = !!available;
   _llmLastReason = reason || '';
   console.log('[Talkie] LLM available:', available, 'reason:', reason);
+  const attr = $('aiAttribution');
+  if (attr) attr.style.display = (available && hasAiConsent() && state.llmEnabled !== false) ? 'block' : 'none';
   if (!available) {
-    showToast(_llmReasonMessage(reason), 6000);
-    // model_not_ready can resolve on its own — poll every 60 s.
     if (reason === 'model_not_ready' && !_llmRetryTimer) {
       _llmRetryTimer = setInterval(() => {
         try { window.webkit?.messageHandlers?.checkLLMAvailability?.postMessage('check'); } catch(_) {}
       }, 60000);
     }
-  } else {
-    if (_llmRetryTimer) { clearInterval(_llmRetryTimer); _llmRetryTimer = null; }
-    if (!wasAvailable) {
-      showToast(currentLang === 'fr' ? 'Suggestions activées' : 'Suggestions enabled', 2500);
-    }
+  } else if (_llmRetryTimer) {
+    clearInterval(_llmRetryTimer);
+    _llmRetryTimer = null;
   }
 };
 
