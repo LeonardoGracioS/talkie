@@ -13,6 +13,11 @@ struct QuickPhrase: Identifiable, Codable, Equatable {
 class AppState: ObservableObject {
     static let shared = AppState()
     @Published var showSettings = false
+    @Published var showAiConsent = false
+    /// Langue affichée sur la feuille de consentement IA (synchronisée depuis le web).
+    var aiConsentLang = "fr"
+    /// Rappelé quand l'utilisateur accepte ou refuse le consentement IA (depuis le web).
+    var aiConsentCompletion: ((Bool) -> Void)?
     /// 0 = system, 1 = light, 2 = dark
     @Published var appearanceMode: Int = UserDefaults.standard.integer(forKey: "talkie_appearance_mode") {
         didSet {
@@ -72,6 +77,8 @@ class SettingsViewModel: ObservableObject {
     @Published var voiceId = ""
     @Published var devMode = false
     @Published var hasELConsent = false
+    @Published var hasAiConsent = false
+    @Published var llmEnabled = true
     @Published var quickPhrases: [QuickPhrase] = []
 
     var onReplayTutorial: (() -> Void)?
@@ -84,6 +91,7 @@ class SettingsViewModel: ObservableObject {
     var onQuickPhrasesChanged: (([QuickPhrase]) -> Void)?
     var onOledModeChanged: ((Bool) -> Void)?
     var onOpenProfilePage: (() -> Void)?
+    var onAiConsentResolved: ((Bool) -> Void)?
 }
 
 // MARK: - Settings View
@@ -94,6 +102,7 @@ struct SettingsView: View {
     @ObservedObject var appState = AppState.shared
     @State private var showResetConfirm = false
     @State private var showELConsent = false
+    @State private var showAiConsent = false
     @State private var devTapCount = 0
 
     var body: some View {
@@ -118,6 +127,31 @@ struct SettingsView: View {
                 }
 
                 Section("Apple Intelligence") {
+                    Toggle(isOn: Binding(
+                        get: { vm.llmEnabled && vm.hasAiConsent },
+                        set: { newValue in
+                            if newValue {
+                                if vm.hasAiConsent {
+                                    vm.llmEnabled = true
+                                } else {
+                                    showAiConsent = true
+                                }
+                            } else {
+                                vm.llmEnabled = false
+                                vm.hasAiConsent = false
+                            }
+                        }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(vm.lang == "fr" ? "Suggestions IA" : "AI suggestions")
+                            Text(vm.lang == "fr"
+                                 ? "Génère 3 réponses avec Apple Intelligence sur l'appareil"
+                                 : "Generate 3 replies with on-device Apple Intelligence")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
                     NavigationLink {
                         MemoryView(memory: $vm.memory, learnedMemory: $vm.learnedMemory, lang: vm.lang, onClearLearnedMemory: vm.onClearLearnedMemory)
                     } label: {
@@ -299,6 +333,19 @@ struct SettingsView: View {
                 }
             } message: {
                 Text(vm.lang == "fr" ? "Toutes vos données seront supprimées. Cette action est irréversible." : "All your data will be deleted. This action is irreversible.")
+            }
+            .sheet(isPresented: $showAiConsent) {
+                AppleIntelligenceConsentView(lang: vm.lang) {
+                    vm.hasAiConsent = true
+                    vm.llmEnabled = true
+                    showAiConsent = false
+                    vm.onAiConsentResolved?(true)
+                } onDecline: {
+                    vm.llmEnabled = false
+                    vm.hasAiConsent = false
+                    showAiConsent = false
+                    vm.onAiConsentResolved?(false)
+                }
             }
             .sheet(isPresented: $showELConsent) {
                 ElevenLabsConsentView(lang: vm.lang) {
@@ -644,6 +691,135 @@ struct PrivacyPolicyNativeView: View {
         }
         .navigationTitle(vm.lang == "fr" ? "Confidentialite" : "Privacy Policy")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Apple Intelligence Consent View
+
+struct AppleIntelligenceConsentView: View {
+    let lang: String
+    var onAccept: () -> Void
+    var onDecline: () -> Void
+
+    private var privacyURL: URL {
+        URL(string: lang == "fr"
+            ? "https://leonardogracios.github.io/talkie-support/privacy.html"
+            : "https://leonardogracios.github.io/talkie-support/privacy-en.html")!
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(spacing: 14) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 52, weight: .medium))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.tint)
+                            .accessibilityHidden(true)
+
+                        Text(lang == "fr"
+                             ? "Autoriser les suggestions IA ?"
+                             : "Allow AI suggestions?")
+                            .font(.title2.weight(.semibold))
+                            .multilineTextAlignment(.center)
+
+                        Text(lang == "fr"
+                             ? "Talkie utilise Apple Intelligence sur votre iPhone pour proposer des réponses. Vos données restent sur l'appareil."
+                             : "Talkie uses on-device Apple Intelligence to suggest replies. Your data stays on your device.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                }
+
+                Section(lang == "fr" ? "Données utilisées" : "Data used") {
+                    consentLabel(
+                        icon: "text.bubble",
+                        title: lang == "fr" ? "Conversations" : "Conversations",
+                        detail: lang == "fr"
+                            ? "Transcriptions récentes et historique (20 échanges max)."
+                            : "Recent transcripts and history (last 20 exchanges max)."
+                    )
+                    consentLabel(
+                        icon: "brain.head.profile",
+                        title: lang == "fr" ? "Mémoire et profil" : "Memory and profile",
+                        detail: lang == "fr"
+                            ? "Mémoire IA, profil personnel et nom d'utilisateur."
+                            : "AI memory, personal profile, and username."
+                    )
+                }
+
+                Section(lang == "fr" ? "Traitement" : "Processing") {
+                    consentLabel(
+                        icon: "iphone.gen3",
+                        title: "Apple Intelligence",
+                        detail: lang == "fr"
+                            ? "Traitement entièrement sur votre iPhone ou iPad. Aucun envoi à un service tiers."
+                            : "Processed entirely on your iPhone or iPad. Nothing is sent to a third party."
+                    )
+                }
+
+                Section(lang == "fr" ? "Votre contrôle" : "Your control") {
+                    consentLabel(
+                        icon: "hand.raised",
+                        title: lang == "fr" ? "Désactivation" : "Disable anytime",
+                        detail: lang == "fr"
+                            ? "Vous pouvez refuser ou désactiver cette fonctionnalité dans Réglages à tout moment."
+                            : "You can decline or turn this off in Settings at any time."
+                    )
+                    Link(destination: privacyURL) {
+                        Label(
+                            lang == "fr" ? "Politique de confidentialité" : "Privacy Policy",
+                            systemImage: "doc.text"
+                        )
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Apple Intelligence")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(lang == "fr" ? "Refuser" : "Decline", role: .cancel) {
+                        onDecline()
+                    }
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 0) {
+                    Divider()
+                    Button(action: onAccept) {
+                        Text(lang == "fr" ? "Autoriser" : "Allow")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+                .background(.bar)
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func consentLabel(icon: String, title: String, detail: String) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: icon)
+                .foregroundStyle(.tint)
+        }
     }
 }
 

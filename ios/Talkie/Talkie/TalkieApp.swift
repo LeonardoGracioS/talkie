@@ -17,6 +17,18 @@ struct TalkieApp: App {
                     SettingsView()
                         .preferredColorScheme(appState.colorScheme)
                 }
+                .sheet(isPresented: $appState.showAiConsent, onDismiss: {
+                    if AppState.shared.aiConsentCompletion != nil {
+                        AppState.shared.aiConsentCompletion?(false)
+                    }
+                }) {
+                    AppleIntelligenceConsentView(lang: appState.aiConsentLang) {
+                        AppState.shared.aiConsentCompletion?(true)
+                    } onDecline: {
+                        AppState.shared.aiConsentCompletion?(false)
+                    }
+                    .preferredColorScheme(appState.colorScheme)
+                }
         }
     }
 }

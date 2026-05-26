@@ -79,8 +79,6 @@ struct WebAppView: UIViewRepresentable {
         // listening session doesn't have to wait. Safe to call repeatedly — it's a
         // no-op once loaded.
         DiarizationManager.shared.prepare()
-        // Wire the status callback now (before the webView exists) — it captures
-        // the coordinator weakly via makeCoordinator below.
 
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
@@ -112,6 +110,8 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "deactivateAudioSession")
         config.userContentController.add(coordinator, name: "speakApplePersonalVoice")
         config.userContentController.add(coordinator, name: "openNativeSettings")
+        config.userContentController.add(coordinator, name: "requestAiConsent")
+        config.userContentController.add(coordinator, name: "prepareCallModeTTS")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -126,6 +126,11 @@ struct WebAppView: UIViewRepresentable {
 
         coordinator.webView = webView
         coordinator.startObservingAudioSessionRecovery()
+        CallModeManager.shared.onCallModeChanged = { [weak coordinator] active in
+            guard let coordinator else { return }
+            let js = "window._callModeChanged && window._callModeChanged(\(active));"
+            coordinator.runJavaScript(js)
+        }
 
         if let htmlURL = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "web") {
             // Grant read access to the entire bundle to avoid sandbox extension errors
@@ -174,17 +179,36 @@ struct WebAppView: UIViewRepresentable {
     /// Skips redundant activations to avoid triggering WebKit audio interruption notifications.
     private static var audioSessionConfigured = false
 
-    static func reassertPlayAndRecordSession() {
+    static func resetAudioSessionConfiguration() {
+        audioSessionConfigured = false
+    }
+
+    static func markAudioSessionConfigured() {
+        audioSessionConfigured = true
+    }
+
+    static func configureAudioSessionForCurrentMode() {
+        resetAudioSessionConfiguration()
+        if CallModeManager.shared.isPhoneCallActive {
+            // Phone call owns audio — leave session alone until TTS.
+            return
+        }
+        reassertPlayAndRecordSession(force: true)
+    }
+
+    static func reassertPlayAndRecordSession(force: Bool = false) {
+        if CallModeManager.shared.isPhoneCallActive {
+            // Do not reconfigure session while a phone call owns audio — wait for TTS prep.
+            return
+        }
         let session = AVAudioSession.sharedInstance()
-        // Skip if already configured — redundant setActive(true) triggers interruption spam
-        if audioSessionConfigured { return }
+        if audioSessionConfigured && !force { return }
         do {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
-            // Désactive les sons système / « clic » micro au démarrage/arrêt de l’enregistrement quand c’est possible.
             try session.setAllowHapticsAndSystemSoundsDuringRecording(false)
             try session.setActive(true)
             audioSessionConfigured = true
@@ -226,7 +250,7 @@ struct WebAppView: UIViewRepresentable {
 
         /// Préfère l'API `async` de WKWebView (évite l'avertissement « asynchronous alternative »).
         @MainActor
-        private func runJavaScript(_ script: String) {
+        func runJavaScript(_ script: String) {
             Task { @MainActor [weak self] in
                 guard let self, let webView = self.webView else { return }
                 do {
@@ -266,7 +290,11 @@ struct WebAppView: UIViewRepresentable {
             let requestedPitchCents = (body["pitchCents"] as? Double).map { Float($0) } ?? 0
             let pitchCents = max(-600, min(600, requestedPitchCents))
             stopNativeTTSPlayback(notifyJS: false)
-            WebAppView.reassertPlayAndRecordSession()
+            if CallModeManager.shared.isPhoneCallActive {
+                CallModeManager.prepareForCallModeTTS()
+            } else {
+                WebAppView.reassertPlayAndRecordSession()
+            }
             try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
 
             // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
@@ -513,20 +541,27 @@ struct WebAppView: UIViewRepresentable {
                 queue: .main
             ) { [weak self] note in
                 guard let info = note.userInfo,
-                      let type = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-                      type == AVAudioSession.InterruptionType.ended.rawValue else { return }
-                // Don't reassert while actively playing — the player manages the session
+                      let type = info[AVAudioSessionInterruptionTypeKey] as? UInt else { return }
+                if type == AVAudioSession.InterruptionType.began.rawValue {
+                    // Phone call or Siri — CallKit observer handles call mode; reconfigure if needed.
+                    return
+                }
+                guard type == AVAudioSession.InterruptionType.ended.rawValue else { return }
                 guard self?.nativeAudioPlayer == nil,
                       self?.nativeAudioEngine == nil,
                       self?.nativeSynthesizer.isSpeaking != true else { return }
-                WebAppView.reassertPlayAndRecordSession()
+                WebAppView.configureAudioSessionForCurrentMode()
             })
         }
 
         func userContentController(_ userContentController: WKUserContentController,
                                    didReceive message: WKScriptMessage) {
             if message.name == "resetAudioSession" {
-                WebAppView.reassertPlayAndRecordSession()
+                WebAppView.configureAudioSessionForCurrentMode()
+                return
+            }
+            if message.name == "prepareCallModeTTS" {
+                CallModeManager.prepareForCallModeTTS()
                 return
             }
             if message.name == "playTTSFromData" {
@@ -599,8 +634,12 @@ struct WebAppView: UIViewRepresentable {
                       let requestId = body["requestId"] as? String else { return }
 
                 let lang = (body["lang"] as? String) ?? "fr-FR"
-                WebAppView.reassertPlayAndRecordSession()
-                try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+                if CallModeManager.shared.isPhoneCallActive {
+                    CallModeManager.prepareForCallModeTTS()
+                } else {
+                    WebAppView.reassertPlayAndRecordSession()
+                    try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+                }
                 nativeSpeechCallbackId = requestId
                 // Sanitize text aggressively — éviter toute ressemblance SSML / balises (logs « root tag speak »).
                 var sanitized = text
@@ -636,14 +675,17 @@ struct WebAppView: UIViewRepresentable {
                 let requestedPitch = (body["pitchMultiplier"] as? Double).map { Float($0) } ?? 1.0
                 utterance.pitchMultiplier = max(0.5, min(2.0, requestedPitch))
 
-                // Pick voice first, then speak — avoid Personal Voice if not available
+                let usePersonalVoice = body["usePersonalVoice"] as? Bool ?? false
+
+                // Pick voice first, then speak — Personal Voice only when user opted in.
                 let voice = AVSpeechSynthesisVoice(language: lang)
                 utterance.voice = voice
 
                 AVSpeechSynthesizer.requestPersonalVoiceAuthorization { status in
                     DispatchQueue.main.async { [weak self] in
                         guard let self else { return }
-                        if status == .authorized,
+                        if usePersonalVoice,
+                           status == .authorized,
                            let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
                             utterance.voice = personalVoice
                         }
@@ -690,9 +732,14 @@ struct WebAppView: UIViewRepresentable {
                    let listening = body["listening"] as? Bool {
                     DispatchQueue.main.async { [weak self] in
                         MicState.shared.isListening = listening
-                        // Wire diarization to the same lifecycle as the web Speech
-                        // Recognition: start it when we begin listening, stop it on
-                        // pause. This keeps the input tap from running unnecessarily.
+                        // Never start diarization during a phone call — mic is unavailable
+                        // and AVAudioEngine conflicts with the call audio session.
+                        if CallModeManager.shared.isPhoneCallActive {
+                            if listening {
+                                DiarizationManager.shared.stop()
+                            }
+                            return
+                        }
                         if listening {
                             DiarizationManager.shared.onSpeakerChange = { [weak self] fluidId, startSec in
                                 let js = "window._diarizationSpeakerChange && window._diarizationSpeakerChange('\(fluidId)', \(startSec));"
@@ -728,6 +775,13 @@ struct WebAppView: UIViewRepresentable {
             if message.name == "openNativeSettings" {
                 Task { @MainActor [weak self] in
                     self?.openNativeSettings()
+                }
+                return
+            }
+
+            if message.name == "requestAiConsent" {
+                Task { @MainActor [weak self] in
+                    self?.presentNativeAiConsent(from: message.body)
                 }
                 return
             }
@@ -825,6 +879,8 @@ struct WebAppView: UIViewRepresentable {
                 elApiKey: state.elApiKey || '',
                 voiceId: state.voiceId || '',
                 hasELConsent: !!localStorage.getItem('talkie_el_consent'),
+                hasAiConsent: !!localStorage.getItem('talkie_ai_consent'),
+                llmEnabled: state.llmEnabled !== false,
                 quickPhrases: state.quickPhrases || []
             })
             """
@@ -850,6 +906,8 @@ struct WebAppView: UIViewRepresentable {
                     }
                     vm.voiceId = dict["voiceId"] as? String ?? ""
                     vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
+                    vm.llmEnabled = dict["llmEnabled"] as? Bool ?? true
+                    vm.hasAiConsent = dict["hasAiConsent"] as? Bool ?? false
                     if let qpArray = dict["quickPhrases"] as? [[String: Any]] {
                         vm.quickPhrases = qpArray.compactMap { d in
                             guard let emoji = d["emoji"] as? String,
@@ -901,6 +959,10 @@ struct WebAppView: UIViewRepresentable {
             vm.onResetAll = { [weak self] in
                 let js = """
                 keychainDelete('elApiKey');
+                localStorage.removeItem('talkie_el_consent');
+                localStorage.removeItem('talkie_ai_consent');
+                localStorage.removeItem('talkie_ai_consent_declined');
+                localStorage.removeItem('talkie_voice_clone_consent');
                 localStorage.removeItem('talkie_v1');
                 localStorage.removeItem('talkie_onboarded');
                 ['echo_v5','echo_v4','echo_v3','echo_v2','echo_v1','echo_onboarded'].forEach(k => localStorage.removeItem(k));
@@ -944,7 +1006,61 @@ struct WebAppView: UIViewRepresentable {
                 }
             }
 
+            vm.onAiConsentResolved = { [weak self] accepted in
+                let vm = SettingsViewModel.shared
+                if accepted {
+                    vm.hasAiConsent = true
+                    vm.llmEnabled = true
+                } else {
+                    vm.hasAiConsent = false
+                    vm.llmEnabled = false
+                }
+                self?.syncSettingsToJS()
+            }
+
             AppState.shared.showSettings = true
+        }
+
+        @MainActor
+        private func presentNativeAiConsent(from body: Any?) {
+            let lang: String
+            if let dict = body as? [String: Any], let l = dict["lang"] as? String, !l.isEmpty {
+                lang = l
+            } else {
+                lang = SettingsViewModel.shared.lang
+            }
+
+            AppState.shared.aiConsentLang = lang
+            AppState.shared.aiConsentCompletion = { [weak self] accepted in
+                let vm = SettingsViewModel.shared
+                vm.hasAiConsent = accepted
+                vm.llmEnabled = accepted
+                vm.lang = lang
+
+                var js = "window._aiConsentCallback && window._aiConsentCallback(\(accepted));"
+                if accepted {
+                    js += """
+                    localStorage.setItem('talkie_ai_consent', '1');
+                    localStorage.removeItem('talkie_ai_consent_declined');
+                    state.llmEnabled = true;
+                    """
+                } else {
+                    js += """
+                    localStorage.removeItem('talkie_ai_consent');
+                    localStorage.setItem('talkie_ai_consent_declined', '1');
+                    state.llmEnabled = false;
+                    """
+                }
+                js += """
+                save();
+                if ($('aiSuggestionsToggleBtn')) $('aiSuggestionsToggleBtn').classList.toggle('active', state.llmEnabled && !!localStorage.getItem('talkie_ai_consent'));
+                if ($('aiAttribution')) $('aiAttribution').style.display = (llmAvailable && !!localStorage.getItem('talkie_ai_consent') && state.llmEnabled !== false) ? 'block' : 'none';
+                """
+                self?.runJavaScript(js)
+                AppState.shared.aiConsentCompletion = nil
+                AppState.shared.showAiConsent = false
+            }
+            AppState.shared.showAiConsent = true
         }
 
         private func syncSettingsToJS() {
@@ -983,7 +1099,15 @@ struct WebAppView: UIViewRepresentable {
             """
             if vm.hasELConsent {
                 js += "\nlocalStorage.setItem('talkie_el_consent', '1');"
+            } else {
+                js += "\nlocalStorage.removeItem('talkie_el_consent');"
             }
+            if vm.hasAiConsent {
+                js += "\nlocalStorage.setItem('talkie_ai_consent', '1');"
+            } else {
+                js += "\nlocalStorage.removeItem('talkie_ai_consent');"
+            }
+            js += "\nstate.llmEnabled = \(vm.llmEnabled);"
             // Sync quick phrases
             if let jsonData = try? JSONEncoder().encode(vm.quickPhrases),
                let jsonStr = String(data: jsonData, encoding: .utf8) {
@@ -1004,9 +1128,11 @@ struct WebAppView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             let pct = AppState.shared.textSizePercent
             let oled = AppState.shared.oledMode
+            let callActive = CallModeManager.shared.isPhoneCallActive
             let js = """
             window._setTextSize && window._setTextSize(\(pct));
             window._setOledMode && window._setOledMode(\(oled));
+            window._callModeChanged && window._callModeChanged(\(callActive));
             """
             Task { @MainActor in
                 do {
