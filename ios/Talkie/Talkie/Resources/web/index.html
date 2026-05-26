@@ -522,6 +522,14 @@ html, body {
 .voice-pill.speed-slow  { background:rgba(91,106,240,0.15); color:#3F4FD1; }
 .voice-pill.speed-fast  { background:rgba(52,199,133,0.18); color:var(--green); }
 .voice-pill.has-speaker { background:rgba(91,106,240,0.12); color:#3F4FD1; }
+.voice-pill.diar-loading {
+  background:rgba(255,179,71,0.18); color:#A06A00;
+  animation:diarPulse 1.4s ease-in-out infinite;
+}
+.voice-pill.diar-failed { background:rgba(255,69,58,0.18); color:#B43A2A; }
+@keyframes diarPulse { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
+body[data-app-theme="dark"] .voice-pill.diar-loading { background:rgba(255,179,71,0.22); color:#FFB347; }
+body[data-app-theme="dark"] .voice-pill.diar-failed { background:rgba(255,99,71,0.22); color:#FF7755; }
 body[data-app-theme="dark"] .voice-pill { background:var(--bg-card); color:var(--text); }
 body[data-app-theme="dark"] .voice-pill.tone-warm   { background:rgba(255,179,71,0.20); color:#FFB347; }
 body[data-app-theme="dark"] .voice-pill.tone-joyful { background:rgba(255,210,80,0.24); color:#FFD250; }
@@ -1336,7 +1344,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
     <!-- Context zone -->
     <div class="context-zone">
       <button type="button" class="context-reset-btn" id="contextResetBtn" aria-label="Réinitialiser le contexte">✕</button>
-      <div class="context-label">L'interlocuteur dit</div>
+      <div class="context-label" id="contextLabel">L'interlocuteur dit</div>
       <div class="context-text empty" id="contextText">En attente de parole...</div>
     </div>
 
@@ -2545,6 +2553,9 @@ function renderVoiceControls() {
   if (sp) {
     speakerLabel.textContent = sp.name;
     speakerPill.classList.add('has-speaker');
+  } else if (typeof _diarStatus !== 'undefined' && _diarStatus === 'loading') {
+    speakerLabel.textContent = currentLang === 'fr' ? 'Chargement…' : 'Loading…';
+    speakerPill.classList.remove('has-speaker');
   } else {
     speakerLabel.textContent = _label('speakerNonePill');
     speakerPill.classList.remove('has-speaker');
@@ -2621,16 +2632,49 @@ function _countAutoSpeakers() {
 window._diarizationSpeakerChange = function(fluidId, startSec) {
   if (!fluidId) return;
   let talkieId = _fluidToTalkie[fluidId];
+  let wasNew = false;
   if (!talkieId) {
     const n = _countAutoSpeakers() + 1;
     const sp = addSpeaker(_autoSpeakerName(n), '');
     if (!sp) return;
     talkieId = sp.id;
     _fluidToTalkie[fluidId] = talkieId;
+    wasNew = true;
     console.log('[Talkie] New speaker detected:', fluidId, '→', sp.name);
+    showToast((currentLang === 'fr' ? 'Nouvelle voix détectée : ' : 'New voice detected: ') + sp.name, 3500);
   }
   if (state.currentSpeakerId !== talkieId) {
     setCurrentSpeaker(talkieId);
+    updateContextDisplay(lastInterlocutorText || '', false);
+    if (!wasNew) {
+      const sp = currentSpeakerObj();
+      if (sp) showToast((currentLang === 'fr' ? 'Passage à : ' : 'Switched to: ') + sp.name, 2000);
+    }
+  }
+};
+
+let _diarStatus = 'unloaded';
+window._diarizationStatus = function(status) {
+  _diarStatus = status || 'unloaded';
+  console.log('[Talkie] Diarization status:', _diarStatus);
+  const pill = document.getElementById('speakerPill');
+  const label = document.getElementById('speakerLabel');
+  if (!pill || !label) return;
+  pill.classList.remove('diar-loading', 'diar-failed');
+  if (_diarStatus === 'loading') {
+    pill.classList.add('diar-loading');
+    if (!currentSpeakerObj()) {
+      label.textContent = currentLang === 'fr' ? 'Chargement…' : 'Loading…';
+    }
+  } else if (_diarStatus === 'failed') {
+    pill.classList.add('diar-failed');
+    showToast(currentLang === 'fr'
+      ? 'Détection des voix indisponible (modèles non chargés)'
+      : 'Voice detection unavailable (models not loaded)', 5000);
+    renderVoiceControls();
+  } else {
+    // ready / running / unloaded → restore normal pill rendering
+    renderVoiceControls();
   }
 };
 
@@ -3222,6 +3266,18 @@ function refreshSuggestions() {
 function updateContextDisplay(text, isInterim) {
   const el = $('contextText');
   const resetBtn = $('contextResetBtn');
+  const labelEl = $('contextLabel');
+  // Update the context label to include the active speaker when one is set —
+  // this is how the user *sees* that diarization has picked up a person.
+  if (labelEl) {
+    const sp = currentSpeakerObj();
+    const fr = currentLang === 'fr';
+    if (sp) {
+      labelEl.textContent = sp.name + (fr ? ' dit' : ' says');
+    } else {
+      labelEl.textContent = fr ? "L'interlocuteur dit" : 'The other person says';
+    }
+  }
   if (!text) {
     el.textContent = t('contextEmpty');
     el.className = 'context-text empty';
@@ -3361,38 +3417,122 @@ let _ttsSafetyTimer = null;
 let _nativeTTSNearEndTimer = null;
 /** Dernier flag passé à speakTextWithCallback (stop TTS / sécurité). */
 let _ttsResumeMicAfter = true;
+/** File d'attente pour les morceaux de texte long (TTS séquentiel). */
+let _ttsChunkQueue = null;
+let _ttsFinalCallback = null;
 
-function speakTextWithCallback(text, onDone, resumeMicAfter = true) {
-  _ttsResumeMicAfter = resumeMicAfter;
-  _ttsCallback = onDone;
-  // Safety: auto-dismiss after 30s max if callback never fires
-  clearTimeout(_ttsSafetyTimer);
-  _ttsSafetyTimer = setTimeout(() => {
-    if (isSpeaking) {
-      console.warn('[Talkie] TTS safety timeout');
-      stopAudio();
-      hideTTSOverlay();
-      if (resumeMicAfter) startListening();
+/** Durée max de sécurité proportionnelle à la longueur du texte (jusqu'à 5 min). */
+function estimateTtsDurationMs(text) {
+  return Math.min(300000, Math.max(20000, text.length * 85 + 5000));
+}
+
+/** Découpe un texte long aux limites de phrase pour fiabiliser AVSpeech / Web Speech / ElevenLabs. */
+function splitTextForTTS(text, maxLen = 900) {
+  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return [];
+  if (normalized.length <= maxLen) return [normalized];
+
+  const chunks = [];
+  let remaining = normalized;
+  while (remaining.length > maxLen) {
+    const window = remaining.slice(0, maxLen);
+    let splitAt = -1;
+    const punctIdx = window.search(/[.!?…](?:\s|$)/);
+    if (punctIdx >= Math.floor(maxLen * 0.35)) {
+      splitAt = punctIdx + 1;
+      while (splitAt < window.length && /\s/.test(window[splitAt])) splitAt++;
+    } else {
+      const clauseIdx = window.search(/[,;:](?:\s|$)/);
+      if (clauseIdx >= Math.floor(maxLen * 0.35)) {
+        splitAt = clauseIdx + 1;
+        while (splitAt < window.length && /\s/.test(window[splitAt])) splitAt++;
+      } else {
+        splitAt = window.lastIndexOf(' ');
+        if (splitAt < Math.floor(maxLen * 0.25)) splitAt = maxLen;
+      }
     }
-  }, 15000);
+    const piece = remaining.slice(0, splitAt).trim();
+    if (piece) chunks.push(piece);
+    remaining = remaining.slice(splitAt).trim();
+  }
+  if (remaining) chunks.push(remaining);
+  return chunks.length ? chunks : [normalized.slice(0, maxLen)];
+}
+
+function _ttsMaxChunkLen() {
+  // Morceaux plus courts pour ElevenLabs : l'audio natif transite en base64 via WKWebView.
+  if (state.useElevenLabs && state.voiceId && state.elApiKey) return 450;
+  return 900;
+}
+
+function _speakTtsChunk(text) {
   if (state.useElevenLabs && state.voiceId && state.elApiKey) {
     playTTS(text);
   } else if (state.useApplePersonalVoice) {
-    // Attempt native speech with Apple Personal Voice fallback to iOS native standard voice
     speakApplePersonalVoice(text);
   } else {
-    // Normal web SpeechSynthesis fallback
     speakLocal(text);
   }
 }
 
-function _onTTSDone() {
+function _advanceTtsChunk() {
+  if (_ttsChunkQueue && _ttsChunkQueue.length) {
+    _ttsCallback = _advanceTtsChunk;
+    _speakTtsChunk(_ttsChunkQueue.shift());
+    return;
+  }
   clearTimeout(_ttsSafetyTimer);
+  const done = _ttsFinalCallback;
+  _ttsFinalCallback = null;
+  _ttsChunkQueue = null;
+  if (done) done();
+}
+
+function speakTextWithCallback(text, onDone, resumeMicAfter = true) {
+  _ttsResumeMicAfter = resumeMicAfter;
+  const trimmed = String(text || '').trim();
+  if (!trimmed) {
+    if (onDone) onDone();
+    return;
+  }
+
+  clearTimeout(_ttsSafetyTimer);
+  _ttsSafetyTimer = setTimeout(() => {
+    if (isSpeaking) {
+      console.warn('[Talkie] TTS safety timeout');
+      _ttsChunkQueue = null;
+      _ttsFinalCallback = null;
+      stopAudio();
+      hideTTSOverlay();
+      if (_ttsResumeMicAfter) startListening();
+    }
+  }, estimateTtsDurationMs(trimmed));
+
+  const chunks = splitTextForTTS(trimmed, _ttsMaxChunkLen());
+  if (chunks.length <= 1) {
+    _ttsFinalCallback = null;
+    _ttsChunkQueue = null;
+    _ttsCallback = onDone;
+    _speakTtsChunk(chunks[0] || trimmed);
+    return;
+  }
+
+  _ttsFinalCallback = onDone;
+  _ttsChunkQueue = chunks.slice(1);
+  _ttsCallback = _advanceTtsChunk;
+  _speakTtsChunk(chunks[0]);
+}
+
+function _onTTSDone() {
   clearTimeout(_nativeTTSNearEndTimer);
   const cb = _ttsCallback;
   _ttsCallback = null;
   resetNativeAudioSession();
   if (cb) cb();
+  // Mode mono-morceau : libérer le timer de sécurité. En mode multi-morceaux, _advanceTtsChunk s'en charge.
+  if (!_ttsChunkQueue?.length && !_ttsFinalCallback) {
+    clearTimeout(_ttsSafetyTimer);
+  }
 }
 
 async function playElevenLabsBlobHTML5(blob) {
@@ -3430,8 +3570,10 @@ async function playElevenLabsBlobHTML5(blob) {
 
 async function playElevenLabsBlob(blob) {
   const playbackId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  // WKWebView postMessage : au-delà ~450 Ko l'audio base64 peut échouer silencieusement.
+  const NATIVE_TTS_MAX_BYTES = 450000;
 
-  if (window.webkit?.messageHandlers?.playTTSFromData) {
+  if (window.webkit?.messageHandlers?.playTTSFromData && blob.size <= NATIVE_TTS_MAX_BYTES) {
     try {
       const b64 = await blobToBase64(blob);
       currentAudio = { isNativeTTS: true, playbackId };
@@ -3575,7 +3717,12 @@ function stopPlaybackOnly() {
 /** @param {boolean} clearTtsCallback - défaut true ; false si on enchaîne une nouvelle lecture avec le même onDone. */
 function stopAudio(clearTtsCallback = true) {
   stopPlaybackOnly();
-  if (clearTtsCallback) _ttsCallback = null;
+  if (clearTtsCallback) {
+    _ttsCallback = null;
+    _ttsChunkQueue = null;
+    _ttsFinalCallback = null;
+    clearTimeout(_ttsSafetyTimer);
+  }
 }
 
 async function playTTS(text) {

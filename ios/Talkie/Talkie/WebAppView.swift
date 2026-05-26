@@ -79,6 +79,8 @@ struct WebAppView: UIViewRepresentable {
         // listening session doesn't have to wait. Safe to call repeatedly — it's a
         // no-op once loaded.
         DiarizationManager.shared.prepare()
+        // Wire the status callback now (before the webView exists) — it captures
+        // the coordinator weakly via makeCoordinator below.
 
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
@@ -696,6 +698,14 @@ struct WebAppView: UIViewRepresentable {
                                 let js = "window._diarizationSpeakerChange && window._diarizationSpeakerChange('\(fluidId)', \(startSec));"
                                 self?.runJavaScript(js)
                             }
+                            DiarizationManager.shared.onStatusChange = { [weak self] status in
+                                let js = "window._diarizationStatus && window._diarizationStatus('\(status)');"
+                                self?.runJavaScript(js)
+                            }
+                            // Fire the current status immediately so the web layer can show
+                            // "loading" / "ready" without waiting for the next transition.
+                            let cur = DiarizationManager.shared.statusString
+                            self?.runJavaScript("window._diarizationStatus && window._diarizationStatus('\(cur)');")
                             DiarizationManager.shared.start()
                         } else {
                             DiarizationManager.shared.stop()

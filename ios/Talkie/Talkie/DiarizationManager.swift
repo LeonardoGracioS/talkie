@@ -25,8 +25,18 @@ final class DiarizationManager {
     /// relative to the start of this listening session.
     var onSpeakerChange: ((String, Float) -> Void)?
 
+    /// Emitted whenever the diarizer's status changes — used by the web layer
+    /// to surface "models downloading", "ready", or "failed" to the user.
+    /// Possible values: "loading" | "ready" | "running" | "failed" | "unloaded".
+    var onStatusChange: ((String) -> Void)?
+
     /// Set to `false` to disable diarization without unloading the models.
     var enabled: Bool = true
+
+    private(set) var statusString: String = "unloaded" {
+        didSet { if oldValue != statusString { onStatusChange?(statusString) } }
+    }
+    private(set) var lastError: String?
 
     private var diarizer: DiarizerManager?
     private var isLoaded = false
@@ -60,6 +70,7 @@ final class DiarizationManager {
     func prepare() {
         guard !isLoaded, !isLoading else { return }
         isLoading = true
+        statusString = "loading"
         Task.detached { [weak self] in
             do {
                 diarLogger.info("Downloading / loading diarizer models…")
@@ -70,12 +81,16 @@ final class DiarizationManager {
                     self?.diarizer = dia
                     self?.isLoaded = true
                     self?.isLoading = false
+                    self?.statusString = "ready"
                     diarLogger.info("Diarizer ready.")
                 }
             } catch {
-                diarLogger.error("Diarizer load failed: \(String(describing: error), privacy: .public)")
+                let msg = String(describing: error)
+                diarLogger.error("Diarizer load failed: \(msg, privacy: .public)")
                 await MainActor.run { [weak self] in
                     self?.isLoading = false
+                    self?.lastError = msg
+                    self?.statusString = "failed"
                 }
             }
         }
@@ -91,6 +106,7 @@ final class DiarizationManager {
         installInputTap()
         startProcessingLoop()
         isRunning = true
+        statusString = "running"
         diarLogger.info("Diarization session started.")
     }
 
@@ -102,13 +118,8 @@ final class DiarizationManager {
         removeInputTap()
         pcmRing.removeAll(keepingCapacity: false)
         lastSeenSpeakerId = nil
+        statusString = isLoaded ? "ready" : "unloaded"
         diarLogger.info("Diarization session stopped.")
-    }
-
-    var status: String {
-        if isLoading { return "loading" }
-        if isLoaded { return isRunning ? "running" : "idle" }
-        return "unloaded"
     }
 
     // MARK: - Input tap
