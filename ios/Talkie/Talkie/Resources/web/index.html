@@ -3794,9 +3794,40 @@ const _ttsPlayQueue = [];
 let _ttsPlayActive = false;
 let _ttsPlayGen = 0;
 
-/** Durée max de sécurité proportionnelle à la longueur du texte (jusqu'à 3 min). */
-function estimateTtsDurationMs(text) {
-  return Math.min(180000, Math.max(2000, text.length * 70 + 1200));
+/** Estime la durée de lecture (ms) — large marge pour ElevenLabs, pauses et vitesse lente. */
+function estimateTtsDurationMs(text, opts = {}) {
+  const t = String(text || '');
+  const rate = opts.rate ?? speedToRate(currentSpeed(), currentTone());
+  // ~110 ms/car à vitesse 1.0 ; ralenti si rate < 1 (ex. mode lent ≈ 0.82).
+  const msPerChar = 110 / Math.max(0.5, rate);
+  let ms = t.length * msPerChar + 6000;
+  if (opts.includeFetch) ms += 25000;
+  if (opts.audioBytes && opts.audioBytes > 0) {
+    // MP3 64 kbps ≈ 8 Ko/s ; ajouter marge pour time-pitch et latence buffer.
+    const audioMs = (opts.audioBytes / 8000) * 1000 / Math.max(0.5, rate);
+    ms = Math.max(ms, audioMs + 5000);
+  }
+  return Math.min(600000, Math.max(8000, ms));
+}
+
+function _clearTtsSafetyTimer() {
+  clearTimeout(_ttsSafetyTimer);
+  _ttsSafetyTimer = null;
+}
+
+/** Réarme le timer de sécurité pour le morceau en cours (évite coupure prématurée). */
+function _scheduleTtsSafetyTimeout(text, opts = {}) {
+  _clearTtsSafetyTimer();
+  _ttsSafetyTimer = setTimeout(() => {
+    if (!_ttsPlayActive) return;
+    console.warn('[Talkie] TTS safety timeout');
+    _ttsChunkQueue = null;
+    _ttsFinalCallback = null;
+    stopPlaybackOnly();
+    const cb = _ttsCallback;
+    _ttsCallback = null;
+    if (cb) cb();
+  }, estimateTtsDurationMs(text, opts));
 }
 
 /** Découpe un texte long aux limites de phrase pour fiabiliser AVSpeech / Web Speech / ElevenLabs. */
@@ -3833,15 +3864,20 @@ function splitTextForTTS(text, maxLen = 900) {
 }
 
 function _ttsMaxChunkLen() {
-  // Morceaux plus courts pour ElevenLabs : l'audio natif transite en base64 via WKWebView.
-  if (state.useElevenLabs && state.voiceId && state.elApiKey) return 450;
+  // Morceaux courts pour ElevenLabs : l'audio MP3 transite en base64 via WKWebView (~450 Ko max).
+  if (state.useElevenLabs && state.voiceId && state.elApiKey) return 400;
   return 900;
 }
 
-function _speakTtsChunk(text) {
+function _ttsUsesElevenLabs() {
+  return !!(state.useElevenLabs && state.voiceId && state.elApiKey);
+}
+
+async function _speakTtsChunk(text) {
   if (callModeActive) prepareCallModeTTS();
-  if (state.useElevenLabs && state.voiceId && state.elApiKey) {
-    playTTS(text);
+  _scheduleTtsSafetyTimeout(text, { includeFetch: _ttsUsesElevenLabs() });
+  if (_ttsUsesElevenLabs()) {
+    await playTTS(text);
   } else if (window.webkit?.messageHandlers?.speakApplePersonalVoice) {
     // AVSpeech natif : fin de lecture fiable (Web Speech iOS laisse speaking=true ~1–2 s).
     speakApplePersonalVoice(text);
@@ -3853,10 +3889,10 @@ function _speakTtsChunk(text) {
 function _advanceTtsChunk() {
   if (_ttsChunkQueue && _ttsChunkQueue.length) {
     _ttsCallback = _advanceTtsChunk;
-    _speakTtsChunk(_ttsChunkQueue.shift());
+    void _speakTtsChunk(_ttsChunkQueue.shift());
     return;
   }
-  clearTimeout(_ttsSafetyTimer);
+  _clearTtsSafetyTimer();
   const done = _ttsFinalCallback;
   _ttsFinalCallback = null;
   _ttsChunkQueue = null;
@@ -3864,7 +3900,7 @@ function _advanceTtsChunk() {
 }
 
 function _finishTtsJob(onDone) {
-  clearTimeout(_ttsSafetyTimer);
+  _clearTtsSafetyTimer();
   _ttsChunkQueue = null;
   _ttsFinalCallback = null;
   _ttsCallback = null;
@@ -3914,27 +3950,19 @@ function _speakTextNow(text, onDone, resumeMicAfter = true) {
 
   stopPlaybackOnly();
 
-  clearTimeout(_ttsSafetyTimer);
-  _ttsSafetyTimer = setTimeout(() => {
-    if (!_ttsPlayActive) return;
-    console.warn('[Talkie] TTS safety timeout');
-    stopPlaybackOnly();
-    if (onDone) onDone();
-  }, estimateTtsDurationMs(trimmed));
-
   const chunks = splitTextForTTS(trimmed, _ttsMaxChunkLen());
   if (chunks.length <= 1) {
     _ttsFinalCallback = null;
     _ttsChunkQueue = null;
     _ttsCallback = onDone;
-    _speakTtsChunk(chunks[0] || trimmed);
+    void _speakTtsChunk(chunks[0] || trimmed);
     return;
   }
 
   _ttsFinalCallback = onDone;
   _ttsChunkQueue = chunks.slice(1);
   _ttsCallback = _advanceTtsChunk;
-  _speakTtsChunk(chunks[0]);
+  void _speakTtsChunk(chunks[0]);
 }
 
 function _onTTSDone() {
@@ -4138,7 +4166,7 @@ function stopAudio(clearTtsCallback = true) {
     _ttsCallback = null;
     _ttsChunkQueue = null;
     _ttsFinalCallback = null;
-    clearTimeout(_ttsSafetyTimer);
+    _clearTtsSafetyTimer();
     hideTTSOverlay();
   }
 }
@@ -4146,6 +4174,8 @@ function stopAudio(clearTtsCallback = true) {
 async function playTTS(text) {
   try {
     const blob = await fetchTTSAudio(text);
+    // Recalibrer le timer sur la durée audio réelle (évite coupure en fin de phrase).
+    _scheduleTtsSafetyTimeout(text, { audioBytes: blob.size, includeFetch: false });
     stopPlaybackOnly();
     await playElevenLabsBlob(blob);
   } catch (e) {
@@ -4158,14 +4188,18 @@ async function fetchTTSAudio(text) {
   if (!(await ensureElConsent())) {
     throw new Error('ElevenLabs consent required');
   }
-  const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${state.voiceId}`, {
-    method: 'POST',
-    headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
-    body: JSON.stringify({
-      text, model_id: 'eleven_multilingual_v2',
-      voice_settings: elevenLabsVoiceSettings(currentTone())
-    })
-  });
+  const outputFormat = 'mp3_44100_64';
+  const resp = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${state.voiceId}?output_format=${outputFormat}`,
+    {
+      method: 'POST',
+      headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+      body: JSON.stringify({
+        text, model_id: 'eleven_multilingual_v2',
+        voice_settings: elevenLabsVoiceSettings(currentTone())
+      })
+    }
+  );
   if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
   return await resp.blob();
 }

@@ -235,6 +235,7 @@ struct WebAppView: UIViewRepresentable {
         private var nativeAudioTempURL: URL?
         private var nativePlaybackId: String?
         private var nativeProgressTimer: Timer?
+        private var nativeEngineBackupWork: DispatchWorkItem?
         private var nativeSynthesizer = AVSpeechSynthesizer()
         private var nativeSpeechCallbackId: String?
         private var nativeSpeechStartTimer: Timer?
@@ -263,6 +264,8 @@ struct WebAppView: UIViewRepresentable {
 
         deinit {
             nativeProgressTimer?.invalidate()
+            nativeEngineBackupWork?.cancel()
+            nativeEngineBackupWork = nil
             nativeAudioPlayer?.stop()
             nativeAudioPlayerNode?.stop()
             nativeAudioEngine?.stop()
@@ -360,10 +363,23 @@ struct WebAppView: UIViewRepresentable {
                         guard let self else { return }
                         // Ignore late callback if a newer playback has started.
                         guard self.nativePlaybackId == playbackId else { return }
+                        self.nativeEngineBackupWork?.cancel()
+                        self.nativeEngineBackupWork = nil
                         self.finishEnginePlayback(playbackId: playbackId, success: true)
                     }
                 }
                 playerNode.play()
+
+                // Secours si .dataPlayedBack ne se déclenche pas (texte long / time-pitch).
+                let frameCount = Double(audioFile.length)
+                let sampleRate = audioFile.processingFormat.sampleRate
+                let durationSec = frameCount / sampleRate / Double(max(0.5, rate))
+                let backup = DispatchWorkItem { [weak self] in
+                    guard let self, self.nativePlaybackId == playbackId else { return }
+                    self.finishEnginePlayback(playbackId: playbackId, success: true)
+                }
+                nativeEngineBackupWork = backup
+                DispatchQueue.main.asyncAfter(deadline: .now() + durationSec + 3.0, execute: backup)
                 return true
             } catch {
                 logger.error("AVAudioEngine setup failed: \(error.localizedDescription) — falling back to AVAudioPlayer")
@@ -375,6 +391,8 @@ struct WebAppView: UIViewRepresentable {
         private func finishEnginePlayback(playbackId: String, success: Bool) {
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
+            nativeEngineBackupWork?.cancel()
+            nativeEngineBackupWork = nil
             nativeAudioPlayerNode?.stop()
             nativeAudioEngine?.stop()
             nativeAudioPlayerNode = nil
@@ -396,6 +414,8 @@ struct WebAppView: UIViewRepresentable {
         private func failNativeTTS(playbackId: String, code: String) {
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
+            nativeEngineBackupWork?.cancel()
+            nativeEngineBackupWork = nil
             nativeAudioPlayer = nil
             nativeAudioPlayerNode?.stop()
             nativeAudioEngine?.stop()
@@ -418,6 +438,8 @@ struct WebAppView: UIViewRepresentable {
         private func stopNativeTTSPlayback(notifyJS: Bool) {
             nativeProgressTimer?.invalidate()
             nativeProgressTimer = nil
+            nativeEngineBackupWork?.cancel()
+            nativeEngineBackupWork = nil
             nativeSpeechStartTimer?.invalidate()
             nativeSpeechStartTimer = nil
             nativeAudioPlayer?.stop()
