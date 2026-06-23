@@ -649,7 +649,66 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
   box-shadow:var(--shadow-sm);
 }
 .control-btn.keyboard:active { background:var(--bg-card-hover); }
+.control-btn.history {
+  flex:0 0 auto;
+  background:transparent; color:var(--text-tertiary);
+  min-width:44px; padding:0 12px;
+}
+.control-btn.history:active { background:var(--bg-card-hover); color:var(--text-secondary); }
 .control-btn svg { flex-shrink:0; }
+
+/* ─── Phrase history sheet ─── */
+#phraseHistoryOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  z-index:203; display:none; align-items:flex-end; justify-content:center;
+}
+#phraseHistoryOverlay.active { display:flex; }
+.phrase-history-sheet {
+  background:var(--bg-card); border-radius:20px 20px 0 0;
+  width:100%; max-width:600px; max-height:75vh;
+  display:flex; flex-direction:column;
+  animation:consentSlideUp .3s ease;
+}
+.phrase-history-header {
+  padding:18px 20px 10px; border-bottom:1px solid var(--separator);
+}
+.phrase-history-title { font:800 18px var(--font); color:var(--text); margin-bottom:10px; }
+.phrase-history-tabs { display:flex; gap:8px; }
+.phrase-history-tab {
+  flex:1; padding:8px 10px; border-radius:10px; border:none;
+  background:var(--bg); color:var(--text-secondary);
+  font:600 13px var(--font); cursor:pointer;
+}
+.phrase-history-tab.active { background:var(--accent-glow); color:var(--accent); }
+.phrase-history-list {
+  flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:8px 12px calc(var(--safe-bottom) + 8px);
+}
+.phrase-history-item {
+  display:flex; align-items:center; gap:10px;
+  width:100%; padding:12px 10px; margin-bottom:4px;
+  border:none; border-radius:12px; background:var(--bg);
+  text-align:left; cursor:pointer;
+}
+.phrase-history-item:active { background:var(--bg-card-hover); }
+.phrase-history-text {
+  flex:1; font:500 15px var(--font); color:var(--text);
+  line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.phrase-history-meta { font:500 11px var(--font); color:var(--text-tertiary); white-space:nowrap; }
+.phrase-history-speak {
+  width:36px; height:36px; border-radius:50%; border:none;
+  background:var(--accent-glow); color:var(--accent);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.phrase-history-empty {
+  padding:32px 20px; text-align:center;
+  font:500 14px var(--font); color:var(--text-tertiary); line-height:1.5;
+}
+.phrase-history-footer {
+  padding:0 16px calc(var(--safe-bottom) + 12px);
+}
 
 /* ─── TTS overlay (subtle bottom bar, no full-screen block) ─── */
 #ttsOverlay {
@@ -1532,6 +1591,9 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
         Relancer
       </button>
+      <button class="control-btn history" id="btnPhraseHistory" aria-label="Historique des phrases">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </button>
       <button class="control-btn keyboard" id="btnKeyboard">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"/></svg>
         Écrire
@@ -1594,6 +1656,13 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
               <span class="desc">Générer 3 réponses avec Apple Intelligence (sur l'appareil)</span>
             </div>
             <button class="toggle" id="aiSuggestionsToggleBtn" role="switch" aria-label="Suggestions IA"></button>
+          </div>
+          <div class="settings-row">
+            <div class="label">
+              <span class="name" id="llmRichContextLabel">Contexte enrichi</span>
+              <span class="desc" id="llmRichContextDesc">Mémoire, profil et historique dans les suggestions (peut réduire la précision)</span>
+            </div>
+            <button class="toggle" id="llmRichContextToggleBtn" role="switch" aria-label="Contexte enrichi"></button>
           </div>
           <div class="settings-row">
             <div class="label">
@@ -1723,6 +1792,23 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
     <div class="tts-overlay-text">En train de parler…</div>
   </div>
   <button class="tts-stop-btn">Stop</button>
+</div>
+
+<!-- ═══ PHRASE HISTORY ═══ -->
+<div id="phraseHistoryOverlay">
+  <div class="phrase-history-sheet">
+    <div class="phrase-history-header">
+      <div class="phrase-history-title" id="phraseHistoryTitle">Historique</div>
+      <div class="phrase-history-tabs">
+        <button type="button" class="phrase-history-tab active" id="phraseHistoryTabManual">Manuel</button>
+        <button type="button" class="phrase-history-tab" id="phraseHistoryTabLlm">Suggestions IA</button>
+      </div>
+    </div>
+    <div class="phrase-history-list" id="phraseHistoryList"></div>
+    <div class="phrase-history-footer">
+      <button type="button" class="speaker-close-btn" id="phraseHistoryCloseBtn">Fermer</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ TONE PICKER ═══ -->
@@ -1971,7 +2057,7 @@ const I18N = {
     // Advanced page
     advanced: 'Avancé',
     promptTitle: 'Prompt système',
-    promptDesc: 'Ce prompt modifie le comportement global de l\'assistant.',
+    promptDesc: 'Consignes additionnelles utilisées uniquement avec le contexte enrichi. Les règles principales sont intégrées à l\'app.',
     resetPrompt: 'Réinitialiser aux valeurs par défaut',
     // Toasts & messages
     errorGeneric: 'Une erreur est survenue',
@@ -2026,25 +2112,19 @@ const I18N = {
     consentAiDecline: 'Refuser',
     aiSuggestions: 'Suggestions IA',
     aiSuggestionsDesc: 'Générer 3 réponses avec Apple Intelligence (sur l\'appareil)',
-    // LLM prompts
-    defaultPrompt: `Tu ES l'utilisateur (paralysé, tu utilises cette app pour parler). On te parle. Tu donnes 3 choses que TU pourrais répondre, là, maintenant.
-RÈGLES ABSOLUES :
-- BREF. Maximum 15 mots par réponse. Souvent 3 à 8 mots suffisent.
-- Réponds DIRECTEMENT à ce qui vient d'être dit, pas à un message ancien.
-- 1re personne ("Je"). Jamais en 3e personne sur toi-même.
-- Trois réponses différentes : (1) directe/factuelle, (2) chaleureuse/émotive, (3) une qui relance ou nuance.
-- Naturel, humain. INTERDIT : "Option", "Réponse :", "Voici", "Bien sûr", "Je peux vous aider".
-FORMAT STRICT :
-- Exactement 3 lignes, UNE phrase par ligne.
-- Commence directement, sans préambule.
-- Pas de numéro, pas de tiret, pas de guillemets, pas de label.`,
+    llmRichContext: 'Contexte enrichi',
+    llmRichContextDesc: 'Mémoire, profil et historique dans les suggestions (peut réduire la précision)',
+    // LLM prompts — core instructions live in the native app; these are user-facing extras
+    defaultPrompt: `Consignes additionnelles (optionnel, avec contexte enrichi activé) :
+- Reste concis et naturel.
+- Adapte le registre à l'interlocuteur si connu.`,
+    llmPromptCore: (text, hint) => `PHRASE À LAQUELLE RÉPONDRE (SEUL SUJET — ne réponds qu'à ceci) :\n"${text}"${hint}`,
     memoryContext: 'Informations personnelles sur l\'utilisateur (à utiliser pour personnaliser les réponses) :',
     userNameCtx: "L'utilisateur s'appelle",
     recentHistory: 'Historique récent :',
     historyMe: 'Moi',
     historyOther: 'Autre',
     diversityHint: (n) => `\nL'utilisateur veut d'autres options (essai ${n}). Propose 3 réponses différentes des précédentes, mais TOUJOURS pertinentes par rapport à la dernière phrase de l'interlocuteur. Pas de hors-sujet.`,
-    llmPrompt: (text, hint) => `Dernière phrase de l'interlocuteur (réponds À CETTE phrase, pas à autre chose) :\n"${text}"${hint}\n\nDonne 3 réponses possibles que JE peux dire maintenant.\n- Brèves (max 15 mots, idéalement 3 à 8).\n- Trois tons : (1) directe, (2) chaleureuse, (3) qui relance ou nuance.\n- UNE par ligne. Pas de numéro, pas de tiret, pas de guillemets, pas de label.`,
     memoryExtractSys: "Tu es un assistant qui extrait des informations personnelles à partir de conversations.",
     memoryExtractPrompt: (recent, current) => `Voici une conversation récente :\n${recent}\n\nMémoire apprise actuelle :\n${current || '(vide)'}\n\nExtrais les NOUVELLES informations personnelles sur l'utilisateur (goûts, famille, métier, habitudes, opinions, lieux, prénoms de proches). Ajoute-les à la mémoire existante sans doublons. Si rien de nouveau, réponds exactement "RIEN". Sinon, réponds UNIQUEMENT avec la mémoire mise à jour (texte court, liste à puces).`,
     memoryHistoryMe: 'Patient',
@@ -2057,7 +2137,7 @@ FORMAT STRICT :
     micDeniedDetail: 'Accès micro refusé — vérifiez les réglages',
     micUnavailable: 'Micro inaccessible',
     micStartFailed: 'Impossible de démarrer le micro',
-    callModeBanner: 'Appel en cours — activez le haut-parleur pour que votre interlocuteur entende Talkie',
+    callModeBanner: 'Appel en cours — l\'audio Talkie est envoyé à votre interlocuteur. Activez « Ajouter l\'audio lors des appels » dans Accessibilité si besoin.',
     callModeActive: 'Mode appel activé — prononcez via le haut-parleur',
     callModeEnded: 'Appel terminé',
     callModeListening: 'Écoute pendant l\'appel…',
@@ -2137,6 +2217,15 @@ FORMAT STRICT :
     devModeOff: 'Mode développeur désactivé',
     voiceTestPrompt: 'Texte à lire :',
     voiceTestDefault: 'Bonjour, ceci est ma voix.',
+    phraseHistoryTitle: 'Historique',
+    phraseHistoryTabManual: 'Manuel',
+    phraseHistoryTabLlm: 'Suggestions IA',
+    phraseHistoryEmptyManual: 'Les phrases saisies ou dictées apparaîtront ici pour les répéter en un tap.',
+    phraseHistoryEmptyLlm: 'Les suggestions IA choisies apparaîtront ici.',
+    phraseHistoryRepeat: 'Répéter',
+    phraseHistoryClose: 'Fermer',
+    phraseHistoryAdded: 'Phrase enregistrée',
+    callModeElevenLabsWarning: 'Pendant un appel, la voix iPhone est utilisée pour que l\'interlocuteur entende.',
   },
   en: {
     splashSub: 'Your voice, preserved',
@@ -2208,7 +2297,7 @@ FORMAT STRICT :
     learnedCleared: 'Learned memory cleared',
     advanced: 'Advanced',
     promptTitle: 'System prompt',
-    promptDesc: 'This prompt changes the overall behavior of the assistant.',
+    promptDesc: 'Additional instructions used only with rich context enabled. Core rules are built into the app.',
     resetPrompt: 'Reset to defaults',
     errorGeneric: 'An error occurred',
     suggestionsUnavailable: 'Suggestions unavailable',
@@ -2262,24 +2351,18 @@ FORMAT STRICT :
     consentAiDecline: 'Decline',
     aiSuggestions: 'AI suggestions',
     aiSuggestionsDesc: 'Generate 3 replies with Apple Intelligence (on-device)',
-    defaultPrompt: `You ARE the user (paralyzed, you use this app to speak). Someone is talking to you. Give 3 things YOU could reply, right now.
-ABSOLUTE RULES:
-- BRIEF. Maximum 15 words per reply. Often 3 to 8 words is enough.
-- Reply DIRECTLY to what was just said, not to an older message.
-- 1st person ("I"). Never speak about yourself in the 3rd person.
-- Three different replies: (1) direct/factual, (2) warm/emotive, (3) one that follows up or nuances.
-- Natural, human. FORBIDDEN: "Option", "Reply:", "Here are", "Sure", "I can help".
-STRICT FORMAT:
-- Exactly 3 lines, ONE sentence per line.
-- Start directly, no preamble.
-- No numbering, no dashes, no quotes, no labels.`,
+    llmRichContext: 'Rich context',
+    llmRichContextDesc: 'Include memory, profile and history in suggestions (may reduce accuracy)',
+    defaultPrompt: `Additional instructions (optional, when rich context is on):
+- Stay concise and natural.
+- Match register to the speaker when known.`,
+    llmPromptCore: (text, hint) => `SENTENCE TO REPLY TO (ONLY TOPIC — reply to this alone):\n"${text}"${hint}`,
     memoryContext: 'Personal information about the user (use to personalize responses):',
     userNameCtx: 'The user\'s name is',
     recentHistory: 'Recent history:',
     historyMe: 'Me',
     historyOther: 'Other',
     diversityHint: (n) => `\nThe user wants other options (try ${n}). Suggest 3 replies different from the previous ones, but STILL on-topic with the last thing said. No off-topic drift.`,
-    llmPrompt: (text, hint) => `Last thing the other person said (reply to THIS, not to anything else):\n"${text}"${hint}\n\nGive 3 possible replies I can say now.\n- Brief (max 15 words, ideally 3 to 8).\n- Three tones: (1) direct, (2) warm, (3) a follow-up or nuance.\n- ONE per line. No numbers, no dashes, no quotes, no labels.`,
     memoryExtractSys: 'You are an assistant that extracts personal information from conversations.',
     memoryExtractPrompt: (recent, current) => `Here is a recent conversation:\n${recent}\n\nCurrent learned memory:\n${current || '(empty)'}\n\nExtract NEW personal information about the user (interests, family, job, habits, opinions, places, names of loved ones). Add them to the existing memory without duplicates. If nothing new, respond exactly "NOTHING". Otherwise, respond ONLY with the updated memory (short text, bullet points).`,
     memoryHistoryMe: 'Patient',
@@ -2292,7 +2375,7 @@ STRICT FORMAT:
     micDeniedDetail: 'Microphone access denied — check settings',
     micUnavailable: 'Microphone unavailable',
     micStartFailed: 'Could not start microphone',
-    callModeBanner: 'Call in progress — use speakerphone so the other person hears Talkie',
+    callModeBanner: 'Call in progress — Talkie audio is sent to the other person. Enable "Allow Apps to Add Audio in Calls" in Accessibility if needed.',
     callModeActive: 'Call mode — speak through the speaker',
     callModeEnded: 'Call ended',
     callModeListening: 'Listening during call…',
@@ -2372,6 +2455,15 @@ STRICT FORMAT:
     devModeOff: 'Developer mode off',
     voiceTestPrompt: 'Text to speak:',
     voiceTestDefault: 'Hello, this is my voice.',
+    phraseHistoryTitle: 'History',
+    phraseHistoryTabManual: 'Manual',
+    phraseHistoryTabLlm: 'AI suggestions',
+    phraseHistoryEmptyManual: 'Typed or dictated phrases will appear here so you can repeat them with one tap.',
+    phraseHistoryEmptyLlm: 'AI suggestions you spoke will appear here.',
+    phraseHistoryRepeat: 'Repeat',
+    phraseHistoryClose: 'Close',
+    phraseHistoryAdded: 'Phrase saved',
+    callModeElevenLabsWarning: 'During a call, iPhone voice is used so the other person can hear you.',
   }
 };
 
@@ -2578,6 +2670,12 @@ function applyStaticTranslations() {
   document.querySelectorAll('#page-privacy .inapp-page-back, #page-support .inapp-page-back').forEach(b => b.setAttribute('aria-label', t('ariaBack')));
   setSvgBtn(el('btnRefresh'), 'refresh');
   setSvgBtn(el('btnKeyboard'), 'write');
+  const histBtn = el('btnPhraseHistory');
+  if (histBtn) histBtn.setAttribute('aria-label', t('phraseHistoryTitle'));
+  setText(el('phraseHistoryTitle'), 'phraseHistoryTitle');
+  setText(el('phraseHistoryTabManual'), 'phraseHistoryTabManual');
+  setText(el('phraseHistoryTabLlm'), 'phraseHistoryTabLlm');
+  setText(el('phraseHistoryCloseBtn'), 'phraseHistoryClose');
   setText(q('.manual-title'), 'manualTitle');
   setPlaceholder(el('manualInput'), 'manualPlaceholder');
   setSvgBtn(el('btnSpeak'), 'speak');
@@ -2614,6 +2712,9 @@ function applyStaticTranslations() {
   setText(aiRow?.querySelector('.name'), 'aiSuggestions');
   setText(aiRow?.querySelector('.desc'), 'aiSuggestionsDesc');
   if (el('aiSuggestionsToggleBtn')) el('aiSuggestionsToggleBtn').setAttribute('aria-label', t('aiSuggestions'));
+  setText(el('llmRichContextLabel'), 'llmRichContext');
+  setText(el('llmRichContextDesc'), 'llmRichContextDesc');
+  if (el('llmRichContextToggleBtn')) el('llmRichContextToggleBtn').setAttribute('aria-label', t('llmRichContext'));
   const elRow = el('useElevenLabsToggleBtn')?.closest('.settings-row');
   setText(elRow?.querySelector('.name'), 'useElevenLabs');
   setText(elRow?.querySelector('.desc'), 'elevenLabsDesc');
@@ -3257,10 +3358,124 @@ function speakSoundboardPhrase(text) {
   userHasInteracted = true;
   stopListening();
   addToHistory(text, true);
+  addToPhraseHistory(text, 'manual');
   speakTextWithCallback(text, () => {
     if (!_ttsPlayActive && !_ttsPlayQueue.length) startListening();
   }, false);
 }
+
+// ─── Phrase history (repeat manual / LLM phrases) ───
+const PHRASE_HISTORY_MAX = 60;
+let phraseHistoryTab = 'manual';
+
+function ensurePhraseHistory() {
+  if (!state.phraseHistory || typeof state.phraseHistory !== 'object') {
+    state.phraseHistory = { manual: [], llm: [] };
+  }
+  if (!Array.isArray(state.phraseHistory.manual)) state.phraseHistory.manual = [];
+  if (!Array.isArray(state.phraseHistory.llm)) state.phraseHistory.llm = [];
+}
+
+function addToPhraseHistory(text, source) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return;
+  ensurePhraseHistory();
+  const bucket = source === 'llm' ? 'llm' : 'manual';
+  const list = state.phraseHistory[bucket];
+  const existing = list.findIndex(e => e.text === trimmed);
+  const loc = currentLang === 'fr' ? 'fr-FR' : 'en-US';
+  const entry = {
+    text: trimmed,
+    time: new Date().toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
+    ts: Date.now(),
+  };
+  if (existing >= 0) list.splice(existing, 1);
+  list.unshift(entry);
+  if (list.length > PHRASE_HISTORY_MAX) list.length = PHRASE_HISTORY_MAX;
+  save();
+}
+
+function openPhraseHistoryOverlay() {
+  ensurePhraseHistory();
+  phraseHistoryTab = 'manual';
+  renderPhraseHistoryTabs();
+  renderPhraseHistoryList();
+  const overlay = $('phraseHistoryOverlay');
+  if (overlay) overlay.classList.add('active');
+}
+
+function closePhraseHistoryOverlay() {
+  $('phraseHistoryOverlay')?.classList.remove('active');
+}
+
+function renderPhraseHistoryTabs() {
+  const manualTab = $('phraseHistoryTabManual');
+  const llmTab = $('phraseHistoryTabLlm');
+  if (manualTab) manualTab.classList.toggle('active', phraseHistoryTab === 'manual');
+  if (llmTab) llmTab.classList.toggle('active', phraseHistoryTab === 'llm');
+}
+
+function renderPhraseHistoryList() {
+  ensurePhraseHistory();
+  const listEl = $('phraseHistoryList');
+  if (!listEl) return;
+  const items = state.phraseHistory[phraseHistoryTab] || [];
+  listEl.innerHTML = '';
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'phrase-history-empty';
+    empty.textContent = phraseHistoryTab === 'llm'
+      ? t('phraseHistoryEmptyLlm')
+      : t('phraseHistoryEmptyManual');
+    listEl.appendChild(empty);
+    return;
+  }
+  items.forEach(entry => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'phrase-history-item';
+    row.setAttribute('aria-label', t('phraseHistoryRepeat') + ': ' + entry.text);
+    row.innerHTML =
+      '<span class="phrase-history-text">' + esc(entry.text) + '</span>' +
+      '<span class="phrase-history-meta">' + esc(entry.time || '') + '</span>' +
+      '<span class="phrase-history-speak" aria-hidden="true">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5z"/></svg></span>';
+    row.addEventListener('click', () => repeatPhraseFromHistory(entry.text, phraseHistoryTab));
+    listEl.appendChild(row);
+  });
+}
+
+function repeatPhraseFromHistory(text, source) {
+  closePhraseHistoryOverlay();
+  userHasInteracted = true;
+  const wasListening = isListening;
+  if (wasListening) stopListening();
+  addToHistory(text, true);
+  addToPhraseHistory(text, source === 'llm' ? 'llm' : 'manual');
+  speakTextWithCallback(text, () => {
+    if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
+  }, wasListening);
+}
+
+safeClick('phraseHistoryCloseBtn', () => closePhraseHistoryOverlay());
+safeClick('phraseHistoryTabManual', () => {
+  phraseHistoryTab = 'manual';
+  renderPhraseHistoryTabs();
+  renderPhraseHistoryList();
+});
+safeClick('phraseHistoryTabLlm', () => {
+  phraseHistoryTab = 'llm';
+  renderPhraseHistoryTabs();
+  renderPhraseHistoryList();
+});
+const phraseHistoryOverlayEl = $('phraseHistoryOverlay');
+if (phraseHistoryOverlayEl) {
+  phraseHistoryOverlayEl.addEventListener('click', (e) => {
+    if (e.target === phraseHistoryOverlayEl) closePhraseHistoryOverlay();
+  });
+}
+
+let _callModeElevenLabsWarned = false;
 
 window._updateQuickPhrases = function(phrasesJSON) {
   try {
@@ -3319,6 +3534,8 @@ function loadState() {
       if (!s.profile) s.profile = {};
       if (!s.styleSummary) s.styleSummary = '';
       if (!s.suggestionStats) s.suggestionStats = { picked: [], pickedSinceLastSummary: 0 };
+      if (!s.phraseHistory) s.phraseHistory = { manual: [], llm: [] };
+      if (s.llmRichContext === undefined) s.llmRichContext = false;
       return s;
     }
   } catch {}
@@ -3350,6 +3567,8 @@ function loadState() {
     speakers: [], currentSpeakerId: null,
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
+    phraseHistory: { manual: [], llm: [] },
+    llmRichContext: false,
   };
 }
 
@@ -3416,7 +3635,11 @@ async function maybeExtractMemory() {
 }
 
 // ─── DOM Helpers ───
-const $ = id => document.getElementById(id);
+// NB: déclaré comme fonction (hoistée) et non `const` : certains câblages
+// d'événements s'exécutent au chargement AVANT cette ligne. Un `const`
+// déclencherait une ReferenceError (temporal dead zone) qui bloquerait toute
+// l'initialisation de l'app.
+function $(id) { return document.getElementById(id); }
 function showToast(msg, dur = 2500) {
   $('toast').textContent = msg;
   $('toast').classList.add('show');
@@ -3602,6 +3825,7 @@ safeClick('btnKeyboard', () => switchToManual());
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
 safeClick('btnCloseManual', () => switchToSuggestions());
 safeClick('btnRefresh', () => refreshSuggestions());
+safeClick('btnPhraseHistory', () => openPhraseHistoryOverlay());
 safeClick('contextResetBtn', () => resetSuggestionContext());
 safeClick('btnSpeak', () => speakManual());
 safeClick('listeningBar', () => {
@@ -3746,6 +3970,7 @@ function speakSuggestion(text, cardIndex) {
   const wasListening = isListening;
   if (wasListening) stopListening();
   addToHistory(text, true);
+  addToPhraseHistory(text, 'llm');
   maybeExtractMemory();
   recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
@@ -3760,10 +3985,11 @@ function speakManual() {
   const wasListening = isListening;
   if (wasListening) stopListening();
   addToHistory(text, true);
+  addToPhraseHistory(text, 'manual');
   recordSuggestionPick(text);
   speakTextWithCallback(text, () => {
-    $('manualInput').value = '';
-    switchToSuggestions(wasListening && !_ttsPlayActive && !_ttsPlayQueue.length);
+    showView('suggestions');
+    if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
   }, wasListening);
 }
 
@@ -3870,11 +4096,19 @@ function _ttsMaxChunkLen() {
 }
 
 function _ttsUsesElevenLabs() {
+  // ElevenLabs cannot inject audio into the telephony uplink — use Apple TTS during calls.
+  if (callModeActive) return false;
   return !!(state.useElevenLabs && state.voiceId && state.elApiKey);
 }
 
 async function _speakTtsChunk(text) {
-  if (callModeActive) prepareCallModeTTS();
+  if (callModeActive) {
+    prepareCallModeTTS();
+    if (state.useElevenLabs && state.voiceId && state.elApiKey && !_callModeElevenLabsWarned) {
+      _callModeElevenLabsWarned = true;
+      showToast(t('callModeElevenLabsWarning'), 4500);
+    }
+  }
   _scheduleTtsSafetyTimeout(text, { includeFetch: _ttsUsesElevenLabs() });
   if (_ttsUsesElevenLabs()) {
     await playTTS(text);
@@ -4429,22 +4663,115 @@ window._llmCallback = function(rid, result, error) {
   }
 };
 
-function callNativeLLM(sys, prompt) {
+function callNativeLLM(sys, prompt, opts = {}) {
   return new Promise((resolve, reject) => {
     if (!hasAiConsent()) {
       reject(new Error('AI consent required'));
       return;
     }
-    const rid = 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+    const rid = 'r_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     _llmCallbacks[rid] = { resolve, reject };
     if (window.webkit?.messageHandlers?.llmRequest) {
-      window.webkit.messageHandlers.llmRequest.postMessage({ requestId: rid, systemPrompt: sys, prompt });
+      window.webkit.messageHandlers.llmRequest.postMessage({
+        requestId: rid,
+        systemPrompt: sys || '',
+        prompt,
+        structured: !!opts.structured,
+        richContext: opts.richContext || '',
+        minimal: !!opts.minimal,
+        language: opts.language || currentLang,
+      });
     } else {
       reject(new Error('LLM non disponible'));
     }
     setTimeout(() => {
       if (_llmCallbacks[rid]) { delete _llmCallbacks[rid]; reject(new Error('Timeout')); }
     }, 30000);
+  });
+}
+
+const _LLM_REFUSAL_RE = /(désolé|desole|je ne peux pas|en tant qu'?ia|en tant qu'?assistant|sorry|i can't help|i cannot help|as an ai|as a language model|i'm unable|i am unable|not able to help)/i;
+
+function isLlmRefusal(text) {
+  if (!text || typeof text !== 'string') return true;
+  return _LLM_REFUSAL_RE.test(text);
+}
+
+function buildRichContextBlock() {
+  if (state.llmRichContext === false) return '';
+  const parts = [];
+  const hist = state.history.slice(-2).map(m =>
+    `${speakerLabelForEntry(m)}: ${m.text}`
+  ).join('\n');
+  if (hist) parts.push(`${t('recentHistory')}\n${hist}`);
+
+  const memParts = [];
+  if (state.memory && state.memory.trim()) memParts.push(state.memory.trim());
+  if (state.learnedMemory && state.learnedMemory.trim()) {
+    const learned = state.learnedMemory.trim();
+    memParts.push(learned.length > 300 ? learned.slice(0, 300) + '…' : learned);
+  }
+  if (memParts.length) parts.push(`${t('memoryContext')}\n${memParts.join('\n')}`);
+
+  if (state.userName) parts.push(`${t('userNameCtx')} ${state.userName}.`);
+
+  const profileLines = buildProfileLines();
+  if (profileLines) {
+    const clipped = profileLines.length > 250 ? profileLines.slice(0, 250) + '…' : profileLines;
+    parts.push(`${t('profileContextHeader')}\n${clipped}`);
+  }
+
+  if (state.styleSummary && state.styleSummary.trim()) {
+    const style = state.styleSummary.trim();
+    parts.push(`${t('styleContextHeader')}\n${style.length > 200 ? style.slice(0, 200) + '…' : style}`);
+  }
+
+  const sp = currentSpeakerObj();
+  if (sp) {
+    const relStr = sp.relationship ? ` (${sp.relationship})` : '';
+    parts.push(`${t('currentSpeakerHeader')} ${sp.name}${relStr}`);
+  }
+
+  const toneHint = t('toneHint')(currentTone());
+  if (toneHint) parts.push(toneHint);
+
+  const custom = (state.systemPrompt || '').trim();
+  const defaultP = getDefaultPrompt().trim();
+  if (custom && custom !== defaultP) {
+    parts.push(`Consignes additionnelles:\n${custom.length > 400 ? custom.slice(0, 400) + '…' : custom}`);
+  }
+
+  return parts.join('\n\n');
+}
+
+function parseSuggestionLines(content) {
+  const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready|désolé|sorry)/i;
+  const _labelRe = /^(directe?|warm|chaleureux|pragmatique|sociale|émotive|émotiv|relance|followup|follow.?up|nuance|autre|option\s*\d|social|emotive)\s*[:–—-]\s*/i;
+  const MAX_WORDS = 14;
+  function trimToOneIdea(s) {
+    const m = s.match(/^(.+?[.!?…])(\s|$)/);
+    const first = m ? m[1] : s;
+    const words = first.split(/\s+/);
+    if (words.length <= MAX_WORDS) return first.trim();
+    return words.slice(0, MAX_WORDS).join(' ').replace(/[,;:\-—]\s*$/, '') + '…';
+  }
+  return content.split('\n')
+    .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
+    .map(s => s.replace(_labelRe, '').trim())
+    .filter(s => s.length > 2 && !isInappropriate(s) && !_preambleRe.test(s) && !isLlmRefusal(s))
+    .map(trimToOneIdea)
+    .filter(s => s.length > 1)
+    .slice(0, 3);
+}
+
+async function requestStructuredSuggestions(interlocutorText, diversityHint, opts = {}) {
+  const prompt = t('llmPromptCore')(interlocutorText, diversityHint);
+  const richContext = opts.minimal ? '' : buildRichContextBlock();
+  return callNativeLLM('', prompt, {
+    structured: true,
+    language: currentLang,
+    richContext,
+    minimal: !!opts.minimal,
   });
 }
 
@@ -4506,91 +4833,43 @@ async function fetchSuggestions(interlocutorText) {
   _currentSuggestionText = interlocutorText;
   showSuggestionLoading();
 
-  const ctx = state.history.slice(-8).map(m =>
-    `${speakerLabelForEntry(m)}: ${m.text}`
-  ).join('\n');
-
-  // Filter inappropriate input
   if (isInappropriate(interlocutorText)) {
     clearSuggestionCards();
     return;
   }
 
-  let sys = SAFETY_PREFIX + state.systemPrompt;
-  // Combine manual + learned memory
-  const memParts = [];
-  if (state.memory && state.memory.trim()) memParts.push(state.memory.trim());
-  if (state.learnedMemory && state.learnedMemory.trim()) memParts.push(state.learnedMemory.trim());
-  if (memParts.length) {
-    sys += `\n\n${t('memoryContext')}\n${memParts.join('\n')}`;
-  }
-  if (state.userName) {
-    sys += `\n${t('userNameCtx')} ${state.userName}.`;
-  }
-  // Structured profile (Phase 3) — short bullets only.
-  const profileLines = buildProfileLines();
-  if (profileLines) sys += `\n\n${t('profileContextHeader')}\n${profileLines}`;
-  // Learned style summary built from accepted suggestions.
-  if (state.styleSummary && state.styleSummary.trim()) {
-    sys += `\n\n${t('styleContextHeader')}\n${state.styleSummary.trim()}`;
-  }
-  // Active speaker hint so the LLM tailors register/tone.
-  const sp = currentSpeakerObj();
-  if (sp) {
-    const relStr = sp.relationship ? ` (${sp.relationship})` : '';
-    sys += `\n\n${t('currentSpeakerHeader')} ${sp.name}${relStr}`;
-  }
-  // Tone hint so the LLM adapts wording (the audio engine handles the literal voice).
-  const toneHint = t('toneHint')(currentTone());
-  if (toneHint) sys += `\n${toneHint}`;
-  sys += `\n\n${t('recentHistory')}\n${ctx}`;
-  sys += `\n\n${t('llmOutputLanguage')}`;
-
-  // Hard cap on the system prompt — Apple's on-device model has a tight context,
-  // and a bloated prompt is the #1 reason for off-topic / hallucinated replies.
-  // We keep the head (rules + memory + profile) and trim the middle if needed.
-  const SYS_MAX = 4500;
-  if (sys.length > SYS_MAX) {
-    const keep = Math.floor(SYS_MAX * 0.6);
-    const tail = sys.slice(sys.length - (SYS_MAX - keep));
-    sys = sys.slice(0, keep) + '\n…\n' + tail;
-  }
-
-  // Diversity instructions
   const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
 
-  const prompt = t('llmPrompt')(interlocutorText, diversityHint);
-
   try {
-    const content = await callNativeLLM(sys, prompt);
-    if (myGen !== _currentSuggestionGen) {
-      console.log('[Talkie] Discarding stale suggestion response (gen', myGen, 'vs', _currentSuggestionGen, ')');
-      return;
+    let content = await requestStructuredSuggestions(interlocutorText, diversityHint);
+    if (myGen !== _currentSuggestionGen) return;
+
+    if (isLlmRefusal(content)) {
+      content = await requestStructuredSuggestions(interlocutorText, diversityHint, { minimal: true });
+      if (myGen !== _currentSuggestionGen) return;
     }
-    const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready)/i;
-    const _labelRe = /^(directe|pragmatique|sociale|émotive|émotiv|relance|nuance|autre|option\s*\d|social|emotive|follow.?up)\s*[:–—-]\s*/i;
-    // Belt-and-braces brevity guard: if the model returns a 50-word ramble,
-    // keep only the first sentence so the card stays tappable.
-    const MAX_WORDS = 22;
-    function trimToOneIdea(s) {
-      // Cut at the first hard sentence boundary (.!? followed by space or end).
-      const m = s.match(/^(.+?[.!?…])(\s|$)/);
-      const first = m ? m[1] : s;
-      const words = first.split(/\s+/);
-      if (words.length <= MAX_WORDS) return first.trim();
-      return words.slice(0, MAX_WORDS).join(' ').replace(/[,;:\-—]\s*$/, '') + '…';
+
+    const suggestions = parseSuggestionLines(content);
+    if (suggestions.length) {
+      renderSuggestionCards(suggestions);
+    } else if (!isLlmRefusal(content)) {
+      clearSuggestionCards();
+    } else {
+      clearSuggestionCards();
+      showToast(t('suggestionsUnavailable'));
     }
-    const suggestions = content.split('\n')
-      .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
-      .map(s => s.replace(_labelRe, '').trim())
-      .filter(s => s.length > 2 && !isInappropriate(s) && !_preambleRe.test(s))
-      .map(trimToOneIdea)
-      .filter(s => s.length > 1)
-      .slice(0, 3);
-    if (suggestions.length) renderSuggestionCards(suggestions);
-    else clearSuggestionCards();
-  } catch(e) {
-    if (myGen !== _currentSuggestionGen) return; // stale failure too — ignore
+  } catch (e) {
+    if (myGen !== _currentSuggestionGen) return;
+    if (e.message === 'refusal') {
+      try {
+        const content = await requestStructuredSuggestions(interlocutorText, diversityHint, { minimal: true });
+        if (myGen !== _currentSuggestionGen) return;
+        const suggestions = parseSuggestionLines(content);
+        if (suggestions.length) renderSuggestionCards(suggestions);
+        else { clearSuggestionCards(); showToast(t('suggestionsUnavailable')); }
+        return;
+      } catch (_) {}
+    }
     console.error('LLM:', e);
     clearSuggestionCards();
     showToast(t('suggestionsUnavailable'));
@@ -4702,6 +4981,7 @@ function loadSettings() {
   $('learnedMemoryDisplay').textContent = state.learnedMemory || t('learnedEmpty');
   $('appleVoiceToggleBtn').classList.toggle('active', state.useApplePersonalVoice);
   $('aiSuggestionsToggleBtn').classList.toggle('active', state.llmEnabled && hasAiConsent());
+  $('llmRichContextToggleBtn')?.classList.toggle('active', state.llmRichContext === true);
   // Developer mode
   $('useElevenLabsToggleBtn').classList.toggle('active', state.useElevenLabs);
   $('elevenLabsConfigArea').style.display = state.useElevenLabs ? 'block' : 'none';
@@ -4855,6 +5135,11 @@ $('aiSuggestionsToggleBtn').onclick = async () => {
   localStorage.setItem(AI_CONSENT_DECLINED_KEY, '1');
   $('aiSuggestionsToggleBtn').classList.remove('active');
   clearSuggestionCards();
+  save();
+};
+$('llmRichContextToggleBtn').onclick = () => {
+  state.llmRichContext = !state.llmRichContext;
+  $('llmRichContextToggleBtn').classList.toggle('active', state.llmRichContext === true);
   save();
 };
 $('useElevenLabsToggleBtn').onclick = async () => {

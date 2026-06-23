@@ -247,6 +247,9 @@ struct WebAppView: UIViewRepresentable {
         override init() {
             super.init()
             nativeSynthesizer.delegate = self
+            // Route TTS into active phone / FaceTime calls so the interlocutor hears it
+            // (same mechanism as Live Speech). No effect when no call is active.
+            nativeSynthesizer.mixToTelephonyUplink = true
         }
 
         /// Préfère l'API `async` de WKWebView (évite l'avertissement « asynchronous alternative »).
@@ -811,22 +814,54 @@ struct WebAppView: UIViewRepresentable {
             guard message.name == "llmRequest",
                   let body = message.body as? [String: Any],
                   let requestId = body["requestId"] as? String,
-                  let prompt = body["prompt"] as? String,
-                  let systemPrompt = body["systemPrompt"] as? String else {
+                  let prompt = body["prompt"] as? String else {
                 return
             }
 
             Task {
-                await generateWithAppleLLM(requestId: requestId, systemPrompt: systemPrompt, prompt: prompt)
+                await generateWithAppleLLM(requestId: requestId, body: body, prompt: prompt)
             }
         }
 
         @MainActor
-        func generateWithAppleLLM(requestId: String, systemPrompt: String, prompt: String) async {
+        private func deliverLLMResult(requestId: String, text: String?, error: String?) async {
             guard let webView else { return }
+            let escaped: String
+            if let text {
+                escaped = text
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                    .replacingOccurrences(of: "\n", with: "\\n")
+                    .replacingOccurrences(of: "\r", with: "")
+            } else {
+                escaped = ""
+            }
+            let errPart: String
+            if let error {
+                errPart = error
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+            } else {
+                errPart = "null"
+            }
+            let js = text != nil
+                ? "window._llmCallback('\(requestId)', '\(escaped)', null);"
+                : "window._llmCallback('\(requestId)', null, '\(errPart)');"
+            do {
+                _ = try await webView.evaluateJavaScript(js)
+            } catch {
+                logger.error("Failed to send LLM result to web: \(error.localizedDescription)")
+            }
+        }
 
-            // Verify availability before attempting — surfaces accurate errors on devices
-            // where Apple Intelligence is disabled, downloading, or the model isn't ready.
+        @MainActor
+        func generateWithAppleLLM(requestId: String, body: [String: Any], prompt: String) async {
+            let structured = body["structured"] as? Bool ?? false
+            let minimal = body["minimal"] as? Bool ?? false
+            let language = (body["language"] as? String) ?? "fr"
+            let richContext = (body["richContext"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let systemPrompt = (body["systemPrompt"] as? String) ?? ""
+
             switch SystemLanguageModel.default.availability {
             case .available:
                 break
@@ -839,50 +874,111 @@ struct WebAppView: UIViewRepresentable {
                 @unknown default: code = "unavailable"
                 }
                 logger.warning("LLM unavailable: \(code, privacy: .public)")
-                let js = "window._llmCallback('\(requestId)', null, '\(code)');"
-                _ = try? await webView.evaluateJavaScript(js)
+                await deliverLLMResult(requestId: requestId, text: nil, error: code)
                 return
             @unknown default:
-                let js = "window._llmCallback('\(requestId)', null, 'unavailable');"
-                _ = try? await webView.evaluateJavaScript(js)
+                await deliverLLMResult(requestId: requestId, text: nil, error: "unavailable")
                 return
             }
 
-            // Cap instructions length — the on-device model has a tight context window
-            // and oversized system prompts (heavy memory + history) silently fail on
-            // some devices. Trim from the front so the most recent history survives.
-            let maxInstructions = 6000
-            let instructions: String = {
-                if systemPrompt.count <= maxInstructions { return systemPrompt }
-                let tail = systemPrompt.suffix(maxInstructions)
-                return String(tail)
-            }()
+            if structured {
+                await generateStructuredSuggestions(
+                    requestId: requestId,
+                    prompt: prompt,
+                    language: language,
+                    richContext: richContext,
+                    minimal: minimal
+                )
+                return
+            }
+
+            // Freeform path (memory extraction, etc.)
+            var instructions = TalkieLLMInstructions.trimmed(systemPrompt)
+            if instructions.isEmpty {
+                instructions = TalkieLLMInstructions.base(language: language, minimal: true)
+            }
 
             do {
                 let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
                 let text = response.content
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "'", with: "\\'")
-                    .replacingOccurrences(of: "\n", with: "\\n")
-                    .replacingOccurrences(of: "\r", with: "")
-                let js = "window._llmCallback('\(requestId)', '\(text)', null);"
-                do {
-                    _ = try await webView.evaluateJavaScript(js)
-                } catch {
-                    logger.error("Failed to send LLM result to web: \(error.localizedDescription)")
+                if TalkieLLMInstructions.isRefusal(text) {
+                    await deliverLLMResult(requestId: requestId, text: nil, error: "refusal")
+                    return
                 }
+                await deliverLLMResult(requestId: requestId, text: text, error: nil)
             } catch {
                 logger.error("LanguageModelSession.respond failed: \(String(describing: error), privacy: .public)")
-                let errMsg = error.localizedDescription
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "'", with: "\\'")
-                let js = "window._llmCallback('\(requestId)', null, '\(errMsg)');"
-                do {
-                    _ = try await webView.evaluateJavaScript(js)
-                } catch {
-                    logger.error("Failed to send LLM error to web: \(error.localizedDescription)")
+                await deliverLLMResult(requestId: requestId, text: nil, error: error.localizedDescription)
+            }
+        }
+
+        @MainActor
+        private func generateStructuredSuggestions(
+            requestId: String,
+            prompt: String,
+            language: String,
+            richContext: String,
+            minimal: Bool
+        ) async {
+            var instructions = TalkieLLMInstructions.base(language: language, minimal: minimal)
+            if !minimal, !richContext.isEmpty {
+                instructions += "\n\n" + richContext
+            }
+            instructions = TalkieLLMInstructions.trimmed(instructions)
+
+            do {
+                let session = LanguageModelSession(instructions: instructions)
+                let response = try await session.respond(to: prompt, generating: TalkieSuggestions.self)
+                let s = response.content
+                let lines = [s.direct, s.warm, s.followUp]
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+
+                if lines.isEmpty {
+                    await deliverLLMResult(requestId: requestId, text: nil, error: "empty")
+                    return
                 }
+
+                let joined = lines.joined(separator: "\n")
+                if TalkieLLMInstructions.isRefusal(joined) {
+                    if !minimal {
+                        await generateStructuredSuggestions(
+                            requestId: requestId,
+                            prompt: prompt,
+                            language: language,
+                            richContext: "",
+                            minimal: true
+                        )
+                        return
+                    }
+                    await deliverLLMResult(requestId: requestId, text: nil, error: "refusal")
+                    return
+                }
+
+                await deliverLLMResult(requestId: requestId, text: joined, error: nil)
+            } catch let error as LanguageModelSession.GenerationError {
+                switch error {
+                case .refusal(_, _):
+                    logger.warning("Structured suggestion refusal — retrying minimal")
+                    if !minimal {
+                        await generateStructuredSuggestions(
+                            requestId: requestId,
+                            prompt: prompt,
+                            language: language,
+                            richContext: "",
+                            minimal: true
+                        )
+                    } else {
+                        await deliverLLMResult(requestId: requestId, text: nil, error: "refusal")
+                    }
+                default:
+                    logger.error("GenerationError: \(String(describing: error), privacy: .public)")
+                    await deliverLLMResult(requestId: requestId, text: nil, error: String(describing: error))
+                }
+            } catch {
+                logger.error("Structured respond failed: \(String(describing: error), privacy: .public)")
+                await deliverLLMResult(requestId: requestId, text: nil, error: error.localizedDescription)
             }
         }
 

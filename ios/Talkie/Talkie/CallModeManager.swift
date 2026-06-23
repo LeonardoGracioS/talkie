@@ -45,21 +45,21 @@ final class CallModeManager: NSObject, CXCallObserverDelegate {
         onCallModeChanged?(active)
     }
 
-    /// Configure audio only at TTS time — playback mixed with the call, routed to speaker.
+    /// Light audio prep before TTS during a call.
+    /// Actual call routing is handled by AVSpeechSynthesizer.mixToTelephonyUplink.
     static func prepareForCallModeTTS() {
         guard shared.isPhoneCallActive else { return }
         let session = AVAudioSession.sharedInstance()
         do {
+            // Do not fight the telephony session — only ensure we can mix if needed.
             try session.setCategory(
-                .playback,
-                mode: .spokenAudio,
-                options: [.mixWithOthers, .duckOthers, .defaultToSpeaker]
+                .playAndRecord,
+                mode: .voiceChat,
+                options: [.mixWithOthers, .allowBluetoothHFP, .defaultToSpeaker]
             )
             try session.setActive(true)
-            try session.overrideOutputAudioPort(.speaker)
-            callLogger.info("Call-mode TTS audio prepared")
+            callLogger.info("Call-mode TTS audio prepared (telephony uplink via mixToTelephonyUplink)")
         } catch {
-            // Non-fatal — TTS may still work via the system mixer.
             callLogger.warning("Call-mode TTS prep failed: \(error.localizedDescription, privacy: .public)")
         }
     }
