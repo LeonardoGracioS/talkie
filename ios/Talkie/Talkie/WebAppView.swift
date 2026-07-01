@@ -80,6 +80,10 @@ struct WebAppView: UIViewRepresentable {
         // no-op once loaded.
         DiarizationManager.shared.prepare()
 
+        // Ask up-front for permission to inject Talkie's voice into calls (iOS 18.2+), so
+        // it's granted before the user ever needs it. No-op once the user has decided.
+        CallModeManager.shared.requestMicrophoneInjectionPermissionIfNeeded()
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
@@ -247,9 +251,13 @@ struct WebAppView: UIViewRepresentable {
         override init() {
             super.init()
             nativeSynthesizer.delegate = self
-            // Route TTS into active phone / FaceTime calls so the interlocutor hears it
-            // (same mechanism as Live Speech). No effect when no call is active.
-            nativeSynthesizer.mixToTelephonyUplink = true
+            // iOS 18.2+ adds TTS to calls via *microphone injection*
+            // (CallModeManager.prepareForCallModeTTS → setPreferredMicrophoneInjectionMode),
+            // which captures the audio the synth plays locally. The legacy
+            // `mixToTelephonyUplink` instead diverts the synth to the telephony uplink path —
+            // which third-party apps can't use on cellular calls (InsufficientPriority) and
+            // which hides the audio from the injection system. Keep it OFF so injection works.
+            nativeSynthesizer.mixToTelephonyUplink = false
         }
 
         /// Préfère l'API `async` de WKWebView (évite l'avertissement « asynchronous alternative »).
@@ -297,11 +305,14 @@ struct WebAppView: UIViewRepresentable {
             let pitchCents = max(-600, min(600, requestedPitchCents))
             stopNativeTTSPlayback(notifyJS: false)
             if CallModeManager.shared.isPhoneCallActive {
+                // .playback + microphone injection — the AVAudioEngine output below is what the
+                // system adds to the call uplink. Do NOT override to speaker: that fights the
+                // call's system-managed route and can break the injection.
                 CallModeManager.prepareForCallModeTTS()
             } else {
                 WebAppView.reassertPlayAndRecordSession()
+                try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
             }
-            try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
 
             // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
             // ElevenLabs MP3 being quieter than AVSpeechSynthesizer output.
@@ -714,13 +725,20 @@ struct WebAppView: UIViewRepresentable {
                            let personalVoice = AVSpeechSynthesisVoice.speechVoices().first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
                             utterance.voice = personalVoice
                         }
+                        // The synth must play through the APP audio session — the one
+                        // prepareForCallModeTTS puts into .playback + microphone-injection mode — so
+                        // the system can add that playback to the call's mic uplink.
+                        self.nativeSynthesizer.usesApplicationAudioSession = true
+                        self.nativeSynthesizer.mixToTelephonyUplink = false
                         self.nativeSynthesizer.speak(utterance)
-                        // Safety: if didStart doesn't fire within 1.5s (SSML parse error),
-                        // immediately notify JS so it can fall back to web TTS.
+                        // Safety: if didStart doesn't fire, notify JS. During a call the audio
+                        // session setup + telephony routing is slower, so give it a longer
+                        // grace period before declaring failure (1.5s was tripping mid-call).
+                        let startTimeout: TimeInterval = CallModeManager.shared.isPhoneCallActive ? 4.0 : 1.5
                         self.nativeSpeechStartTimer?.invalidate()
-                        self.nativeSpeechStartTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+                        self.nativeSpeechStartTimer = Timer.scheduledTimer(withTimeInterval: startTimeout, repeats: false) { [weak self] _ in
                             guard let self, let id = self.nativeSpeechCallbackId else { return }
-                            logger.warning("AVSpeechSynthesizer did not start within 1.5s — notifying JS")
+                            logger.warning("AVSpeechSynthesizer did not start within \(startTimeout, privacy: .public)s — notifying JS")
                             self.nativeSpeechCallbackId = nil
                             self.nativeSpeechStartTimer = nil
                             if self.nativeSynthesizer.isSpeaking {
@@ -728,6 +746,7 @@ struct WebAppView: UIViewRepresentable {
                             }
                             let fresh = AVSpeechSynthesizer()
                             fresh.delegate = self
+                            fresh.mixToTelephonyUplink = false
                             self.nativeSynthesizer = fresh
                             let js = "window._nativeSpeechCallback && window._nativeSpeechCallback('\(id)', 'start_failed');"
                             DispatchQueue.main.async { [weak self] in

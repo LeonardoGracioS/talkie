@@ -27,6 +27,7 @@ targets:
           - "**/.DS_Store"
           - "Resources/**"
           - "Assets.xcassets/**"
+          - "Info.plist"
       - path: Talkie/Resources/web
         buildPhase: resources
         type: folder
@@ -36,11 +37,15 @@ targets:
     settings:
       base:
         MARKETING_VERSION: "3.0.1"
-        CURRENT_PROJECT_VERSION: "18"
+        CURRENT_PROJECT_VERSION: "19"
         PRODUCT_BUNDLE_IDENTIFIER: com.leonardogracios.talkie
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: true
+        # Partial plist merged with the generated keys — carries NSMicrophoneInjectionUsageDescription,
+        # which Xcode's INFOPLIST_KEY_* passthrough does not support (newer key). Required by
+        # AVAudioApplication.requestMicrophoneInjectionPermission or the system terminates the app.
+        INFOPLIST_FILE: Talkie/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Talkie
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UILaunchScreen_BackgroundColor: AccentColor

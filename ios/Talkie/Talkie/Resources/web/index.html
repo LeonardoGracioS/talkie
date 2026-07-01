@@ -2143,6 +2143,7 @@ const I18N = {
     callModeListening: 'Écoute pendant l\'appel…',
     callModeListenRetry: 'Appuyez pour réessayer l\'écoute',
     callModeListenLimited: 'Écoute indisponible pendant l\'appel — utilisez Écrire ou le clavier',
+    callModeTtsFailed: 'Voix indisponible pendant l\'appel — réessayez',
     voiceCloned: 'Voix clonée !',
     describeProblem: 'Veuillez décrire le problème',
     llmUnavailable: 'Apple Intelligence non disponible. Activez-le dans Réglages → Apple Intelligence.',
@@ -2381,6 +2382,7 @@ const I18N = {
     callModeListening: 'Listening during call…',
     callModeListenRetry: 'Tap to retry listening',
     callModeListenLimited: 'Listening unavailable during call — use Write or keyboard',
+    callModeTtsFailed: 'Voice unavailable during call — try again',
     voiceCloned: 'Voice cloned!',
     describeProblem: 'Please describe the problem',
     llmUnavailable: 'Apple Intelligence unavailable. Enable it in Settings → Apple Intelligence.',
@@ -4096,18 +4098,14 @@ function _ttsMaxChunkLen() {
 }
 
 function _ttsUsesElevenLabs() {
-  // ElevenLabs cannot inject audio into the telephony uplink — use Apple TTS during calls.
-  if (callModeActive) return false;
+  // iOS 18.2+ microphone injection adds whatever the app plays (incl. the ElevenLabs MP3
+  // via AVAudioEngine) into the call uplink — so ElevenLabs works during calls too.
   return !!(state.useElevenLabs && state.voiceId && state.elApiKey);
 }
 
 async function _speakTtsChunk(text) {
   if (callModeActive) {
     prepareCallModeTTS();
-    if (state.useElevenLabs && state.voiceId && state.elApiKey && !_callModeElevenLabsWarned) {
-      _callModeElevenLabsWarned = true;
-      showToast(t('callModeElevenLabsWarning'), 4500);
-    }
   }
   _scheduleTtsSafetyTimeout(text, { includeFetch: _ttsUsesElevenLabs() });
   if (_ttsUsesElevenLabs()) {
@@ -4279,11 +4277,28 @@ async function playElevenLabsBlob(blob) {
 let _speechPollTimer = null;
 let _speechSynthMaxTimer = null;
 
-function speakApplePersonalVoice(text) {
+function speakApplePersonalVoice(text, _retry = 0) {
   const rid = 'sv_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
   const gen = _ttsPlayGen;
   currentAudio = { isNativeTTS: true, playbackId: rid };
   let _nativeSpeechDone = false;
+
+  // During a call, only the native AVSpeechSynthesizer (mixToTelephonyUplink) can reach
+  // the interlocutor — Web Speech plays locally only. So never fall back to speakLocal()
+  // mid-call (that's silent for the other person); re-arm the call session and retry native.
+  const onNativeError = () => {
+    if (callModeActive) {
+      if (_retry < 2) {
+        prepareCallModeTTS();
+        setTimeout(() => { if (gen === _ttsPlayGen) speakApplePersonalVoice(text, _retry + 1); }, 400);
+      } else {
+        showToast(t('callModeTtsFailed'), 4000);
+        if (gen === _ttsPlayGen) _onTTSDone();
+      }
+    } else {
+      speakLocal(text);
+    }
+  };
 
   window._nativeSpeechCallback = (cbRid, err) => {
     if (cbRid !== rid || _nativeSpeechDone || gen !== _ttsPlayGen) return;
@@ -4293,7 +4308,7 @@ function speakApplePersonalVoice(text) {
     if (err) {
       console.warn('[Talkie] Native speech error/cancelled:', err);
       if (err !== 'cancelled' && gen === _ttsPlayGen) {
-        speakLocal(text);
+        onNativeError();
         return;
       }
     }
@@ -4308,7 +4323,7 @@ function speakApplePersonalVoice(text) {
     });
   } catch(e) {
     console.error('Failed native speech', e);
-    if (gen === _ttsPlayGen) speakLocal(text);
+    if (gen === _ttsPlayGen) onNativeError();
   }
 }
 

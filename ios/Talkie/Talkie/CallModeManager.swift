@@ -34,6 +34,7 @@ final class CallModeManager: NSObject, CXCallObserverDelegate {
         callLogger.info("Call mode \(active ? "active" : "inactive", privacy: .public)")
 
         if active {
+            requestMicrophoneInjectionPermissionIfNeeded()
             Task { @MainActor in
                 DiarizationManager.shared.stop()
             }
@@ -45,22 +46,39 @@ final class CallModeManager: NSObject, CXCallObserverDelegate {
         onCallModeChanged?(active)
     }
 
-    /// Light audio prep before TTS during a call.
-    /// Actual call routing is handled by AVSpeechSynthesizer.mixToTelephonyUplink.
+    /// iOS 18.2+ telephony audio injection (Settings ▸ Accessibility ▸ Audio & Visual ▸
+    /// "Allow Apps to Add Audio in Calls"). Requesting this is what makes the app appear in
+    /// that per-app list and grants it the priority to feed the call uplink. Without a
+    /// granted permission, the synthesizer's audio is rejected with `InsufficientPriority`
+    /// and the interlocutor hears nothing — which is exactly the bug we hit.
+    ///
+    /// Requires `NSMicrophoneInjectionUsageDescription` in Info.plist; the system terminates
+    /// the app if it requests permission without that key.
+    func requestMicrophoneInjectionPermissionIfNeeded() {
+        let status = AVAudioApplication.shared.microphoneInjectionPermission
+        callLogger.info("Mic-injection permission: \(String(describing: status), privacy: .public)")
+        guard status == .undetermined else { return }
+        AVAudioApplication.requestMicrophoneInjectionPermission { result in
+            callLogger.info("Mic-injection permission result: \(String(describing: result), privacy: .public)")
+        }
+    }
+
+    /// Arm iOS 18.2+ microphone injection right before TTS so the audio the app plays is added
+    /// to the call's microphone uplink (what the other party hears).
+    ///
+    /// Use `.playback` (NOT `.playAndRecord`): during a call the app only needs to *play* — the
+    /// system adds that playback to the mic uplink. `.playAndRecord` contends for the mic, which
+    /// the call owns, so `setActive` fails with `InsufficientPriority` and aborts the audio.
     static func prepareForCallModeTTS() {
         guard shared.isPhoneCallActive else { return }
         let session = AVAudioSession.sharedInstance()
         do {
-            // Do not fight the telephony session — only ensure we can mix if needed.
-            try session.setCategory(
-                .playAndRecord,
-                mode: .voiceChat,
-                options: [.mixWithOthers, .allowBluetoothHFP, .defaultToSpeaker]
-            )
+            try session.setCategory(.playback, options: [.mixWithOthers])
             try session.setActive(true)
-            callLogger.info("Call-mode TTS audio prepared (telephony uplink via mixToTelephonyUplink)")
+            try session.setPreferredMicrophoneInjectionMode(.spokenAudio)
+            callLogger.info("Call-mode injection armed (.playback + .spokenAudio)")
         } catch {
-            callLogger.warning("Call-mode TTS prep failed: \(error.localizedDescription, privacy: .public)")
+            callLogger.warning("Call-mode injection prep failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
