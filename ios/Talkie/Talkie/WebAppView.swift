@@ -116,6 +116,14 @@ struct WebAppView: UIViewRepresentable {
         config.userContentController.add(coordinator, name: "openNativeSettings")
         config.userContentController.add(coordinator, name: "requestAiConsent")
         config.userContentController.add(coordinator, name: "prepareCallModeTTS")
+        // Native on-device STT (iOS 26 SpeechTranscriber) + timestamp-fused diarization.
+        config.userContentController.add(coordinator, name: "startNativeSTT")
+        config.userContentController.add(coordinator, name: "stopNativeSTT")
+        config.userContentController.add(coordinator, name: "checkNativeSTT")
+        config.userContentController.add(coordinator, name: "setTableMode")
+        config.userContentController.add(coordinator, name: "haptic")
+        // TEMP debug: pipe the WebView console to stdout (visible via devicectl --console).
+        config.userContentController.add(coordinator, name: "debugLog")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -183,6 +191,17 @@ struct WebAppView: UIViewRepresentable {
     /// Skips redundant activations to avoid triggering WebKit audio interruption notifications.
     private static var audioSessionConfigured = false
 
+    /// Table ("Plusieurs interlocuteurs") mode uses AVAudioSession mode `.measurement`,
+    /// which disables the system input processing (AGC/EQ) that otherwise ducks the
+    /// quiet, distant voices around a table. Stored so TTS re-assertions don't clobber it.
+    static var tableModeActive = false {
+        didSet {
+            guard oldValue != tableModeActive else { return }
+            resetAudioSessionConfiguration()
+            reassertPlayAndRecordSession(force: true)
+        }
+    }
+
     static func resetAudioSessionConfiguration() {
         audioSessionConfigured = false
     }
@@ -208,9 +227,12 @@ struct WebAppView: UIViewRepresentable {
         let session = AVAudioSession.sharedInstance()
         if audioSessionConfigured && !force { return }
         do {
+            // `.measurement` in table mode → raw far-field input (no AGC ducking of
+            // distant speakers). `.default` in 1-to-1 mode → clean near-field capture.
+            let mode: AVAudioSession.Mode = tableModeActive ? .measurement : .default
             try session.setCategory(
                 .playAndRecord,
-                mode: .default,
+                mode: mode,
                 options: [.defaultToSpeaker, .allowBluetoothHFP, .mixWithOthers]
             )
             try session.setAllowHapticsAndSystemSoundsDuringRecording(false)
@@ -270,6 +292,37 @@ struct WebAppView: UIViewRepresentable {
                 } catch {
                     // Best-effort JS execution
                 }
+            }
+        }
+
+        /// Track whether we've already hooked SpeechCaptureManager so we don't
+        /// double-register closures capturing self.
+        private var speechCaptureWired = false
+
+        /// Bridge SpeechCaptureManager (native STT + fused diarization) to the web layer.
+        @MainActor
+        func wireSpeechCaptureCallbacks() {
+            guard !speechCaptureWired else { return }
+            speechCaptureWired = true
+            let mgr = SpeechCaptureManager.shared
+            mgr.onTurn = { [weak self] text, speakerId, startSec, endSec in
+                let payload: [String: Any] = [
+                    "text": text, "speakerId": speakerId,
+                    "startSec": startSec, "endSec": endSec
+                ]
+                guard let data = try? JSONSerialization.data(withJSONObject: payload),
+                      let json = String(data: data, encoding: .utf8) else { return }
+                let escaped = json
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                self?.runJavaScript("window._nativeTranscript && window._nativeTranscript('\(escaped)');")
+            }
+            mgr.onInterim = { [weak self] text in
+                let escaped = Self.escapeForJavaScript(text)
+                self?.runJavaScript("window._nativeTranscriptInterim && window._nativeTranscriptInterim('\(escaped)');")
+            }
+            mgr.onStatus = { [weak self] status in
+                self?.runJavaScript("window._nativeSTTStatus && window._nativeSTTStatus('\(status)');")
             }
         }
 
@@ -598,6 +651,56 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "prepareCallModeTTS" {
                 CallModeManager.prepareForCallModeTTS()
+                return
+            }
+            if message.name == "debugLog" {
+                print("[JS] \(message.body)")
+                return
+            }
+            if message.name == "haptic" {
+                let style = (message.body as? [String: Any])?["style"] as? String ?? "light"
+                let feedback: UIImpactFeedbackGenerator.FeedbackStyle
+                switch style {
+                case "medium": feedback = .medium
+                case "heavy": feedback = .heavy
+                case "soft": feedback = .soft
+                case "rigid": feedback = .rigid
+                default: feedback = .light
+                }
+                let gen = UIImpactFeedbackGenerator(style: feedback)
+                gen.impactOccurred()
+                return
+            }
+            if message.name == "checkNativeSTT" {
+                let lang = (message.body as? [String: Any])?["lang"] as? String ?? "fr"
+                print("[STT] checkNativeSTT received (lang=\(lang))")
+                wireSpeechCaptureCallbacks()
+                SpeechCaptureManager.shared.checkAvailability(lang: lang)
+                return
+            }
+            if message.name == "startNativeSTT" {
+                let body = message.body as? [String: Any]
+                let lang = body?["lang"] as? String ?? "fr"
+                let table = body?["tableMode"] as? Bool ?? false
+                print("[STT] startNativeSTT received (lang=\(lang), table=\(table), inCall=\(CallModeManager.shared.isPhoneCallActive))")
+                // Never contend with a live phone call for the mic.
+                if CallModeManager.shared.isPhoneCallActive { return }
+                wireSpeechCaptureCallbacks()
+                WebAppView.tableModeActive = table
+                MicState.shared.isListening = true
+                SpeechCaptureManager.shared.start(lang: lang, tableMode: table)
+                return
+            }
+            if message.name == "stopNativeSTT" {
+                SpeechCaptureManager.shared.stop()
+                MicState.shared.isListening = false
+                WebAppView.tableModeActive = false
+                return
+            }
+            if message.name == "setTableMode" {
+                let on = (message.body as? [String: Any])?["on"] as? Bool ?? false
+                WebAppView.tableModeActive = on
+                SpeechCaptureManager.shared.setTableMode(on)
                 return
             }
             if message.name == "playTTSFromData" {
@@ -1015,6 +1118,8 @@ struct WebAppView: UIViewRepresentable {
                 useElevenLabs: state.useElevenLabs,
                 elApiKey: state.elApiKey || '',
                 voiceId: state.voiceId || '',
+                useClaude: state.useClaude,
+                claudeApiKey: state.claudeApiKey || '',
                 hasELConsent: !!localStorage.getItem('talkie_el_consent'),
                 hasAiConsent: !!localStorage.getItem('talkie_ai_consent'),
                 llmEnabled: state.llmEnabled !== false,
@@ -1042,6 +1147,11 @@ struct WebAppView: UIViewRepresentable {
                         vm.elApiKey = k
                     }
                     vm.voiceId = dict["voiceId"] as? String ?? ""
+                    vm.useClaude = dict["useClaude"] as? Bool ?? false
+                    vm.claudeApiKey = dict["claudeApiKey"] as? String ?? ""
+                    if vm.claudeApiKey.isEmpty, let k = KeychainHelper.load(key: "claudeApiKey"), !k.isEmpty {
+                        vm.claudeApiKey = k
+                    }
                     vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
                     vm.llmEnabled = dict["llmEnabled"] as? Bool ?? true
                     vm.hasAiConsent = dict["hasAiConsent"] as? Bool ?? false
@@ -1208,11 +1318,17 @@ struct WebAppView: UIViewRepresentable {
             } else {
                 _ = KeychainHelper.save(key: "elApiKey", value: vm.elApiKey)
             }
+            if vm.claudeApiKey.isEmpty {
+                KeychainHelper.delete(key: "claudeApiKey")
+            } else {
+                _ = KeychainHelper.save(key: "claudeApiKey", value: vm.claudeApiKey)
+            }
 
             let memory = Self.escapeForJavaScript(vm.memory)
             let learnedMemory = Self.escapeForJavaScript(vm.learnedMemory)
             let voiceId = Self.escapeForJavaScript(vm.voiceId)
             let elKey = Self.escapeForJavaScript(vm.elApiKey)
+            let claudeKey = Self.escapeForJavaScript(vm.claudeApiKey)
 
             let lang = Self.escapeForJavaScript(vm.lang)
 
@@ -1223,6 +1339,8 @@ struct WebAppView: UIViewRepresentable {
             state.useApplePersonalVoice = \(vm.useApplePersonalVoice);
             state.useElevenLabs = \(vm.useElevenLabs);
             state.voiceId = '\(voiceId)';
+            state.useClaude = \(vm.useClaude);
+            state.claudeApiKey = '\(claudeKey)';
             currentLang = '\(lang)';
             if (window.changeLanguage && currentLang !== state.lang) {
                 window.changeLanguage('\(lang)');

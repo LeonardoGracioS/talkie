@@ -17,59 +17,101 @@
 }
 
 :root {
-  --bg: #F5F6FA;
-  --bg-card: #FFFFFF;
-  --bg-card-hover: #F0F1F5;
-  --accent: #5B6AF0;
-  --accent-light: #7B87F5;
-  --accent-soft: rgba(91,106,240,0.08);
-  --accent-glow: rgba(91,106,240,0.18);
-  --green: #34C785;
-  --green-soft: rgba(52,199,133,0.1);
-  --red: #EF4444;
+  /* ── Light theme — "calm instrument" ── */
+  --bg: #F2F2F7;
+  --bg-card: #FFFFFF;         /* the ONLY elevated surface: reply cards */
+  --bg-card-hover: #F0F0F5;
+  --accent: #5560E8;
+  --accent-light: #6E78F0;
+  --accent-soft: rgba(85,96,232,0.10);
+  --accent-glow: rgba(85,96,232,0.20);
+  --green: #1FA870;           /* reserved for "listening" only */
+  --green-soft: rgba(31,168,112,0.10);
+  --red: #FF3B30;
   --orange: #F59E0B;
-  --text: #1A1D2E;
-  --text-secondary: #6B7194;
-  --text-tertiary: #A0A5BD;
-  --separator: rgba(26,29,46,0.06);
-  --shadow-sm: 0 1px 4px rgba(26,29,46,0.06);
-  --shadow-md: 0 4px 20px rgba(26,29,46,0.08);
-  --shadow-card: 0 2px 12px rgba(26,29,46,0.06), 0 0 0 1px rgba(26,29,46,0.03);
-  --shadow-card-active: 0 1px 4px rgba(26,29,46,0.08);
-  --radius: 20px;
+  --text: #111116;
+  --text-secondary: #55555F;
+  --text-tertiary: #8E8E98;
+  --separator: rgba(17,17,22,0.08);
+  --shadow-sm: 0 1px 3px rgba(17,17,22,0.06);
+  --shadow-md: 0 6px 20px rgba(17,17,22,0.08);
+  --shadow-card: 0 6px 20px rgba(17,17,22,0.08);
+  --shadow-card-active: 0 2px 6px rgba(17,17,22,0.10);
+  --radius: 22px;
+  --radius-lg: 24px;
   --radius-sm: 14px;
-  --font: 'DM Sans', -apple-system, system-ui, sans-serif;
+  /* System font → instantly reads as a native iOS app. */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", system-ui, sans-serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Glass reserved for the floating bottom bar + sheets only (not the cards). */
+  --glass-blur: saturate(160%) blur(24px);
+  --glass-bg: rgba(255,255,255,0.80);
+  --glass-border: rgba(17,17,22,0.08);
+  --glass-hi: inset 0 1px 0 rgba(255,255,255,0.6);
+  --glass-shadow: 0 10px 30px rgba(17,17,22,0.12);
+  --hero-bg: #FFFFFF;
+  --hero-border: var(--separator);
+  /* Very calm ambient — a single faint accent bloom at the top, otherwise flat. */
+  --ambient: radial-gradient(100% 55% at 50% -12%, rgba(85,96,232,0.06) 0%, rgba(85,96,232,0) 60%), #F2F2F7;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-app-theme="light"]) {
-    --bg: #1C1C1E;
-    --bg-card: #2C2C2E;
-    --bg-card-hover: #3A3A3C;
-    --text: #F2F2F7;
-    --text-secondary: #AEAEB2;
-    --text-tertiary: #636366;
-    --separator: rgba(255,255,255,0.08);
+    --bg: #0B0B0F;
+    --bg-card: #1A1A20;
+    --bg-card-hover: #23232B;
+    --text: #F5F5F7;
+    --text-secondary: #A0A0AC;
+    --text-tertiary: #63636E;
+    --accent: #7A86FF;
+    --accent-light: #9AA2FF;
+    --accent-soft: rgba(122,134,255,0.14);
+    --accent-glow: rgba(122,134,255,0.24);
+    --green: #30D08C;
+    --green-soft: rgba(48,208,140,0.12);
+    --red: #FF6961;
+    --separator: rgba(255,255,255,0.07);
     --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-    --shadow-card: 0 2px 12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
-    --shadow-card-active: 0 1px 4px rgba(0,0,0,0.4);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+    --shadow-card: 0 8px 24px rgba(0,0,0,0.38);
+    --shadow-card-active: 0 2px 8px rgba(0,0,0,0.5);
+    --glass-bg: rgba(22,22,28,0.72);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-hi: inset 0 1px 0 rgba(255,255,255,0.05);
+    --glass-shadow: 0 12px 34px rgba(0,0,0,0.5);
+    --hero-bg: #1A1A20;
+    --hero-border: transparent;
+    --ambient: radial-gradient(100% 55% at 50% -12%, rgba(122,134,255,0.10) 0%, rgba(122,134,255,0) 60%), #0B0B0F;
   }
 }
 :root[data-app-theme="dark"] {
-  --bg: #1C1C1E;
-  --bg-card: #2C2C2E;
-  --bg-card-hover: #3A3A3C;
-  --text: #F2F2F7;
-  --text-secondary: #AEAEB2;
-  --text-tertiary: #636366;
-  --separator: rgba(255,255,255,0.08);
+  --bg: #0B0B0F;
+  --bg-card: #1A1A20;
+  --bg-card-hover: #23232B;
+  --text: #F5F5F7;
+  --text-secondary: #A0A0AC;
+  --text-tertiary: #63636E;
+  --accent: #7A86FF;
+  --accent-light: #9AA2FF;
+  --accent-soft: rgba(122,134,255,0.14);
+  --accent-glow: rgba(122,134,255,0.24);
+  --green: #30D08C;
+  --green-soft: rgba(48,208,140,0.12);
+  --red: #FF6961;
+  --separator: rgba(255,255,255,0.07);
   --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
-  --shadow-card-active: 0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.38);
+  --shadow-card-active: 0 2px 8px rgba(0,0,0,0.5);
+  --glass-bg: rgba(22,22,28,0.72);
+  --glass-border: rgba(255,255,255,0.08);
+  --glass-hi: inset 0 1px 0 rgba(255,255,255,0.05);
+  --glass-shadow: 0 12px 34px rgba(0,0,0,0.5);
+  --hero-bg: #1A1A20;
+  --hero-border: transparent;
+  --ambient: radial-gradient(100% 55% at 50% -12%, rgba(122,134,255,0.10) 0%, rgba(122,134,255,0) 60%), #0B0B0F;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
@@ -82,6 +124,20 @@ html, body {
   font-family:var(--font);
   font-size:20px;
   -webkit-font-smoothing:antialiased;
+}
+/* Ambient backdrop for the glass to blur over (fixed so it doesn't scroll). */
+body::before {
+  content:''; position:fixed; inset:0; z-index:-1;
+  background:var(--ambient, var(--bg));
+  pointer-events:none;
+}
+/* Respect the OS "reduce motion" setting — important for some ALS users. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:0.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.001ms !important;
+  }
 }
 
 #app {
@@ -155,10 +211,13 @@ html, body {
 }
 .top-bar-left { display:flex; align-items:center; gap:10px; }
 .settings-btn {
-  width:60px; height:60px; border-radius:50%;
-  border:none; cursor:pointer;
+  width:56px; height:56px; border-radius:50%;
+  border:1px solid var(--glass-border); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  background:var(--accent-soft); color:var(--accent);
+  background:var(--glass-bg); color:var(--accent);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-hi);
   transition:background .2s;
 }
 .settings-btn:active { background:var(--accent-glow); }
@@ -167,18 +226,26 @@ html, body {
 /* ─── Listening indicator ─── */
 .listening-bar {
   display:flex; align-items:center; justify-content:center;
-  gap:10px; padding:16px 16px;
-  min-height:60px;
-  background:var(--green-soft);
+  gap:10px; padding:11px 14px;
+  min-height:48px;
+  /* Active (listening): green-tinted glass with a soft glow. */
+  background:linear-gradient(var(--green-soft), var(--green-soft)), var(--glass-bg);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+  border:1px solid rgba(52,199,133,0.38);
   border-radius:var(--radius-sm);
-  margin-bottom:12px; flex-shrink:0;
-  transition:background .3s, opacity .3s;
+  box-shadow:var(--glass-hi), 0 0 22px rgba(52,199,133,0.26);
+  margin-bottom:8px; flex-shrink:0;
+  transition:background .3s, box-shadow .3s, opacity .2s;
   cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
-.listening-bar:active { opacity:0.8; }
+.listening-bar:active { opacity:0.85; }
 .listening-bar.inactive {
-  background:var(--accent-soft);
+  /* Idle (tap to listen): calm neutral glass, no glow. */
+  background:var(--glass-bg);
+  border-color:var(--glass-border);
+  box-shadow:var(--glass-hi);
 }
 .listening-bar.inactive .listening-dot { background:var(--accent); animation:none; }
 .listening-bar.inactive .listening-text { color:var(--accent); font-weight:700; }
@@ -249,24 +316,32 @@ body[data-app-theme="dark"].call-mode .call-mode-banner {
 }
 
 /* ─── Context zone (top) ─── */
+/* The user HEARS fine — this zone is a quiet, glanceable confirmation of what
+   the app understood, not the star of the screen. Deliberately NOT a card: plain
+   muted text, so the only card-shaped things on screen are the 3 reply cards. */
 .context-zone {
-  background:linear-gradient(135deg, rgba(91,106,240,0.06) 0%, rgba(91,106,240,0.02) 100%);
-  border-radius:var(--radius);
-  padding:18px 20px;
-  margin-bottom:16px; flex-shrink:0;
-  min-height:60px;
-  max-height:min(38vh, 260px);
+  /* Muted glass strip — clearly quieter (more transparent) than the reply cards. */
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-sm);
+  box-shadow:var(--glass-hi);
+  padding:9px 14px 10px;
+  margin-bottom:10px; flex-shrink:0;
+  min-height:40px;
+  max-height:min(15vh, 104px);
   overflow-y:auto;
   overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  transition:box-shadow .3s;
   position:relative;
 }
 .context-label {
-  font:700 13px var(--font);
+  font:700 11px var(--font);
   text-transform:uppercase; letter-spacing:1px;
   color:var(--accent);
-  margin-bottom:6px;
+  margin-bottom:4px;
+  opacity:0.85;
 }
 .context-reset-btn {
   position:absolute; top:10px; right:10px;
@@ -282,9 +357,9 @@ body[data-app-theme="dark"].call-mode .call-mode-banner {
 .context-reset-btn.visible { display:flex; }
 .context-reset-btn:active { transform:scale(0.9); background:rgba(91,106,240,0.22); }
 .context-text {
-  font-weight:600; font-size:1.25rem; line-height:1.35; font-family:var(--font);
-  color:var(--text);
-  min-height:27px;
+  font-weight:500; font-size:0.98rem; line-height:1.4; font-family:var(--font);
+  color:var(--text-secondary);
+  min-height:22px;
   word-break:break-word;
   overflow-wrap:anywhere;
 }
@@ -307,39 +382,46 @@ body[data-app-theme="dark"].call-mode .call-mode-banner {
   color:var(--text-tertiary);
   font-weight:500;
   font-style:italic;
-  font-size:1.0625rem;
+  font-size:0.92rem;
 }
 
-/* ─── Suggestions zone (center) ─── */
+/* ─── Suggestions zone (center) — THE HERO ───
+   These cards are the user's voice (they can't speak). Big text, tall targets,
+   generous spacing: tremor-friendly taps, readable at arm's length. */
 .suggestions-label {
-  font:700 13px var(--font);
-  text-transform:uppercase; letter-spacing:1px;
-  color:var(--green);
-  margin-bottom:10px; padding-left:4px;
-  flex-shrink:0;
+  /* Hidden: the three big reply cards are self-evident — the label was one more
+     row of chrome on an already busy screen. Kept in the DOM for i18n/a11y code. */
+  display:none;
 }
 .suggestions-zone {
   flex:1; display:flex; flex-direction:column;
-  gap:16px; min-height:0;
+  gap:12px; min-height:0;
+  /* Cards size to their own text (never clipped). Usually all 3 fit; if every
+     reply is long the zone scrolls rather than cutting words the user must say. */
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   padding:2px 2px;
 }
 
 .suggestion-card {
-  background:var(--bg-card);
-  border-radius:var(--radius);
-  padding:20px 48px 20px 20px;
-  min-height:80px;
-  box-shadow:var(--shadow-card);
-  flex-shrink:0;
+  /* Hero glass: near-opaque so the reply text (the user's voice) is razor-legible. */
+  background:var(--hero-bg);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+  border:1px solid var(--hero-border);
+  border-radius:var(--radius-lg);
+  padding:14px 48px 14px 20px;
+  /* Height follows the text — the whole reply is always fully shown, never cut. */
+  flex:0 0 auto;
+  min-height:60px;
+  box-shadow:var(--glass-shadow), var(--glass-hi);
   cursor:pointer;
   display:flex; align-items:center;
-  font-weight:600; font-size:1.25rem; line-height:1.4; font-family:var(--font);
+  overflow:hidden;
+  font-weight:700; font-size:clamp(1.02rem, 2.4vh, 1.3rem); line-height:1.3; font-family:var(--font);
   color:var(--text);
   transition:transform .15s ease, box-shadow .15s ease, background .15s;
   position:relative;
-  overflow:hidden;
   animation:cardFadeIn .4s ease both;
 }
 .suggestion-card::after {
@@ -527,16 +609,20 @@ body[data-app-theme="dark"].call-mode .call-mode-banner {
   flex-wrap:wrap;
 }
 .voice-pill {
-  flex:1 1 auto;
-  min-height:40px;
-  padding:8px 12px;
-  border:none; border-radius:20px;
-  background:var(--bg-card);
+  /* 4 pills → clean 2×2 grid on portrait phones (predictable targets, no ragged wrap).
+     Ghost style: quiet chips, no card box — the reply cards are the only "cards". */
+  flex:1 1 calc(50% - 4px);
+  min-height:42px;
+  padding:7px 12px;
+  border:1px solid var(--glass-border); border-radius:999px;
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
   color:var(--text);
   font:600 13px var(--font);
   cursor:pointer;
   display:flex; align-items:center; justify-content:center; gap:6px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  box-shadow:var(--glass-hi);
   transition:transform .12s, background .2s;
   -webkit-tap-highlight-color:transparent;
   white-space:nowrap;
@@ -561,6 +647,33 @@ body[data-app-theme="dark"].call-mode .call-mode-banner {
 }
 .voice-pill.diar-failed { background:rgba(255,69,58,0.18); color:#B43A2A; }
 @keyframes diarPulse { 0%,100% { opacity:1; } 50% { opacity:0.55; } }
+.voice-pill.table-active { background:var(--accent); color:#fff; box-shadow:0 2px 8px var(--accent-glow); }
+
+/* Multi-speaker live thread (table mode) — lives inside .context-zone and shares
+   its compact footprint. Small, muted lines with a colored dot per voice; the
+   suggestions below keep the visual weight. */
+.speaker-thread {
+  flex-shrink:0;
+  margin:0 0 6px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.speaker-thread.hidden { display:none; }
+/* In group mode, once the thread has content it IS the transcript — hide the
+   1-to-1 "X dit" label and the empty "waiting for speech" placeholder. */
+.context-zone.has-thread .context-label,
+.context-zone.has-thread .context-text.empty { display:none; }
+.speaker-thread .st-line {
+  display:flex; align-items:baseline; gap:6px;
+  font:400 0.92rem var(--font);
+  line-height:1.35;
+}
+.speaker-thread .st-dot {
+  flex:0 0 auto; width:8px; height:8px; border-radius:50%;
+  align-self:center;
+}
+.speaker-thread .st-name { flex:0 0 auto; font-weight:700; font-size:0.85rem; }
+.speaker-thread .st-text { flex:1 1 auto; color:var(--text-secondary); word-break:break-word; }
+body.oled-mode .speaker-thread .st-text { color:#ddd; }
 body[data-app-theme="dark"] .voice-pill.diar-loading { background:rgba(255,179,71,0.22); color:#FFB347; }
 body[data-app-theme="dark"] .voice-pill.diar-failed { background:rgba(255,99,71,0.22); color:#FF7755; }
 body[data-app-theme="dark"] .voice-pill { background:var(--bg-card); color:var(--text); }
@@ -641,20 +754,27 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
 }
 .control-btn:active { transform:scale(0.96); }
 .control-btn.refresh {
-  background:var(--accent-soft); color:var(--accent);
+  flex:0 0 auto; width:66px; min-height:66px; padding:0;
+  background:var(--glass-bg); color:var(--accent);
+  border:1px solid var(--glass-border);
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-hi);
 }
 .control-btn.refresh:active { background:var(--accent-glow); }
+.control-btn.history {
+  flex:0 0 auto; width:66px; min-height:66px; padding:0;
+  background:var(--glass-bg); color:var(--text-secondary);
+  border:1px solid var(--glass-border);
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-hi);
+}
+.control-btn.history:active { background:var(--bg-card-hover); color:var(--text); }
 .control-btn.keyboard {
-  background:var(--bg-card); color:var(--text);
+  flex:1; min-height:72px; font-size:20px;
+  background:var(--accent); color:#fff;
   box-shadow:var(--shadow-sm);
 }
-.control-btn.keyboard:active { background:var(--bg-card-hover); }
-.control-btn.history {
-  flex:0 0 auto;
-  background:transparent; color:var(--text-tertiary);
-  min-width:44px; padding:0 12px;
-}
-.control-btn.history:active { background:var(--bg-card-hover); color:var(--text-secondary); }
+.control-btn.keyboard:active { filter:brightness(0.94); }
 .control-btn svg { flex-shrink:0; }
 
 /* ─── Phrase history sheet ─── */
@@ -1314,13 +1434,14 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
   }
 
   .settings-btn { width: 48px; height: 48px; }
+  #view-suggestions .voice-pill { flex: 1 1 auto; }
   .suggestion-card {
-    min-height: 56px;
-    padding: 12px 44px 12px 14px;
-    font-size: 1.05rem;
+    min-height: 72px;
+    padding: 14px 44px 14px 16px;
+    font-size: 1.2rem;
   }
   .suggestion-card.empty,
-  .suggestion-card.loading { min-height: 56px; }
+  .suggestion-card.loading { min-height: 72px; }
   .control-btn { min-height: 48px; font-size: 15px; }
   .soundboard-btn { min-width: 52px; min-height: 48px; padding: 6px 10px; }
   .soundboard-btn .sb-emoji { font-size: 18px; }
@@ -1462,6 +1583,174 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 
 /* ─── Hidden inputs ─── */
 #fileInput { display:none; }
+/* ════════════════════════════════════════════════════════════
+   NATIVE REDESIGN (UI_REDESIGN_PLAN) — appended last so it wins.
+   « Calm instrument »: one elevated surface (reply cards), one accent,
+   green only for listening, system font, SVG icons, no emoji chrome.
+   ════════════════════════════════════════════════════════════ */
+.icon { width:22px; height:22px; display:inline-block; flex:none; color:currentColor; vertical-align:middle; }
+
+#view-suggestions {
+  gap:0;
+  padding: calc(var(--safe-top) + 8px) 20px calc(var(--safe-bottom) + 8px);
+}
+
+/* — Status row: listening (primary) + settings — */
+.status-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-shrink:0; }
+.icon-btn {
+  width:44px; height:44px; flex:none; border:none; cursor:pointer; padding:0;
+  border-radius:50%; background:transparent; color:var(--text-secondary);
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s, color .2s;
+}
+.icon-btn:active { background:var(--accent-soft); color:var(--accent); }
+
+.listen-chip {
+  flex:1 1 auto; min-height:52px;
+  display:flex; align-items:center; gap:12px;
+  padding:0 18px; border:none; cursor:pointer;
+  border-radius:16px; background:var(--green-soft); color:var(--green);
+  font:600 1.02rem var(--font);
+  transition:background .25s, color .25s, opacity .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.listen-chip:active { opacity:0.82; }
+.listen-chip.inactive { background:var(--separator); color:var(--text-secondary); }
+.listen-text { font-weight:600; }
+.listen-ind { width:26px; height:22px; display:flex; align-items:center; justify-content:center; flex:none; }
+.listen-off-ic { width:22px; height:22px; display:none; }
+.listen-chip.inactive .listen-off-ic { display:block; }
+.listen-chip.inactive .listen-waves { display:none; }
+.listen-waves { display:flex; align-items:flex-end; gap:2.5px; height:18px; }
+.listen-waves i { width:3px; height:5px; border-radius:2px; background:currentColor; animation:lw 1.2s ease-in-out infinite; }
+.listen-waves i:nth-child(1){animation-delay:0s} .listen-waves i:nth-child(2){animation-delay:.15s}
+.listen-waves i:nth-child(3){animation-delay:.3s} .listen-waves i:nth-child(4){animation-delay:.45s}
+.listen-waves i:nth-child(5){animation-delay:.6s}
+@keyframes lw { 0%,100%{transform:scaleY(0.6)} 50%{transform:scaleY(2.6)} }
+
+/* — Compact control chips (speaker · group · tone · speed) — */
+.chip-row { display:flex; gap:8px; margin-bottom:14px; flex-shrink:0; flex-wrap:wrap; }
+.chip {
+  flex:1 1 auto; min-height:38px; padding:6px 12px;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  border:1px solid var(--separator); border-radius:999px;
+  background:transparent; color:var(--text-secondary);
+  font:600 0.9rem var(--font); cursor:pointer;
+  transition:background .2s, color .2s, border-color .2s;
+  white-space:nowrap; overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+.chip .icon { width:18px; height:18px; }
+.chip:active { background:var(--accent-soft); }
+.chip.active, .chip.table-active, .chip.has-speaker {
+  background:var(--accent-soft); color:var(--accent); border-color:transparent;
+}
+.chip-mini { flex:0 1 auto; }
+#tonePill .vp-icon, #speedPill .vp-icon { display:none; }
+.chip.tone-warm{color:var(--orange)} .chip.tone-firm{color:var(--red)}
+.chip.tone-joyful{color:var(--orange)} .chip.tone-sad{color:var(--accent)} .chip.tone-calm{color:var(--green)}
+.chip.speed-slow{color:var(--accent)} .chip.speed-fast{color:var(--green)}
+.chip.diar-loading{color:var(--orange)} .chip.diar-failed{color:var(--red)}
+
+/* — Transcript: floating text, NOT a card — */
+.context-zone {
+  background:transparent; border:none; box-shadow:none; border-radius:0;
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  padding:0 2px; margin:0 0 14px; flex-shrink:0;
+  min-height:24px; max-height:min(18vh,130px);
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+  position:relative;
+}
+.context-label {
+  font:600 0.8rem var(--font); text-transform:none; letter-spacing:0;
+  color:var(--text-tertiary); margin-bottom:3px; opacity:1;
+}
+.context-text { font:400 1.02rem/1.4 var(--font); color:var(--text-secondary); min-height:22px; word-break:break-word; }
+.context-text.interim { color:var(--text-tertiary); font-style:italic; }
+.context-text.interim::after { background:var(--accent); }
+.context-text.empty { color:var(--text-tertiary); font-style:italic; font-size:0.98rem; font-weight:400; }
+.context-reset-btn {
+  position:absolute; top:-4px; right:-2px; width:30px; height:30px;
+  background:transparent; color:var(--text-tertiary); border:none;
+  font:400 22px/1 var(--font); cursor:pointer; display:none;
+  align-items:center; justify-content:center; border-radius:50%;
+}
+.context-reset-btn.visible { display:flex; }
+.context-reset-btn:active { background:var(--accent-soft); color:var(--accent); }
+.speaker-thread { margin:2px 0 0; gap:6px; background:transparent; }
+.speaker-thread .st-line { font:400 1.0rem var(--font); }
+.speaker-thread .st-name { font-weight:600; font-size:0.94rem; }
+.speaker-thread .st-text { color:var(--text-secondary); }
+.context-zone.has-thread .context-label,
+.context-zone.has-thread .context-text.empty { display:none; }
+
+/* — Suggestion cards: the ONLY elevated surface (the hero) — */
+.suggestions-zone { flex:1; display:flex; flex-direction:column; gap:12px; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px; }
+.suggestion-card {
+  background:var(--bg-card);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  border:1px solid var(--hero-border);
+  border-radius:var(--radius);
+  padding:16px 20px; flex:0 0 auto; min-height:60px;
+  box-shadow:var(--shadow-card);
+  cursor:pointer; display:flex; align-items:center; overflow:hidden;
+  font:600 1.28rem/1.32 var(--font); color:var(--text);
+  transition:transform .18s cubic-bezier(.32,.72,0,1), box-shadow .18s, background .18s, opacity .18s, border-color .18s;
+  position:relative; animation:cardIn .3s cubic-bezier(.32,.72,0,1) both;
+}
+.suggestion-card::after { display:none; }              /* remove permanent green speaker dot */
+.suggestion-card:active { transform:scale(0.98); background:var(--bg-card-hover); }
+.suggestion-card.speaking {
+  background:var(--accent-soft); border-color:transparent;
+  box-shadow:0 0 0 1.5px var(--accent) inset, var(--shadow-card);
+}
+.suggestions-zone:has(.suggestion-card.speaking) .suggestion-card:not(.speaking) { opacity:0.5; }
+.suggestion-card:nth-child(1){animation-delay:0s} .suggestion-card:nth-child(2){animation-delay:.06s}
+.suggestion-card:nth-child(3){animation-delay:.12s}
+@keyframes cardIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+
+/* Empty state — a calm, living waveform + one line */
+.suggestions-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:20px; }
+.suggestions-empty-wave { display:flex; align-items:center; gap:4px; height:28px; color:var(--text-tertiary); opacity:0.55; }
+.suggestions-empty-wave i { width:4px; height:10px; border-radius:2px; background:currentColor; animation:lw 1.7s ease-in-out infinite; }
+.suggestions-empty-wave i:nth-child(2){animation-delay:.2s} .suggestions-empty-wave i:nth-child(3){animation-delay:.4s}
+.suggestions-empty-wave i:nth-child(4){animation-delay:.6s} .suggestions-empty-wave i:nth-child(5){animation-delay:.8s}
+.suggestions-empty-text { font:400 0.98rem/1.5 var(--font); color:var(--text-tertiary); text-align:center; }
+.ai-attribution { color:var(--text-tertiary)!important; font-size:11px; }
+
+/* — Quick phrases: neutral capsules — */
+.soundboard-btn {
+  background:transparent; border:1px solid var(--separator); color:var(--text);
+  box-shadow:none; border-radius:999px;
+  min-height:44px; min-width:auto; padding:8px 14px;
+  flex-direction:row; gap:6px;
+}
+.soundboard-btn:active { background:var(--accent-soft); transform:scale(0.96); }
+.soundboard-btn .sb-emoji { font-size:16px; }
+.soundboard-btn .sb-label { font-size:0.95rem; font-weight:500; max-width:none; }
+
+/* — Bottom bar: floating glass — */
+.controls-zone {
+  gap:10px; padding:8px; margin-top:12px; flex-shrink:0;
+  background:var(--glass-bg);
+  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border); border-radius:22px; box-shadow:var(--shadow-md);
+}
+.control-btn.refresh, .control-btn.history {
+  flex:0 0 auto; width:56px; min-height:56px; padding:0;
+  background:transparent; color:var(--text-secondary); box-shadow:none; border:none; border-radius:16px;
+}
+.control-btn.refresh:active, .control-btn.history:active { background:var(--accent-soft); color:var(--accent); }
+.control-btn.refresh .icon, .control-btn.history .icon { width:24px; height:24px; }
+.control-btn.keyboard {
+  flex:1; min-height:56px; background:var(--accent); color:#fff; box-shadow:none;
+  font:600 1.05rem var(--font); gap:8px; border-radius:16px;
+}
+.control-btn.keyboard .icon { width:22px; height:22px; }
+.control-btn.keyboard:active { filter:brightness(0.94); }
+
+/* Landscape: keep the simple flex column (the old grid referenced dead classes) */
+@media (orientation: landscape) { #view-suggestions { display:flex; flex-direction:column; } }
 </style>
 </head>
 <body>
@@ -1520,33 +1809,71 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 <!-- Toast -->
 <div id="toast"></div>
 
+<!-- Monochrome SVG icon set (SF Symbols / Lucide style). Use: <svg class="icon"><use href="#i-name"/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="s-stroke" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></g>
+  </defs>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
+  </symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="2" y1="2" x2="22" y2="22"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="22"/>
+  </symbol>
+  <symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </symbol>
+  <symbol id="i-people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+  </symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>
+  </symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h.01M18 13h.01M8 16h8"/>
+  </symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>
+  </symbol>
+</svg>
+
 <div id="app">
 
   <!-- ═══ MAIN VIEW: SUGGESTIONS ═══ -->
   <div id="view-suggestions" class="view active">
-    <!-- Top bar -->
-    <div class="top-bar">
-      <div class="top-bar-left">
-        <div class="app-logo">
-          <img src="logo_talkie.png" alt="Talkie Logo" style="width:36px; height:36px; border-radius:10px; object-fit:cover; box-shadow:0 2px 8px rgba(91,106,240,0.25);">
-          <span class="app-logo-text">Talkie</span>
-        </div>
-      </div>
-      <button class="settings-btn" id="settingsBtn" aria-label="Paramètres">
-        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+    <!-- Status row: listening state (primary) + settings -->
+    <div class="status-row">
+      <button class="listen-chip inactive" id="listeningBar" role="button" aria-label="Activer ou couper l'écoute">
+        <span class="listen-ind">
+          <span class="listen-waves"><i></i><i></i><i></i><i></i><i></i></span>
+          <svg class="icon listen-off-ic"><use href="#i-mic-off"/></svg>
+        </span>
+        <span class="listen-text" id="listeningText">Appuyez pour écouter</span>
+      </button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Réglages">
+        <svg class="icon"><use href="#i-gear"/></svg>
       </button>
     </div>
 
-    <!-- Voice control pills: tone, speed, current speaker -->
-    <div class="voice-controls" id="voiceControls">
-      <button class="voice-pill" id="tonePill" type="button" aria-label="Changer le ton de la voix">
-        <span class="vp-icon" id="toneIcon">😐</span><span class="vp-label" id="toneLabel">Neutre</span>
+    <!-- Compact control chips: speaker · group · tone · speed -->
+    <div class="chip-row" id="voiceControls">
+      <button class="chip" id="speakerPill" type="button" aria-label="Choisir l'interlocuteur">
+        <svg class="icon"><use href="#i-person"/></svg><span class="chip-label" id="speakerLabel">Interlocuteur</span>
       </button>
-      <button class="voice-pill" id="speedPill" type="button" aria-label="Changer la vitesse de parole">
-        <span class="vp-icon" id="speedIcon">⏱️</span><span class="vp-label" id="speedLabel">Normal</span>
+      <button class="chip" id="tablePill" type="button" aria-label="Mode plusieurs interlocuteurs">
+        <svg class="icon"><use href="#i-people"/></svg><span class="chip-label" id="tableLabel">Une voix</span>
       </button>
-      <button class="voice-pill" id="speakerPill" type="button" aria-label="Choisir l'interlocuteur">
-        <span class="vp-icon">👤</span><span class="vp-label" id="speakerLabel">Interlocuteur</span>
+      <button class="chip chip-mini" id="tonePill" type="button" aria-label="Ton de la voix">
+        <span class="vp-icon" id="toneIcon"></span><span class="chip-label" id="toneLabel">Neutre</span>
+      </button>
+      <button class="chip chip-mini" id="speedPill" type="button" aria-label="Vitesse de parole">
+        <span class="vp-icon" id="speedIcon"></span><span class="chip-label" id="speedLabel">Normal</span>
       </button>
     </div>
 
@@ -1556,25 +1883,19 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
       <span id="callModeBannerText">Appel en cours — activez le haut-parleur pour que votre interlocuteur entende Talkie</span>
     </div>
 
-    <!-- Listening indicator (tap to start/stop) -->
-    <div class="listening-bar inactive" id="listeningBar" role="button" aria-label="Appuyez pour écouter la conversation">
-      <div class="listening-dot"></div>
-      <div class="listening-waves"><i></i><i></i><i></i><i></i><i></i></div>
-      <div class="listening-text" id="listeningText">Appuyez pour écouter</div>
-    </div>
-
-    <!-- Context zone -->
+    <!-- Transcript — floating text, NOT a card -->
     <div class="context-zone">
-      <button type="button" class="context-reset-btn" id="contextResetBtn" aria-label="Réinitialiser le contexte">✕</button>
+      <button type="button" class="context-reset-btn" id="contextResetBtn" aria-label="Réinitialiser le contexte">×</button>
       <div class="context-label" id="contextLabel">L'interlocuteur dit</div>
-      <div class="context-text empty" id="contextText">En attente de parole...</div>
+      <div class="speaker-thread hidden" id="speakerThread" aria-live="polite"></div>
+      <div class="context-text empty" id="contextText">En attente de parole…</div>
     </div>
 
     <!-- Suggestions -->
     <div class="suggestions-label" id="suggestionsLabel">Vos réponses</div>
     <div class="suggestions-zone" id="suggestionsZone">
       <div class="suggestions-empty" id="suggestionsEmpty">
-        <div class="suggestions-empty-icon">💬</div>
+        <span class="suggestions-empty-wave"><i></i><i></i><i></i><i></i><i></i></span>
         <div class="suggestions-empty-text">Les suggestions apparaîtront ici<br>quand l'interlocuteur parlera</div>
       </div>
     </div>
@@ -1585,17 +1906,16 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
       <div class="soundboard-scroll" id="soundboardScroll"></div>
     </div>
 
-    <!-- Controls -->
+    <!-- Bottom bar (floating glass) -->
     <div class="controls-zone">
-      <button class="control-btn refresh" id="btnRefresh">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-        Relancer
+      <button class="control-btn refresh" id="btnRefresh" aria-label="Relancer les réponses" title="Relancer les réponses">
+        <svg class="icon"><use href="#i-refresh"/></svg>
       </button>
-      <button class="control-btn history" id="btnPhraseHistory" aria-label="Historique des phrases">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <button class="control-btn history" id="btnPhraseHistory" aria-label="Historique des phrases" title="Historique">
+        <svg class="icon"><use href="#i-clock"/></svg>
       </button>
       <button class="control-btn keyboard" id="btnKeyboard">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"/></svg>
+        <svg class="icon"><use href="#i-keyboard"/></svg>
         Écrire
       </button>
     </div>
@@ -1978,7 +2298,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
      ═══════════════════════════════════════════ -->
 <script>
 
-const BUILD_VERSION = 'v3.0.0';
+const BUILD_VERSION = 'v3.1.1 (21)';
 
 // ─── i18n ───
 const I18N = {
@@ -2009,6 +2329,7 @@ const I18N = {
     manualPlaceholder: 'Tapez votre message ici...',
     speak: 'Prononcer',
     aiAttribution: 'Suggestions générées par Apple Intelligence',
+    ctrlHistory: 'Historique',
     ttsSpeaking: 'En train de parler…',
     ttsStop: 'Stop',
     // Settings
@@ -2253,6 +2574,7 @@ const I18N = {
     manualPlaceholder: 'Type your message here...',
     speak: 'Speak',
     aiAttribution: 'Suggestions generated by Apple Intelligence',
+    ctrlHistory: 'History',
     ttsSpeaking: 'Speaking…',
     ttsStop: 'Stop',
     settings: 'Settings',
@@ -2670,7 +2992,6 @@ function applyStaticTranslations() {
   if (rFoot) rFoot.textContent = t('reportFooterHint');
   refreshLegalIframes();
   document.querySelectorAll('#page-privacy .inapp-page-back, #page-support .inapp-page-back').forEach(b => b.setAttribute('aria-label', t('ariaBack')));
-  setSvgBtn(el('btnRefresh'), 'refresh');
   setSvgBtn(el('btnKeyboard'), 'write');
   const histBtn = el('btnPhraseHistory');
   if (histBtn) histBtn.setAttribute('aria-label', t('phraseHistoryTitle'));
@@ -2764,6 +3085,27 @@ function applyStaticTranslations() {
   if (typeof renderSoundboard === "function") renderSoundboard();
   } catch(e) { console.warn('[i18n]', e); }
 }
+
+// TEMP debug — mirror the WebView console to native stdout so `devicectl … --console`
+// shows JS activity (the WebView console is otherwise invisible on device).
+(function() {
+  const bridge = () => window.webkit?.messageHandlers?.debugLog;
+  if (!bridge()) return;
+  ['log', 'warn', 'error'].forEach(level => {
+    const orig = console[level].bind(console);
+    console[level] = function(...args) {
+      orig(...args);
+      try {
+        bridge().postMessage(level.toUpperCase() + ' ' + args.map(a => {
+          try {
+            if (a instanceof Error) return a.message || a.name || 'Error';
+            return typeof a === 'object' ? JSON.stringify(a) : String(a);
+          } catch(_) { return String(a); }
+        }).join(' ').slice(0, 500));
+      } catch(_) {}
+    };
+  });
+})();
 
 // Global error handler — shows errors visually
 window.onerror = function(msg, src, line) {
@@ -2958,6 +3300,21 @@ function renderVoiceControls() {
     speakerLabel.textContent = _label('speakerNonePill');
     speakerPill.classList.remove('has-speaker');
   }
+  // Less chrome: the speaker pill only earns its place once there ARE speakers
+  // (voices detected / declared) or in group mode. Otherwise hide it.
+  const speakerRelevant = (state.speakers || []).length > 0 || !!state.tableMode;
+  speakerPill.style.display = speakerRelevant ? '' : 'none';
+
+  const tablePill = document.getElementById('tablePill');
+  const tableLabel = document.getElementById('tableLabel');
+  if (tablePill && tableLabel) {
+    const on = !!(state && state.tableMode);
+    tableLabel.textContent = currentLang === 'fr'
+      ? (on ? 'Plusieurs voix' : 'Une voix')
+      : (on ? 'Group' : 'One-on-one');
+    tablePill.classList.toggle('table-active', on);
+    tablePill.setAttribute('aria-pressed', String(on));
+  }
 }
 
 function setTone(tone) {
@@ -3075,6 +3432,212 @@ window._diarizationStatus = function(status) {
     renderVoiceControls();
   }
 };
+
+// ─── Native STT (iOS 26 SpeechTranscriber) + timestamp-fused diarization ───
+// The native layer streams a single mic through SpeechTranscriber (real STT, no
+// kill/restart word loss) AND FluidAudio on the SAME clock, then fuses each
+// finalized phrase with the overlapping speaker segment → "who said what". This
+// replaces the fragile Web Speech + global-variable-tag path when available.
+let nativeSTTAvailable = false;   // can we use the native path at all?
+let nativeSTTActive = false;      // is a native session currently running?
+const _nativeSpeakersSeen = new Set();
+let _tableAutoPrompted = false;
+// Watchdog: if the native engine doesn't reach "running" quickly after start,
+// fall back to Web Speech so listening can never be left silently dead.
+let _nativeStartWatchdog = null;
+function _clearNativeWatchdog() {
+  if (_nativeStartWatchdog) { clearTimeout(_nativeStartWatchdog); _nativeStartWatchdog = null; }
+}
+function _armNativeWatchdog(ms) {
+  _clearNativeWatchdog();
+  _nativeStartWatchdog = setTimeout(() => {
+    _nativeStartWatchdog = null;
+    if (!nativeSTTActive || !isListening) return;
+    console.warn('[Talkie] native STT watchdog fired — falling back to Web Speech');
+    nativeSTTActive = false;
+    try { window.webkit?.messageHandlers?.stopNativeSTT?.postMessage({}); } catch(_) {}
+    _fallbackToWebSpeech();
+  }, ms);
+}
+
+function _isNativeBridge() {
+  return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.startNativeSTT);
+}
+
+// Native haptic feedback (UIImpactFeedbackGenerator via Swift). No-op off-device.
+function hapticTap(style) {
+  try { window.webkit?.messageHandlers?.haptic?.postMessage({ style: style || 'light' }); } catch(_) {}
+}
+
+function checkNativeSTT() {
+  if (!_isNativeBridge()) { nativeSTTAvailable = false; return; }
+  try { window.webkit.messageHandlers.checkNativeSTT.postMessage({ lang: currentLang }); } catch(_) {}
+}
+
+window._nativeSTTStatus = function(status) {
+  console.log('[Talkie] native STT status:', status);
+  if (status === 'available' || status === 'needs_download') {
+    nativeSTTAvailable = true;
+  } else if (status === 'unavailable') {
+    nativeSTTAvailable = false;
+    _clearNativeWatchdog();
+    if (nativeSTTActive) { nativeSTTActive = false; _fallbackToWebSpeech(); }
+  } else if (status === 'downloading') {
+    // Model download can take a while on first run — give it more slack.
+    _armNativeWatchdog(120000);
+    showToast(currentLang === 'fr' ? 'Téléchargement du modèle vocal…' : 'Downloading speech model…', 3000);
+  } else if (status === 'failed') {
+    _clearNativeWatchdog();
+    if (nativeSTTActive) { nativeSTTActive = false; _fallbackToWebSpeech(); }
+  } else if (status === 'running') {
+    _clearNativeWatchdog();
+  }
+  if (status === 'running' || status === 'downloading') { _diarStatus = 'running'; renderVoiceControls(); }
+};
+
+function _fallbackToWebSpeech() {
+  showToast(currentLang === 'fr'
+    ? 'Transcription native indisponible — mode standard'
+    : 'Native transcription unavailable — standard mode', 3500);
+  if (isListening) {
+    try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: true }); } catch(_) {}
+    beginRecognition(micSession);
+  }
+}
+
+// Map a native (stable) speaker id to a Talkie speaker, auto-creating a label on
+// first sight — same convention as the legacy diarization bridge.
+function _mapNativeSpeaker(rawId) {
+  if (!rawId) return null;
+  let talkieId = _fluidToTalkie[rawId];
+  if (!talkieId) {
+    const n = _countAutoSpeakers() + 1;
+    const sp = addSpeaker(_autoSpeakerName(n), '');
+    if (!sp) return null;
+    talkieId = sp.id;
+    _fluidToTalkie[rawId] = talkieId;
+    showToast((currentLang === 'fr' ? 'Nouvelle voix détectée : ' : 'New voice detected: ') + sp.name, 3000);
+  }
+  return talkieId;
+}
+
+window._nativeTranscriptInterim = function(text) {
+  if (!isListening || isSpeaking) return;
+  interimBuf = (text || '').trim();
+  updateContextDisplay(interimBuf, true);
+};
+
+window._nativeTranscript = function(json) {
+  if (!isListening || isSpeaking) return;
+  let turn;
+  try { turn = JSON.parse(json); } catch(_) { return; }
+  const text = inferQuestionMark((turn.text || '').trim());
+  if (text.length < 2) return;
+
+  const talkieId = turn.speakerId ? _mapNativeSpeaker(turn.speakerId) : null;
+  if (talkieId && state.currentSpeakerId !== talkieId) setCurrentSpeaker(talkieId);
+
+  if (turn.speakerId) { _nativeSpeakersSeen.add(turn.speakerId); _maybeAutoTableMode(); }
+
+  // Table mode: the finalized phrase lives in the speaker thread (with its
+  // colored dot) — the live line resets to avoid showing the same text twice.
+  if (state.tableMode) {
+    pushTableTurn(talkieId, text);
+    updateContextDisplay('', false);
+  } else {
+    updateContextDisplay(text, false);
+  }
+  addToHistory(text, false);
+  lastInterlocutorText = text;
+  interimBuf = '';
+  refreshCount = 0;
+  if (llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
+};
+
+// ─── "Plusieurs interlocuteurs" (table) mode ───
+let tableTurns = [];
+const _SPK_COLORS = ['#4A90D9', '#E0533D', '#3FA34D', '#B26FD1', '#E09B3D', '#37A6A6'];
+
+function _speakerColor(talkieId) {
+  const list = state.speakers || [];
+  const idx = list.findIndex(s => s.id === talkieId);
+  return _SPK_COLORS[(idx < 0 ? 0 : idx) % _SPK_COLORS.length];
+}
+
+function _escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = (s == null) ? '' : String(s);
+  return d.innerHTML;
+}
+
+function pushTableTurn(talkieId, text) {
+  const sp = (state.speakers || []).find(s => s.id === talkieId);
+  const name = sp ? sp.name : (currentLang === 'fr' ? 'Interlocuteur' : 'Speaker');
+  tableTurns.push({ name, text, color: _speakerColor(talkieId) });
+  if (tableTurns.length > 8) tableTurns = tableTurns.slice(-8);
+  renderTableThread();
+}
+
+function renderTableThread() {
+  const el = document.getElementById('speakerThread');
+  if (!el) return;
+  const zone = el.closest('.context-zone');
+  const hasThread = !!state.tableMode && tableTurns.length > 0;
+  if (zone) zone.classList.toggle('has-thread', hasThread);
+  if (!hasThread) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = tableTurns.map(tt =>
+    `<div class="st-line"><span class="st-dot" style="background:${tt.color}"></span>` +
+    `<span class="st-name" style="color:${tt.color}">${_escHtml(tt.name)}</span>` +
+    `<span class="st-text">${_escHtml(tt.text)}</span></div>`
+  ).join('');
+  // The thread lives inside the scrollable .context-zone — scroll the parent.
+  if (zone) zone.scrollTop = zone.scrollHeight;
+}
+
+function _maybeAutoTableMode() {
+  if (state.tableMode || _tableAutoPrompted) return;
+  if (_nativeSpeakersSeen.size >= 2) {
+    _tableAutoPrompted = true;
+    enableTableMode(true, true);
+  }
+}
+
+function enableTableMode(on, auto) {
+  state.tableMode = !!on;
+  save();
+  // Applying the far-field audio-session mode (.measurement) reconfigures the
+  // AVAudioSession. Doing that under a live AVAudioEngine can interrupt capture,
+  // so when a native session is running we stop then restart it cleanly; the new
+  // mode is applied while the engine is down. Otherwise just flip the flag.
+  if (nativeSTTActive) {
+    try { window.webkit?.messageHandlers?.stopNativeSTT?.postMessage({}); } catch(_) {}
+    setTimeout(() => {
+      if (!isListening) return;
+      try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode }); } catch(_) {}
+    }, 250);
+  } else {
+    try { window.webkit?.messageHandlers?.setTableMode?.postMessage({ on: state.tableMode }); } catch(_) {}
+  }
+  document.body.classList.toggle('table-mode', state.tableMode);
+  if (!state.tableMode) tableTurns = [];
+  renderTableThread();
+  renderVoiceControls();
+  if (on && auto) {
+    showToast(currentLang === 'fr'
+      ? 'Plusieurs interlocuteurs détectés — mode Table activé'
+      : 'Multiple speakers detected — Table mode on', 4000);
+  } else {
+    showToast((currentLang === 'fr' ? 'Mode Table ' : 'Table mode ') +
+      (on ? (currentLang === 'fr' ? 'activé' : 'on') : (currentLang === 'fr' ? 'désactivé' : 'off')), 2500);
+  }
+}
+
+function toggleTableMode() { enableTableMode(!state.tableMode, false); }
 
 function _genSpeakerId() {
   return 'sp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3563,10 +4126,11 @@ function loadState() {
   return {
     userName: '', systemPrompt: getDefaultPrompt(), lang: currentLang,
     elApiKey: EL_DEFAULT_KEY, voiceId: DEFAULT_VOICE_ID,
+    useClaude: false, claudeApiKey: '',
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
     tone: 'neutral', speed: 'normal',
-    speakers: [], currentSpeakerId: null,
+    speakers: [], currentSpeakerId: null, tableMode: false,
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
     phraseHistory: { manual: [], llm: [] },
@@ -3576,9 +4140,10 @@ function loadState() {
 
 function save() {
   try {
-    // Save state without elApiKey (stored in Keychain)
+    // Save state without API keys (stored in Keychain)
     const toSave = Object.assign({}, state);
     delete toSave.elApiKey;
+    delete toSave.claudeApiKey;
     localStorage.setItem(DB_KEY, JSON.stringify(toSave));
   } catch {}
 }
@@ -3741,6 +4306,9 @@ window._keychainCallback = function(action, key, value) {
     const el = document.getElementById('settingsELKey');
     if (el && !el.value) el.value = value;
   }
+  if (action === 'load' && key === 'claudeApiKey' && value) {
+    state.claudeApiKey = value;
+  }
 };
 
 function keychainSave(key, value) {
@@ -3832,6 +4400,7 @@ safeClick('contextResetBtn', () => resetSuggestionContext());
 safeClick('btnSpeak', () => speakManual());
 safeClick('listeningBar', () => {
   userHasInteracted = true;
+  hapticTap('light');
   if (callModeActive) {
     if (isListening) stopListening();
     else tryCallModeListening();
@@ -3895,6 +4464,19 @@ function updateContextDisplay(text, isInterim) {
 }
 
 // ─── Suggestions ───
+/** Which engine ACTUALLY produced the last suggestions ('claude' | 'apple' | null). */
+let _lastSuggestionEngine = null;
+/** Show which engine produced the suggestions — truthful (reflects fallback). */
+function updateAiAttribution() {
+  const el = $('aiAttribution');
+  if (!el) return;
+  const eng = _lastSuggestionEngine
+    || ((state.useClaude && (state.claudeApiKey || '').trim()) ? 'claude' : 'apple');
+  el.textContent = eng === 'claude'
+    ? (currentLang === 'fr' ? 'Suggestions générées par Claude' : 'Suggestions generated by Claude')
+    : t('aiAttribution');
+}
+
 function renderSuggestionCards(suggestions) {
   const zone = $('suggestionsZone');
   zone.innerHTML = '';
@@ -3923,6 +4505,7 @@ function renderSuggestionCards(suggestions) {
     card.appendChild(flag);
     zone.appendChild(card);
   });
+  updateAiAttribution();
   $('aiAttribution').style.display = 'block';
 }
 
@@ -3940,7 +4523,7 @@ function showSuggestionLoading() {
 function clearSuggestionCards() {
   $('suggestionsZone').innerHTML = `
     <div class="suggestions-empty" id="suggestionsEmpty">
-      <div class="suggestions-empty-icon">💬</div>
+      <span class="suggestions-empty-wave"><i></i><i></i><i></i><i></i><i></i></span>
       <div class="suggestions-empty-text">${t('suggestionsEmptyLine1')}<br>${t('suggestionsEmptyLine2')}</div>
     </div>`;
   $('aiAttribution').style.display = 'none';
@@ -3967,6 +4550,7 @@ document.querySelector('.tts-stop-btn').addEventListener('click', () => {
 // ─── Speak suggestion ───
 function speakSuggestion(text, cardIndex) {
   userHasInteracted = true;
+  hapticTap('medium');
   const card = $('suggestionCard' + cardIndex);
   if (card) card.classList.add('speaking');
   const wasListening = isListening;
@@ -4138,12 +4722,13 @@ function _finishTtsJob(onDone) {
   _ttsCallback = null;
   _ttsPlayActive = false;
   resetNativeAudioSession();
+  // Clear the "speaking" state BEFORE the callback. The callback (e.g.
+  // speakSuggestion → resumeListeningAfterTTS → startListening) is otherwise
+  // silently blocked by startListening()'s `if (isSpeaking) return` guard, so the
+  // mic never re-armed after speaking a reply — the #1 conversation-flow bug.
+  if (!_ttsPlayQueue.length) hideTTSOverlay();
   if (onDone) onDone();
-  if (_ttsPlayQueue.length) {
-    _pumpTtsQueue();
-  } else {
-    hideTTSOverlay();
-  }
+  if (_ttsPlayQueue.length) _pumpTtsQueue();
 }
 
 function _pumpTtsQueue() {
@@ -4578,7 +5163,7 @@ function beginRecognition(sess) {
       killRecognition();
       try {
         const rec2 = new SR();
-        rec2.lang = 'fr-FR';
+        rec2.lang = getLangCode();
         rec2.continuous = true;
         rec2.interimResults = true;
         recognition = rec2;
@@ -4617,8 +5202,43 @@ function startListening(opts) {
   interimBuf = '';
   isListening = true;
   updateListeningUI(true);
-  try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: true }); } catch(_) {}
   resetNativeAudioSession();
+
+  // Native path (iOS 26 SpeechTranscriber + fused diarization). Skipped during a
+  // phone call — the call owns the mic there, so we fall back to Web Speech.
+  if (nativeSTTAvailable && !callModeActive) {
+    nativeSTTActive = true;
+    _nativeSpeakersSeen.clear();
+    // Prune ghost speakers: auto-created labels ("Locuteur N") never renamed by
+    // the user and never actually quoted in history. Keeps the picker clean if a
+    // past session over-segmented voices.
+    (function() {
+      const usedIds = new Set((state.history || []).map(h => h.speakerId).filter(Boolean));
+      const autoRe = /^(Locuteur|Speaker) \d+$/;
+      const keep = (state.speakers || []).filter(s =>
+        !(autoRe.test(s.name || '') && !(s.relationship || '').trim() && !usedIds.has(s.id)));
+      if (keep.length !== (state.speakers || []).length) {
+        state.speakers = keep;
+        if (state.currentSpeakerId && !keep.some(s => s.id === state.currentSpeakerId)) state.currentSpeakerId = null;
+        Object.keys(_fluidToTalkie).forEach(k => {
+          if (!keep.some(s => s.id === _fluidToTalkie[k])) delete _fluidToTalkie[k];
+        });
+        save();
+      }
+    })();
+    // NOTE: no getUserMedia here — mic permission is app-level and the native
+    // engine asks for it itself. Grabbing/releasing the mic through WebKit right
+    // before starting the native AVAudioEngine makes WebKit deactivate the shared
+    // audio session asynchronously, killing the engine we just started.
+    resetNativeAudioSession();
+    _armNativeWatchdog(8000);
+    try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode }); } catch(_) {}
+    return;
+  }
+
+  // Fallback path: Web Speech recognizer + native diarization (legacy).
+  nativeSTTActive = false;
+  try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: true }); } catch(_) {}
 
   const run = () => {
     if (micSession !== sess) return;
@@ -4652,6 +5272,11 @@ function stopListening() {
   clearTimeout(phraseEndTimer);
   killRecognition();
   updateListeningUI(false);
+  _clearNativeWatchdog();
+  if (nativeSTTActive) {
+    nativeSTTActive = false;
+    try { window.webkit?.messageHandlers?.stopNativeSTT?.postMessage({}); } catch(_) {}
+  }
   try { window.webkit?.messageHandlers?.micStatusUpdate?.postMessage({ listening: false }); } catch(_) {}
 }
 
@@ -4715,7 +5340,10 @@ function isLlmRefusal(text) {
 function buildRichContextBlock() {
   if (state.llmRichContext === false) return '';
   const parts = [];
-  const hist = state.history.slice(-2).map(m =>
+  // In table mode several people alternate, so give the model a longer
+  // speaker-labelled thread — that's how it keeps "who is talking to whom" straight.
+  const histCount = state.tableMode ? 5 : 2;
+  const hist = state.history.slice(-histCount).map(m =>
     `${speakerLabelForEntry(m)}: ${m.text}`
   ).join('\n');
   if (hist) parts.push(`${t('recentHistory')}\n${hist}`);
@@ -4779,7 +5407,55 @@ function parseSuggestionLines(content) {
     .slice(0, 3);
 }
 
+/** Optional cloud suggestions via Claude (Anthropic), using the user's own API key.
+ *  Falls back to the on-device Apple model on any error. Returns a 3-line string
+ *  parsed by parseSuggestionLines(), exactly like the native structured path. */
+async function callClaude(interlocutorText, opts = {}) {
+  const key = (state.claudeApiKey || '').trim();
+  if (!key) throw new Error('No Claude API key');
+  const rich = opts.minimal ? '' : buildRichContextBlock();
+  const fr = currentLang === 'fr';
+  const sys = (fr
+    ? "Tu aides une personne qui ne peut pas parler à répondre dans une conversation. Donne EXACTEMENT 3 réponses courtes, à la première personne (\"je\"), en français, que CETTE personne pourrait dire. Une par ligne, sans numéro, sans préambule, max ~12 mots, naturelles et faciles à prononcer. Rends-les distinctes : 1) directe, 2) chaleureuse/personnelle, 3) une question de relance."
+    : "You help a person who cannot speak reply in a conversation. Give EXACTLY 3 short first-person replies THEY could say, in English. One per line, no numbering, no preamble, max ~12 words, natural and easy to speak. Make them distinct: 1) direct, 2) warm/personal, 3) a follow-up question.")
+    + (rich ? (fr ? "\n\nContexte :\n" : "\n\nContext:\n") + rich : "");
+  const userMsg = fr
+    ? `L'autre personne vient de dire : "${interlocutorText}"`
+    : `The other person just said: "${interlocutorText}"`;
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5',
+      max_tokens: 256,
+      system: sys,
+      messages: [{ role: 'user', content: userMsg }],
+    }),
+  });
+  if (!resp.ok) {
+    const e = await resp.text().catch(() => '');
+    throw new Error('Claude ' + resp.status + ' ' + e.slice(0, 140));
+  }
+  const data = await resp.json();
+  return (data.content && data.content[0] && data.content[0].text) || '';
+}
+
 async function requestStructuredSuggestions(interlocutorText, diversityHint, opts = {}) {
+  // Optional Claude cloud path (user's API key). Any failure falls back to on-device.
+  if (state.useClaude && (state.claudeApiKey || '').trim()) {
+    try {
+      const out = await callClaude(interlocutorText, { minimal: !!opts.minimal });
+      if (out && out.trim()) { _lastSuggestionEngine = 'claude'; return out; }
+    } catch (e) {
+      console.warn('[Talkie] Claude suggestions failed — falling back to on-device', e);
+    }
+  }
+  _lastSuggestionEngine = 'apple';
   const prompt = t('llmPromptCore')(interlocutorText, diversityHint);
   const richContext = opts.minimal ? '' : buildRichContextBlock();
   return callNativeLLM('', prompt, {
@@ -5267,11 +5943,17 @@ renderVoiceControls();
 safeClick('tonePill', openTonePicker);
 safeClick('speedPill', cycleSpeed);
 safeClick('speakerPill', function() { if (typeof openSpeakerPicker === 'function') openSpeakerPicker(); });
+safeClick('tablePill', toggleTableMode);
+// Probe native STT availability (iOS 26); restore saved table mode.
+checkNativeSTT();
+if (state.tableMode) document.body.classList.add('table-mode');
+renderTableThread();
 showView('suggestions');
 $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
 keychainLoad('elApiKey');
+keychainLoad('claudeApiKey');
 // Update theme-color — driven by data-app-theme attribute (set by native side)
 (function() {
   const meta = document.querySelector('meta[name="theme-color"]');

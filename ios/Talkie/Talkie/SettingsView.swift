@@ -75,6 +75,8 @@ class SettingsViewModel: ObservableObject {
     @Published var useElevenLabs = false
     @Published var elApiKey = ""
     @Published var voiceId = ""
+    @Published var useClaude = false
+    @Published var claudeApiKey = ""
     @Published var devMode = false
     @Published var hasELConsent = false
     @Published var hasAiConsent = false
@@ -104,6 +106,8 @@ struct SettingsView: View {
     @State private var showELConsent = false
     @State private var showAiConsent = false
     @State private var devTapCount = 0
+    @State private var showELKey = false
+    @State private var showClaudeKey = false
 
     var body: some View {
         NavigationStack {
@@ -262,9 +266,22 @@ struct SettingsView: View {
                         }
 
                         if vm.useElevenLabs {
-                            SecureField("Clé API ElevenLabs", text: $vm.elApiKey)
+                            HStack {
+                                Group {
+                                    if showELKey {
+                                        TextField("Clé API ElevenLabs", text: $vm.elApiKey)
+                                    } else {
+                                        SecureField("Clé API ElevenLabs", text: $vm.elApiKey)
+                                    }
+                                }
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
+                                Button { showELKey.toggle() } label: {
+                                    Image(systemName: showELKey ? "eye.slash" : "eye")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
 
                             TextField("Voice ID", text: $vm.voiceId)
                                 .autocorrectionDisabled()
@@ -277,6 +294,34 @@ struct SettingsView: View {
                                 }
                             } label: {
                                 Label("Clonage vocal (avancé)", systemImage: "waveform.badge.plus")
+                            }
+                        }
+
+                        Toggle(isOn: $vm.useClaude) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(vm.lang == "fr" ? "Suggestions Claude (cloud)" : "Claude suggestions (cloud)")
+                                Text(vm.lang == "fr" ? "Meilleures suggestions via l'API Anthropic — vos derniers échanges lui sont envoyés" : "Better suggestions via the Anthropic API — your recent messages are sent to it")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if vm.useClaude {
+                            HStack {
+                                Group {
+                                    if showClaudeKey {
+                                        TextField(vm.lang == "fr" ? "Clé API Anthropic (sk-ant-…)" : "Anthropic API key (sk-ant-…)", text: $vm.claudeApiKey)
+                                    } else {
+                                        SecureField(vm.lang == "fr" ? "Clé API Anthropic (sk-ant-…)" : "Anthropic API key (sk-ant-…)", text: $vm.claudeApiKey)
+                                    }
+                                }
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                                Button { showClaudeKey.toggle() } label: {
+                                    Image(systemName: showClaudeKey ? "eye.slash" : "eye")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }

@@ -33,6 +33,11 @@ final class DiarizationManager {
     /// Set to `false` to disable diarization without unloading the models.
     var enabled: Bool = true
 
+    /// True once the CoreML models are loaded and `diarize(_:)` can run.
+    /// Used by SpeechCaptureManager (the native-STT path), which reuses this
+    /// loaded model instead of spinning up a second engine.
+    var modelsReady: Bool { isLoaded }
+
     private(set) var statusString: String = "unloaded" {
         didSet { if oldValue != statusString { onStatusChange?(statusString) } }
     }
@@ -75,7 +80,12 @@ final class DiarizationManager {
             do {
                 diarLogger.info("Downloading / loading diarizer models…")
                 let models = try await DiarizerModels.downloadIfNeeded()
-                let dia = DiarizerManager()
+                // clusteringThreshold 0.7 → 0.8: fewer, stickier speakers. The default
+                // over-segmented one real person into several ids ("Locuteur 3" & "5"
+                // for the same voice). Higher = a voice must differ MORE to count as new.
+                var config = DiarizerConfig.default
+                config.clusteringThreshold = 0.8
+                let dia = DiarizerManager(config: config)
                 dia.initialize(models: models)
                 await MainActor.run { [weak self] in
                     self?.diarizer = dia
@@ -154,7 +164,9 @@ final class DiarizationManager {
             var bufferConsumed = false
             converter.convert(to: outBuf, error: &convError) { _, status in
                 if bufferConsumed {
-                    status.pointee = .endOfStream
+                    // `.noDataNow`, NOT `.endOfStream` — the converter is reused for
+                    // every tap buffer and `.endOfStream` would poison it for good.
+                    status.pointee = .noDataNow
                     return nil
                 }
                 bufferConsumed = true
@@ -233,6 +245,32 @@ final class DiarizationManager {
             }
         } catch {
             diarLogger.error("Diarization run failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    // MARK: - Reusable diarization (native-STT path)
+    //
+    // SpeechCaptureManager owns the single audio engine when native STT is
+    // active, and calls this to diarize a window on the *same* audio it feeds to
+    // SpeechTranscriber — so transcript timestamps and speaker segments share one
+    // clock (the missing piece that broke "who said what" at a table). We do NOT
+    // start this class's own `inputEngine` in that mode; we only reuse the model.
+    //
+    // `samples` must be 16 kHz mono Float32. `startTime` offsets the returned
+    // segments' timestamps onto the caller's session timeline, so overlaps with
+    // transcript ranges can be computed directly.
+
+    /// Returns *all* speaker segments for `samples` (empty on any failure).
+    func diarize(_ samples: [Float], startTime: TimeInterval) async -> [TimedSpeakerSegment] {
+        guard let diarizer else { return [] }
+        do {
+            let result = try await diarizer.performCompleteDiarization(
+                samples, sampleRate: 16_000, atTime: startTime
+            )
+            return result.segments
+        } catch {
+            diarLogger.error("diarize(_:) failed: \(String(describing: error), privacy: .public)")
+            return []
         }
     }
 }
