@@ -7,10 +7,12 @@ import os
 
 private let sttLogger = Logger(subsystem: "com.leonardogracios.talkie", category: "SpeechCapture")
 
-/// Debug: os.Logger lines don't show up via devicectl console, so mirror to stdout.
+/// Debug only — never in Release/TestFlight builds (transcripts are private).
 private func dbg(_ msg: String) {
+    #if DEBUG
     print("[STT] \(msg)")
     sttLogger.info("\(msg, privacy: .public)")
+    #endif
 }
 
 /// The on-device engine for the "table" / multi-speaker experience.
@@ -40,9 +42,12 @@ final class SpeechCaptureManager {
 
     // MARK: - Callbacks to the web layer (set by WebAppView.Coordinator)
 
-    /// A finalized turn: (text, stableSpeakerId, startSec, endSec).
-    /// `speakerId` is "" when diarization hasn't attributed the phrase yet.
-    var onTurn: ((String, String, Double, Double) -> Void)?
+    /// A finalized turn: (text, stableSpeakerId, startSec, endSec, turnId).
+    /// `speakerId` is "" when diarization hasn't attributed the phrase yet; when it
+    /// resolves later, `onTurnSpeakerUpdate(turnId, speakerId)` fires (P1.3).
+    var onTurn: ((String, String, Double, Double, String) -> Void)?
+    /// Retroactive speaker attribution for a previously-emitted turn.
+    var onTurnSpeakerUpdate: ((String, String) -> Void)?
     /// Live (volatile) partial transcript for on-screen feedback.
     var onInterim: ((String) -> Void)?
     /// "loading" | "downloading" | "running" | "unavailable" | "stopped" | "failed"
@@ -51,6 +56,11 @@ final class SpeechCaptureManager {
     private(set) var isRunning = false
     /// Far-field table mode changes diarization sensitivity slightly.
     var tableMode = false
+    /// Paused during TTS playback: engine stays alive but we stop feeding the
+    /// analyzer/diarizer (so Talkie's own voice from the speaker is never
+    /// transcribed) — far cheaper than tearing the whole session down (P1.1).
+    /// Read on the audio thread; a stale read costs at most one extra buffer.
+    private nonisolated(unsafe) var suspended = false
 
     // MARK: - Audio + Speech
 
@@ -70,7 +80,12 @@ final class SpeechCaptureManager {
     private var lastVolatileText = ""
     private var lastVolatileAt = Date.distantPast
     private var finalizeInFlight = false
-    private let silenceBeforeFinalize: TimeInterval = 1.1
+    /// "Patience" before force-finalizing a paused phrase. Configurable (P1.4):
+    /// slow/hesitant speakers need more, quick exchanges want less. Default 1.4 s.
+    private var silenceBeforeFinalize: TimeInterval = 1.4
+    /// Last time ANY speech (volatile or final) was seen — gates diarization so we
+    /// don't burn CPU/ANE re-clustering silence for hours (P1.2).
+    private var lastSpeechAt = Date.distantPast
 
     // MARK: - Diarization ring (16 kHz mono) on the shared session clock
 
@@ -112,6 +127,16 @@ final class SpeechCaptureManager {
     private var storedSegments: [Seg] = []
     private var lastSpeakerId: String = ""
 
+    /// Recently emitted turns still lacking a confident speaker, kept so a later
+    /// diarization pass can attribute them retroactively (P1.3). Capped small.
+    private struct PendingTurn { let id: String; let start: Double; let end: Double }
+    private var unresolvedTurns: [PendingTurn] = []
+    private var turnCounter = 0
+
+    /// Retained teardown of the previous analyzer, so a fast stop→start (toggle
+    /// table, resume after TTS) doesn't run two analyzers at once (P1.6).
+    private var teardownTask: Task<Void, Never>?
+
     // MARK: - Lifecycle
 
     /// Reports availability to JS without starting capture.
@@ -136,17 +161,42 @@ final class SpeechCaptureManager {
         }
     }
 
-    func start(lang: String, tableMode: Bool) {
+    func start(lang: String, tableMode: Bool, patience: Double = 1.4) {
         guard !isRunning else { return }
         self.tableMode = tableMode
+        self.silenceBeforeFinalize = max(0.6, min(3.0, patience))
         isRunning = true
         resetSessionState()
         // Make sure the diarization model is (being) loaded — we reuse it.
         DiarizationManager.shared.prepare()
         onStatus?("loading")
         setupTask = Task { @MainActor [weak self] in
+            // Ensure the previous session's analyzer is fully released first (P1.6).
+            await self?.teardownTask?.value
             await self?.setupAndRun(lang: lang)
         }
+    }
+
+    // MARK: - Pause / resume (during TTS) — P1.1
+    //
+    // Keep the analyzer + engine + loaded model alive; just stop feeding audio.
+    // Tearing the whole session down after every spoken reply cost ~1 s of
+    // "reloading" and churned memory.
+
+    func pause() {
+        guard isRunning, !suspended else { return }
+        suspended = true
+        lastVolatileText = ""; lastVolatileAt = .distantPast
+        dbg("paused (TTS)")
+    }
+
+    func resume() {
+        guard isRunning, suspended else { return }
+        suspended = false
+        // Drop whatever leaked in around the TTS so it's never transcribed/diarized.
+        pcmRing.removeAll(keepingCapacity: true)
+        lastVolatileText = ""; lastVolatileAt = .distantPast
+        dbg("resumed")
     }
 
     func stop() {
@@ -160,11 +210,13 @@ final class SpeechCaptureManager {
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
-        // Finish the analyzer's stream so it releases the model gracefully.
+        suspended = false
+        // Retain the teardown so a following start() awaits it — never two
+        // analyzers finalizing at once (P1.6). cancelAndFinishNow() is immediate.
         let a = analyzer
         analyzer = nil
         transcriber = nil
-        Task { try? await a?.finalizeAndFinishThroughEndOfInput() }
+        teardownTask = Task { await a?.cancelAndFinishNow() }
         onStatus?("stopped")
         sttLogger.info("Native STT session stopped.")
     }
@@ -183,7 +235,10 @@ final class SpeechCaptureManager {
         lastSpeakerId = ""
         lastVolatileText = ""
         lastVolatileAt = .distantPast
+        lastSpeechAt = .distantPast
         finalizeInFlight = false
+        suspended = false
+        unresolvedTurns.removeAll()
     }
 
     /// Every 250 ms: if the volatile transcript has been stable for
@@ -194,7 +249,7 @@ final class SpeechCaptureManager {
             while let self, self.isRunning {
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if Task.isCancelled { break }
-                guard self.isRunning, !self.finalizeInFlight, !self.lastVolatileText.isEmpty,
+                guard self.isRunning, !self.suspended, !self.finalizeInFlight, !self.lastVolatileText.isEmpty,
                       Date().timeIntervalSince(self.lastVolatileAt) > self.silenceBeforeFinalize,
                       let analyzer = self.analyzer else { continue }
                 self.finalizeInFlight = true
@@ -348,7 +403,7 @@ final class SpeechCaptureManager {
         dbg("input format: \(inputFormat)")
 
         input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
-            guard let self else { return }
+            guard let self, !self.suspended else { return }   // paused during TTS (P1.1)
             // Timestamp for THIS buffer on the shared 16 kHz clock (before advancing it).
             let startTime = CMTime(value: self.stampSamples16k, timescale: 16_000)
             // 1) → analyzer format → SpeechTranscriber, stamped so its result ranges
@@ -402,7 +457,9 @@ final class SpeechCaptureManager {
     private func appendToRing(_ samples: [Float]) {
         pcmRing.append(contentsOf: samples)
         totalSamplesFed += samples.count
-        if pcmRing.count > ringCapacity {
+        // Trim in ~1 s batches so removeFirst (O(n)) runs about once a second, not
+        // on every tap buffer (which was shifting ~256k floats ~15×/s) — P1.2.
+        if pcmRing.count > ringCapacity + 16_000 {
             pcmRing.removeFirst(pcmRing.count - ringCapacity)
         }
     }
@@ -412,7 +469,9 @@ final class SpeechCaptureManager {
     private func startDiarizationLoop() {
         diarTask = Task { @MainActor [weak self] in
             while let self, self.isRunning {
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 s tick
+                // Table mode alternates fast → tick more often; 1-to-1 can be lazier.
+                let tickNs: UInt64 = self.tableMode ? 2_000_000_000 : 3_000_000_000
+                try? await Task.sleep(nanoseconds: tickNs)
                 if Task.isCancelled { break }
                 await self.runDiarizationOnce()
             }
@@ -420,20 +479,33 @@ final class SpeechCaptureManager {
     }
 
     private func runDiarizationOnce() async {
-        guard isRunning, DiarizationManager.shared.modelsReady else { return }
+        guard isRunning, !suspended, DiarizationManager.shared.modelsReady else { return }
+        // Don't re-cluster silence: skip when no speech in the last 4 s (P1.2). The
+        // transcriber's own VAD means "recent volatile/final" is a good proxy.
+        guard Date().timeIntervalSince(lastSpeechAt) < 4.0 else { return }
         let window = pcmRing
         guard window.count >= 16_000 * 2 else { return } // need ≥2 s
         // Absolute session time of the window's first sample.
         let windowStartSec = Double(totalSamplesFed - window.count) / 16_000.0
         let rawSegments = await DiarizationManager.shared.diarize(window, startTime: windowStartSec)
-        if !rawSegments.isEmpty {
-            dbg("diar: \(rawSegments.count) segment(s), windowStart=\(String(format: "%.1f", windowStartSec))s")
-        }
         guard isRunning else { return }
         // Consolidate each segment to a stable speaker id via its embedding.
         storedSegments = rawSegments
             .map { Seg(id: consolidate($0.embedding), start: Double($0.startTimeSeconds), end: Double($0.endTimeSeconds)) }
             .sorted { $0.start < $1.start }
+        resolvePendingTurns()
+    }
+
+    /// Retroactively attribute earlier turns that had no speaker yet (P1.3).
+    private func resolvePendingTurns() {
+        guard !unresolvedTurns.isEmpty, !storedSegments.isEmpty else { return }
+        var stillPending: [PendingTurn] = []
+        for t in unresolvedTurns {
+            let sp = speakerForRange(start: t.start, end: t.end)
+            if sp.isEmpty { stillPending.append(t) }
+            else { onTurnSpeakerUpdate?(t.id, sp) }
+        }
+        unresolvedTurns = stillPending
     }
 
     /// Match an embedding to a confirmed speaker (lenient) or mint a new one.
@@ -475,9 +547,10 @@ final class SpeechCaptureManager {
     // MARK: - Transcript results + fusion
 
     private func handleResult(_ result: SpeechTranscriber.Result) {
+        guard !suspended else { return }   // ignore anything captured during TTS
         let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
-        dbg("result final=\(result.isFinal) range=[\(result.range.start.seconds), \(result.range.end.seconds)] text=\"\(text.prefix(60))\"")
         guard !text.isEmpty else { return }
+        lastSpeechAt = Date()
         if result.isFinal {
             lastVolatileText = ""
             lastVolatileAt = .distantPast
@@ -486,8 +559,15 @@ final class SpeechCaptureManager {
             let sStart = start.isFinite ? start : 0
             let sEnd = end.isFinite ? end : sStart
             let speaker = fuseSpeaker(start: sStart, end: sEnd)
-            dbg("TURN speaker=\(speaker.isEmpty ? "?" : speaker) « \(text.prefix(40)) »")
-            onTurn?(text, speaker, sStart, sEnd)
+            turnCounter += 1
+            let turnId = "t\(turnCounter)"
+            if speaker.isEmpty {
+                // Diarization hasn't caught up — remember for retroactive fix (P1.3).
+                unresolvedTurns.append(PendingTurn(id: turnId, start: sStart, end: sEnd))
+                if unresolvedTurns.count > 12 { unresolvedTurns.removeFirst(unresolvedTurns.count - 12) }
+            }
+            dbg("TURN \(turnId) speaker=\(speaker.isEmpty ? "?" : speaker)")
+            onTurn?(text, speaker, sStart, sEnd, turnId)
         } else {
             // Only count *changes* as activity — a repeated identical volatile
             // must not keep pushing the silence window forward.
@@ -499,20 +579,23 @@ final class SpeechCaptureManager {
         }
     }
 
-    /// Majority-overlap fusion: the speaker whose segments cover the most of the
-    /// phrase's `[start, end]` wins. Falls back to the last known speaker when
-    /// diarization hasn't caught up yet (keeps the thread coherent at a table).
-    private func fuseSpeaker(start: Double, end: Double) -> String {
-        guard end > start, !storedSegments.isEmpty else { return lastSpeakerId }
+    /// Majority-overlap: the speaker whose segments cover most of `[start,end]`.
+    /// Pure — does not touch `lastSpeakerId` (used by retroactive resolution too).
+    private func speakerForRange(start: Double, end: Double) -> String {
+        guard end > start, !storedSegments.isEmpty else { return "" }
         var overlapById: [String: Double] = [:]
         for seg in storedSegments {
             let ov = min(end, seg.end) - max(start, seg.start)
             if ov > 0 { overlapById[seg.id, default: 0] += ov }
         }
-        if let best = overlapById.max(by: { $0.value < $1.value })?.key {
-            lastSpeakerId = best
-            return best
-        }
+        return overlapById.max(by: { $0.value < $1.value })?.key ?? ""
+    }
+
+    /// Fusion for a live turn: majority-overlap, falling back to the last known
+    /// speaker when diarization hasn't caught up (keeps a table thread coherent).
+    private func fuseSpeaker(start: Double, end: Double) -> String {
+        let best = speakerForRange(start: start, end: end)
+        if !best.isEmpty { lastSpeakerId = best; return best }
         return lastSpeakerId
     }
 }

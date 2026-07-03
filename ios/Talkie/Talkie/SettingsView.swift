@@ -82,6 +82,10 @@ class SettingsViewModel: ObservableObject {
     @Published var hasAiConsent = false
     @Published var llmEnabled = true
     @Published var quickPhrases: [QuickPhrase] = []
+    @Published var patience: Double = 1.4      // end-of-phrase wait (P1.4)
+    @Published var autoListen = false          // start listening on open (P2.6)
+    var onExportData: (() -> Void)?            // P2.4
+    var onImportData: (() -> Void)?
 
     var onReplayTutorial: (() -> Void)?
     var onResetAll: (() -> Void)?
@@ -216,6 +220,36 @@ struct SettingsView: View {
                     .onChange(of: appState.oledMode) { _, newValue in
                         vm.onOledModeChanged?(newValue)
                     }
+
+                    Picker(vm.lang == "fr" ? "Patience (fin de phrase)" : "Patience (end of phrase)", selection: $vm.patience) {
+                        Text(vm.lang == "fr" ? "Rapide" : "Fast").tag(1.0)
+                        Text(vm.lang == "fr" ? "Normale" : "Normal").tag(1.4)
+                        Text(vm.lang == "fr" ? "Lente (parleurs hésitants)" : "Slow (hesitant speakers)").tag(2.2)
+                    }
+
+                    Toggle(isOn: $vm.autoListen) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(vm.lang == "fr" ? "Écouter dès l'ouverture" : "Listen on open")
+                            Text(vm.lang == "fr" ? "Démarre l'écoute automatiquement au lancement" : "Starts listening automatically on launch")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Section(vm.lang == "fr" ? "Sauvegarde" : "Backup") {
+                    Button {
+                        vm.onExportData?()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Exporter mes données" : "Export my data", systemImage: "square.and.arrow.up")
+                    }
+                    Button {
+                        vm.onImportData?()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Restaurer une sauvegarde" : "Restore a backup", systemImage: "square.and.arrow.down")
+                    }
+                    Text(vm.lang == "fr" ? "Profil, mémoire, locuteurs et phrases (hors clés API)." : "Profile, memory, speakers and phrases (API keys excluded).")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
 
                 Section(vm.lang == "fr" ? "À propos" : "About") {

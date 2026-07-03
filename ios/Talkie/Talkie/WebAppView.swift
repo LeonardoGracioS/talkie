@@ -5,7 +5,17 @@ import FoundationModels
 import Security
 import SafariServices
 import UIKit
+import UniformTypeIdentifiers
 import os
+
+/// Bridges the UIDocumentPicker delegate back to a closure (P2.4 import).
+final class DocPickerDelegate: NSObject, UIDocumentPickerDelegate {
+    private let onPick: (URL) -> Void
+    init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        if let url = urls.first { onPick(url) }
+    }
+}
 
 private let logger = Logger(subsystem: "com.leonardogracios.talkie", category: "NativeTTS")
 
@@ -119,6 +129,8 @@ struct WebAppView: UIViewRepresentable {
         // Native on-device STT (iOS 26 SpeechTranscriber) + timestamp-fused diarization.
         config.userContentController.add(coordinator, name: "startNativeSTT")
         config.userContentController.add(coordinator, name: "stopNativeSTT")
+        config.userContentController.add(coordinator, name: "pauseNativeSTT")
+        config.userContentController.add(coordinator, name: "resumeNativeSTT")
         config.userContentController.add(coordinator, name: "checkNativeSTT")
         config.userContentController.add(coordinator, name: "setTableMode")
         config.userContentController.add(coordinator, name: "haptic")
@@ -305,10 +317,10 @@ struct WebAppView: UIViewRepresentable {
             guard !speechCaptureWired else { return }
             speechCaptureWired = true
             let mgr = SpeechCaptureManager.shared
-            mgr.onTurn = { [weak self] text, speakerId, startSec, endSec in
+            mgr.onTurn = { [weak self] text, speakerId, startSec, endSec, turnId in
                 let payload: [String: Any] = [
                     "text": text, "speakerId": speakerId,
-                    "startSec": startSec, "endSec": endSec
+                    "startSec": startSec, "endSec": endSec, "turnId": turnId
                 ]
                 guard let data = try? JSONSerialization.data(withJSONObject: payload),
                       let json = String(data: data, encoding: .utf8) else { return }
@@ -316,6 +328,9 @@ struct WebAppView: UIViewRepresentable {
                     .replacingOccurrences(of: "\\", with: "\\\\")
                     .replacingOccurrences(of: "'", with: "\\'")
                 self?.runJavaScript("window._nativeTranscript && window._nativeTranscript('\(escaped)');")
+            }
+            mgr.onTurnSpeakerUpdate = { [weak self] turnId, speakerId in
+                self?.runJavaScript("window._nativeTurnSpeakerUpdate && window._nativeTurnSpeakerUpdate('\(turnId)', '\(speakerId)');")
             }
             mgr.onInterim = { [weak self] text in
                 let escaped = Self.escapeForJavaScript(text)
@@ -654,7 +669,9 @@ struct WebAppView: UIViewRepresentable {
                 return
             }
             if message.name == "debugLog" {
+                #if DEBUG
                 print("[JS] \(message.body)")
+                #endif
                 return
             }
             if message.name == "haptic" {
@@ -673,7 +690,6 @@ struct WebAppView: UIViewRepresentable {
             }
             if message.name == "checkNativeSTT" {
                 let lang = (message.body as? [String: Any])?["lang"] as? String ?? "fr"
-                print("[STT] checkNativeSTT received (lang=\(lang))")
                 wireSpeechCaptureCallbacks()
                 SpeechCaptureManager.shared.checkAvailability(lang: lang)
                 return
@@ -682,19 +698,32 @@ struct WebAppView: UIViewRepresentable {
                 let body = message.body as? [String: Any]
                 let lang = body?["lang"] as? String ?? "fr"
                 let table = body?["tableMode"] as? Bool ?? false
-                print("[STT] startNativeSTT received (lang=\(lang), table=\(table), inCall=\(CallModeManager.shared.isPhoneCallActive))")
+                let patience = body?["patience"] as? Double ?? 1.4
                 // Never contend with a live phone call for the mic.
                 if CallModeManager.shared.isPhoneCallActive { return }
                 wireSpeechCaptureCallbacks()
                 WebAppView.tableModeActive = table
                 MicState.shared.isListening = true
-                SpeechCaptureManager.shared.start(lang: lang, tableMode: table)
+                // Keep the screen awake while listening — the ALS user isn't touching
+                // it while others speak; auto-lock would kill the session (P0.1).
+                UIApplication.shared.isIdleTimerDisabled = true
+                SpeechCaptureManager.shared.start(lang: lang, tableMode: table, patience: patience)
                 return
             }
             if message.name == "stopNativeSTT" {
                 SpeechCaptureManager.shared.stop()
                 MicState.shared.isListening = false
                 WebAppView.tableModeActive = false
+                UIApplication.shared.isIdleTimerDisabled = false
+                return
+            }
+            if message.name == "pauseNativeSTT" {
+                // TTS is about to play — keep the model warm, just stop feeding audio (P1.1).
+                SpeechCaptureManager.shared.pause()
+                return
+            }
+            if message.name == "resumeNativeSTT" {
+                SpeechCaptureManager.shared.resume()
                 return
             }
             if message.name == "setTableMode" {
@@ -879,6 +908,8 @@ struct WebAppView: UIViewRepresentable {
                    let listening = body["listening"] as? Bool {
                     DispatchQueue.main.async { [weak self] in
                         MicState.shared.isListening = listening
+                        // Keep the screen awake while listening (fallback path too) — P0.1.
+                        UIApplication.shared.isIdleTimerDisabled = listening
                         // Never start diarization during a phone call — mic is unavailable
                         // and AVAudioEngine conflicts with the call audio session.
                         if CallModeManager.shared.isPhoneCallActive {
@@ -1123,7 +1154,9 @@ struct WebAppView: UIViewRepresentable {
                 hasELConsent: !!localStorage.getItem('talkie_el_consent'),
                 hasAiConsent: !!localStorage.getItem('talkie_ai_consent'),
                 llmEnabled: state.llmEnabled !== false,
-                quickPhrases: state.quickPhrases || []
+                quickPhrases: state.quickPhrases || [],
+                patience: state.patience || 1.4,
+                autoListen: !!state.autoListen
             })
             """
             Task { @MainActor [weak self] in
@@ -1155,6 +1188,8 @@ struct WebAppView: UIViewRepresentable {
                     vm.hasELConsent = dict["hasELConsent"] as? Bool ?? false
                     vm.llmEnabled = dict["llmEnabled"] as? Bool ?? true
                     vm.hasAiConsent = dict["hasAiConsent"] as? Bool ?? false
+                    vm.patience = dict["patience"] as? Double ?? 1.4
+                    vm.autoListen = dict["autoListen"] as? Bool ?? false
                     if let qpArray = dict["quickPhrases"] as? [[String: Any]] {
                         vm.quickPhrases = qpArray.compactMap { d in
                             guard let emoji = d["emoji"] as? String,
@@ -1265,7 +1300,61 @@ struct WebAppView: UIViewRepresentable {
                 self?.syncSettingsToJS()
             }
 
+            vm.onExportData = { [weak self] in self?.exportUserData() }
+            vm.onImportData = { [weak self] in self?.importUserData() }
+
             AppState.shared.showSettings = true
+        }
+
+        // MARK: - Backup / restore (P2.4)
+
+        /// Returns the topmost presented VC so we can present over the settings sheet.
+        private func topPresenter() -> UIViewController? {
+            guard var top = webView?.window?.rootViewController else { return nil }
+            while let p = top.presentedViewController { top = p }
+            return top
+        }
+
+        @MainActor
+        private func exportUserData() {
+            guard let webView = self.webView else { return }
+            let js = "JSON.stringify({ v: 1, exportedAt: Date.now(), state: (function(){ var s = Object.assign({}, state); delete s.elApiKey; delete s.claudeApiKey; return s; })() })"
+            Task { @MainActor [weak self] in
+                guard let self, let webView = self.webView,
+                      let json = (try? await webView.evaluateJavaScript(js)) as? String,
+                      let data = json.data(using: .utf8) else { return }
+                let url = FileManager.default.temporaryDirectory.appendingPathComponent("talkie-backup.json")
+                try? data.write(to: url)
+                let av = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                if let top = self.topPresenter() {
+                    av.popoverPresentationController?.sourceView = webView
+                    av.popoverPresentationController?.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 0, height: 0)
+                    top.present(av, animated: true)
+                }
+            }
+        }
+
+        private var docPickerDelegate: DocPickerDelegate?
+
+        @MainActor
+        private func importUserData() {
+            let picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.json])
+            let delegate = DocPickerDelegate { [weak self] url in
+                self?.applyImportedData(from: url)
+            }
+            self.docPickerDelegate = delegate
+            picker.delegate = delegate
+            topPresenter()?.present(picker, animated: true)
+        }
+
+        @MainActor
+        private func applyImportedData(from url: URL) {
+            let didAccess = url.startAccessingSecurityScopedResource()
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            let escaped = Self.escapeForJavaScript(json)
+            runJavaScript("window._importData && window._importData('\(escaped)');")
         }
 
         @MainActor
@@ -1363,6 +1452,9 @@ struct WebAppView: UIViewRepresentable {
                 js += "\nlocalStorage.removeItem('talkie_ai_consent');"
             }
             js += "\nstate.llmEnabled = \(vm.llmEnabled);"
+            js += "\nstate.patience = \(vm.patience);"
+            js += "\nstate.autoListen = \(vm.autoListen);"
+            js += "\nsave();"
             // Sync quick phrases
             if let jsonData = try? JSONEncoder().encode(vm.quickPhrases),
                let jsonStr = String(data: jsonData, encoding: .utf8) {

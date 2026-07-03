@@ -1751,6 +1751,22 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 
 /* Landscape: keep the simple flex column (the old grid referenced dead classes) */
 @media (orientation: landscape) { #view-suggestions { display:flex; flex-direction:column; } }
+
+/* — Call mode (P2.7) — */
+.listen-phone-ic { width:20px; height:20px; display:none; }
+.listen-chip.in-call { background:var(--accent-soft); color:var(--accent); }
+.listen-chip.in-call .listen-waves,
+.listen-chip.in-call .listen-off-ic { display:none; }
+.listen-chip.in-call .listen-phone-ic { display:block; }
+.call-hint {
+  flex:0 0 auto; margin:0 2px 4px; padding:10px 14px;
+  background:var(--accent-soft); color:var(--text-secondary);
+  border-radius:14px; font:400 0.9rem/1.4 var(--font);
+}
+.suggestion-card.call-card { min-height:56px; font-size:1.2rem; }
+body:not(.call-mode) .call-hint { display:none; }
+/* In a call we're not listening — the "waiting for speech" transcript is misleading. */
+body.call-mode .context-zone { display:none; }
 </style>
 </head>
 <body>
@@ -1841,6 +1857,9 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
   <symbol id="i-speaker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/>
   </symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
+  </symbol>
 </svg>
 
 <div id="app">
@@ -1853,6 +1872,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
         <span class="listen-ind">
           <span class="listen-waves"><i></i><i></i><i></i><i></i><i></i></span>
           <svg class="icon listen-off-ic"><use href="#i-mic-off"/></svg>
+          <svg class="icon listen-phone-ic"><use href="#i-phone"/></svg>
         </span>
         <span class="listen-text" id="listeningText">Appuyez pour écouter</span>
       </button>
@@ -2298,7 +2318,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
      ═══════════════════════════════════════════ -->
 <script>
 
-const BUILD_VERSION = 'v3.1.1 (21)';
+const BUILD_VERSION = 'v3.2.0 (22)';
 
 // ─── i18n ───
 const I18N = {
@@ -2309,10 +2329,10 @@ const I18N = {
     onbDesc: 'Une application de communication assistée, conçue pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler.',
     onbContinue: 'Continuer',
     onbHowTitle: 'Comment ça marche',
-    onbStep1: "L'interlocuteur parle. Appuyez sur la barre du haut pour activer l'écoute.",
-    onbStep2: 'Talkie transcrit et propose 3 réponses adaptées.',
-    onbStep3: 'Appuyez sur une réponse pour la prononcer à voix haute.',
-    onbTip: 'Pour profiter au maximum de Talkie, assurez-vous qu\'Apple Intelligence est activé dans vos Réglages iOS. Vous bénéficierez ainsi de la suggestion automatique de réponses, générées directement sur votre appareil.',
+    onbStep1: "L'interlocuteur parle. Appuyez sur le bandeau « Écouter », tout en haut, pour démarrer.",
+    onbStep2: 'Talkie transcrit ce qu\'il dit et vous propose 3 réponses, en grandes cartes.',
+    onbStep3: 'Appuyez sur une réponse pour la dire à voix haute. Appui long pour la modifier avant.',
+    onbTip: 'Conversation à plusieurs (repas, réunion) ? Activez « Plusieurs voix » : Talkie sépare qui dit quoi. Pour les suggestions automatiques, gardez Apple Intelligence activé dans les Réglages iOS — tout se fait sur votre appareil.',
     onbCustomize: 'Personnalisez',
     onbCustomizeDesc: 'Vous pouvez personnaliser la voix, activer les suggestions IA avec Apple Intelligence, et bien plus dans les réglages. Tout est sauvegardé sur votre appareil.',
     onbStart: 'Commencer',
@@ -2555,10 +2575,10 @@ const I18N = {
     onbDesc: 'An assisted communication app, designed for people living with ALS, mute individuals, or those with speech difficulties.',
     onbContinue: 'Continue',
     onbHowTitle: 'How it works',
-    onbStep1: 'The other person speaks. Tap the top bar to start listening.',
-    onbStep2: 'Talkie transcribes and suggests 3 adapted responses.',
-    onbStep3: 'Tap a response to speak it out loud.',
-    onbTip: 'To get the most out of Talkie, make sure Apple Intelligence is enabled in your iOS Settings. You\'ll benefit from automatic response suggestions, generated directly on your device.',
+    onbStep1: 'The other person speaks. Tap the “Listen” bar at the very top to start.',
+    onbStep2: 'Talkie transcribes what they say and offers 3 replies, as large cards.',
+    onbStep3: 'Tap a reply to say it out loud. Long-press to edit it first.',
+    onbTip: 'Group conversation (a meal, a meeting)? Turn on “Group” so Talkie separates who says what. For automatic suggestions, keep Apple Intelligence on in iOS Settings — everything runs on your device.',
     onbCustomize: 'Customize',
     onbCustomizeDesc: 'You can customize the voice, enable AI suggestions with Apple Intelligence, and more in settings. Everything is saved on your device.',
     onbStart: 'Get started',
@@ -3527,20 +3547,16 @@ window._nativeTranscriptInterim = function(text) {
   updateContextDisplay(interimBuf, true);
 };
 
-window._nativeTranscript = function(json) {
-  if (!isListening || isSpeaking) return;
-  let turn;
-  try { turn = JSON.parse(json); } catch(_) { return; }
+// P0.2: turns that land WHILE Talkie is speaking must not be dropped (the other
+// person often reacts to the reply). Buffer them, replay when we resume.
+let _pendingTurns = [];
+
+function _processNativeTurn(turn, suppressSuggest) {
   const text = inferQuestionMark((turn.text || '').trim());
   if (text.length < 2) return;
-
   const talkieId = turn.speakerId ? _mapNativeSpeaker(turn.speakerId) : null;
   if (talkieId && state.currentSpeakerId !== talkieId) setCurrentSpeaker(talkieId);
-
   if (turn.speakerId) { _nativeSpeakersSeen.add(turn.speakerId); _maybeAutoTableMode(); }
-
-  // Table mode: the finalized phrase lives in the speaker thread (with its
-  // colored dot) — the live line resets to avoid showing the same text twice.
   if (state.tableMode) {
     pushTableTurn(talkieId, text);
     updateContextDisplay('', false);
@@ -3548,10 +3564,66 @@ window._nativeTranscript = function(json) {
     updateContextDisplay(text, false);
   }
   addToHistory(text, false);
+  // Tag the entry with its native turn id so a later diarization pass can patch
+  // the speaker retroactively (P1.3).
+  if (turn.turnId && state.history.length) {
+    state.history[state.history.length - 1].nativeTurnId = turn.turnId;
+    save();
+  }
   lastInterlocutorText = text;
   interimBuf = '';
   refreshCount = 0;
-  if (llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
+  if (!suppressSuggest && llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
+}
+
+window._nativeTranscript = function(json) {
+  if (!isListening) return;
+  let turn;
+  try { turn = JSON.parse(json); } catch(_) { return; }
+  if (isSpeaking) {
+    _pendingTurns.push(turn);
+    if (_pendingTurns.length > 8) _pendingTurns.shift();
+    return;
+  }
+  _processNativeTurn(turn, false);
+};
+
+// Replay turns buffered during TTS; suggestions fetched once, for the last one.
+function _flushPendingTurns() {
+  if (!_pendingTurns.length) return;
+  const batch = _pendingTurns; _pendingTurns = [];
+  batch.forEach((t, i) => _processNativeTurn(t, i < batch.length - 1));
+}
+
+// P2.4: restore a backup file (from the native document picker).
+window._importData = function(json) {
+  try {
+    const obj = JSON.parse(json);
+    const s = (obj && obj.state) ? obj.state : obj;
+    if (!s || typeof s !== 'object') throw new Error('bad');
+    // Keep the API keys currently in the Keychain; replace everything else.
+    const keys = { elApiKey: state.elApiKey, claudeApiKey: state.claudeApiKey };
+    Object.assign(state, s, keys);
+    save();
+    showToast(currentLang === 'fr' ? 'Sauvegarde restaurée' : 'Backup restored', 3000);
+    setTimeout(() => location.reload(), 900);
+  } catch(e) {
+    showToast(currentLang === 'fr' ? 'Fichier de sauvegarde invalide' : 'Invalid backup file', 3000);
+  }
+};
+
+// P1.3: an earlier turn just got a confident speaker — patch its history entry.
+window._nativeTurnSpeakerUpdate = function(turnId, rawSpeakerId) {
+  if (!turnId || !rawSpeakerId) return;
+  const talkieId = _mapNativeSpeaker(rawSpeakerId);
+  if (!talkieId) return;
+  const entry = (state.history || []).find(e => e.nativeTurnId === turnId);
+  if (entry && entry.speakerId !== talkieId) {
+    entry.speakerId = talkieId;
+    save();
+    if (state.tableMode) renderTableThread();
+    renderVoiceControls();
+  }
 };
 
 // ─── "Plusieurs interlocuteurs" (table) mode ───
@@ -3618,7 +3690,7 @@ function enableTableMode(on, auto) {
     try { window.webkit?.messageHandlers?.stopNativeSTT?.postMessage({}); } catch(_) {}
     setTimeout(() => {
       if (!isListening) return;
-      try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode }); } catch(_) {}
+      try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4) }); } catch(_) {}
     }, 250);
   } else {
     try { window.webkit?.messageHandlers?.setTableMode?.postMessage({ on: state.tableMode }); } catch(_) {}
@@ -3669,6 +3741,17 @@ function removeSpeaker(id) {
   save();
 }
 
+// P2.1: rename an auto-detected speaker ("Locuteur 3" → "Marie (épouse)") so the
+// LLM context and the transcript become meaningful.
+function renameSpeaker(id, name, relationship) {
+  const sp = (state.speakers || []).find(s => s.id === id);
+  if (!sp) return;
+  const n = (name || '').trim();
+  if (n) sp.name = n.slice(0, 40);
+  if (relationship != null) sp.relationship = (relationship || '').trim().slice(0, 60);
+  save();
+}
+
 function openSpeakerPicker() {
   const overlay = document.getElementById('speakerOverlay');
   const list = document.getElementById('speakerSheetList');
@@ -3704,6 +3787,21 @@ function openSpeakerPicker() {
       check.className = 'sp-check';
       row.appendChild(check);
       if (sp.id) {
+        const ed = document.createElement('button');
+        ed.type = 'button';
+        ed.className = 'sp-remove';
+        ed.textContent = currentLang === 'fr' ? 'Modifier' : 'Edit';
+        ed.onclick = (e) => {
+          e.stopPropagation();
+          const newName = prompt(currentLang === 'fr' ? 'Nom du locuteur' : 'Speaker name', sp.name || '');
+          if (newName === null) return;
+          const newRel = prompt(currentLang === 'fr' ? 'Relation (ex : épouse, ami…)' : 'Relationship (e.g. wife, friend…)', sp.relationship || '');
+          renameSpeaker(sp.id, newName, newRel == null ? sp.relationship : newRel);
+          render();
+          renderVoiceControls();
+          if (state.tableMode) renderTableThread();
+        };
+        row.appendChild(ed);
         const rm = document.createElement('button');
         rm.type = 'button';
         rm.className = 'sp-remove';
@@ -3840,6 +3938,37 @@ function recordSuggestionPick(text) {
   }
 }
 
+// P1.5: background LLM tasks (memory, style) route through Claude when the user
+// configured it — otherwise they'd always hit the Apple model, which often
+// refuses, so these features never worked for a Claude user. Fails silently.
+async function callLLMText(sys, prompt) {
+  if (state.useClaude && (state.claudeApiKey || '').trim()) {
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': state.claudeApiKey.trim(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 400,
+          system: sys,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const out = (data.content && data.content[0] && data.content[0].text) || '';
+        if (out.trim()) return out;
+      }
+    } catch(_) { /* fall through to on-device */ }
+  }
+  return callNativeLLM(sys, prompt);
+}
+
 async function refreshStyleSummary() {
   if (!llmAvailable || !hasAiConsent() || state.llmEnabled === false) return;
   const picked = (state.suggestionStats && state.suggestionStats.picked) || [];
@@ -3852,7 +3981,7 @@ async function refreshStyleSummary() {
     ? "Tu es un analyste linguistique. À partir d'un corpus de phrases que l'utilisateur a choisi de dire, rédige un court résumé (5 à 8 puces, max 80 mots au total) de son style de communication : longueur typique, registre (familier/soutenu/direct), tonalité, vocabulaire récurrent, tournures favorites. Pas d'analyse psychologique, uniquement le style. Réponds en français, sans préambule."
     : "You are a linguistic analyst. From the corpus of replies the user chose to say, write a short summary (5-8 bullets, max 80 words total) of their communication style: typical length, register (casual/formal/direct), tone, recurring vocabulary, favorite turns of phrase. No psychological analysis, just style. Reply in English, no preamble.";
   try {
-    const out = await callNativeLLM(sys, corpus);
+    const out = await callLLMText(sys, corpus);
     if (out && out.trim()) {
       state.styleSummary = out.trim();
       state.suggestionStats.pickedSinceLastSummary = 0;
@@ -3862,7 +3991,7 @@ async function refreshStyleSummary() {
       console.log('[Talkie] Style summary refreshed.');
     }
   } catch (e) {
-    console.warn('[Talkie] Style summary refresh failed:', e);
+    console.debug('[Talkie] Style summary skipped:', e && e.message);
   }
 }
 
@@ -4130,7 +4259,7 @@ function loadState() {
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
     tone: 'neutral', speed: 'normal',
-    speakers: [], currentSpeakerId: null, tableMode: false,
+    speakers: [], currentSpeakerId: null, tableMode: false, patience: 1.4, autoListen: false,
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
     phraseHistory: { manual: [], llm: [] },
@@ -4191,13 +4320,13 @@ async function maybeExtractMemory() {
   const prompt = t('memoryExtractPrompt')(recent, currentLearned);
 
   try {
-    const result = await callNativeLLM(sys, prompt);
+    const result = await callLLMText(sys, prompt);
     if (result && !result.includes('RIEN') && !result.includes('NOTHING') && result.trim().length > 5) {
       state.learnedMemory = result.trim();
       save();
     }
   } catch(e) {
-    console.warn('[Talkie] Memory extraction failed:', e);
+    console.debug('[Talkie] Memory extraction skipped:', e && e.message);
   }
 }
 
@@ -4243,7 +4372,11 @@ window._callModeChanged = function(active) {
     clearTimeout(callModeListenRetryTimer);
     callModeListenRetryTimer = null;
     callModeListenAttempts = 0;
-    showToast(t('callModeActive'), 3500);
+    // P2.7: iOS forbids third-party apps from hearing the call, so instead of a
+    // dead/failing suggestion zone, show a "call phrases" pad the user can tap to
+    // speak INTO the call (TTS injection, iOS 18.2+).
+    renderCallPhrases();
+    updateListeningUI(false);
     // Do NOT auto-start mic/STT here — iOS kills apps that grab audio during calls.
   } else {
     clearTimeout(callModeListenRetryTimer);
@@ -4253,37 +4386,92 @@ window._callModeChanged = function(active) {
     updateListeningUI(false);
     if (wasInCall) {
       showToast(t('callModeEnded'), 2200);
-      if (wasListeningBeforeCall && !isSpeaking) startListening();
+      // Restore the normal suggestions zone (empty state until the next turn).
+      clearSuggestionCards();
+      // P0.4: resume listening after the call, but give iOS ~1 s to release the
+      // call's audio session first, and re-check we're still eligible.
+      if (wasListeningBeforeCall) {
+        setTimeout(() => {
+          if (!callModeActive && !isSpeaking && !isListening) startListening();
+        }, 1000);
+      }
     }
     wasListeningBeforeCall = false;
   }
 };
 
-function scheduleCallModeListenRetry() {
-  if (!callModeActive) return;
-  if (callModeListenAttempts >= CALL_MODE_LISTEN_MAX) {
-    stopListening();
-    showToast(t('callModeListenLimited'), 4500);
-    return;
-  }
-  callModeListenAttempts++;
-  clearTimeout(callModeListenRetryTimer);
-  callModeListenRetryTimer = setTimeout(() => {
-    if (!callModeActive || isSpeaking) return;
-    tryCallModeListening();
-  }, 1500 + callModeListenAttempts * 400);
-}
+// P2.7: no more auto-retry loop (it spammed failure toasts). Listening in-call is
+// impossible on iOS; we assume it and offer the call-phrases pad instead.
+function scheduleCallModeListenRetry() { /* intentionally a no-op now */ }
 
 function tryCallModeListening() {
-  if (!callModeActive || isSpeaking) return;
-  resetNativeAudioSession();
-  startListening({ callMode: true });
+  // Kept for the manual "explain" tap — surface the limitation calmly.
+  showCallModeExplainer();
+}
+
+let _callExplainShown = false;
+function showCallModeExplainer() {
+  showToast(currentLang === 'fr'
+    ? "Astuce : mettez l'appel sur le téléphone d'un proche en haut-parleur, puis activez « Plusieurs voix »."
+    : "Tip: put the call on a relative's phone on speaker, then turn on “Group”.", 5000);
+}
+
+// ─── Call phrases (spoken INTO the call via TTS injection) ───
+const CALL_PHRASES = {
+  fr: ['Allô ?', 'Oui', 'Non', 'Peux-tu répéter ?', "Deux secondes, j'écris…", 'Je te rappelle', 'Merci, au revoir'],
+  en: ['Hello?', 'Yes', 'No', 'Can you repeat?', "One second, I'm typing…", "I'll call you back", 'Thanks, goodbye'],
+};
+function getCallPhrases() {
+  if (state.callPhrases && state.callPhrases.length) return state.callPhrases;
+  return CALL_PHRASES[currentLang] || CALL_PHRASES.fr;
+}
+function renderCallPhrases() {
+  const zone = $('suggestionsZone');
+  if (!zone) return;
+  zone.innerHTML = '';
+  const hint = document.createElement('div');
+  hint.className = 'call-hint';
+  hint.textContent = currentLang === 'fr'
+    ? "iOS ne permet pas aux apps d'écouter l'appel. Vos phrases, elles, sont bien entendues par votre correspondant."
+    : "iOS doesn't let apps hear the call. Your phrases, though, are heard by the other person.";
+  zone.appendChild(hint);
+  getCallPhrases().forEach((text) => {
+    const card = document.createElement('div');
+    card.className = 'suggestion-card call-card';
+    card.textContent = text;
+    card.setAttribute('role', 'button');
+    card.onclick = () => speakCallPhrase(text);
+    zone.appendChild(card);
+  });
+  const att = $('aiAttribution'); if (att) att.style.display = 'none';
+}
+function speakCallPhrase(text) {
+  hapticTap('medium');
+  addToHistory(text, true);
+  addToPhraseHistory(text, 'manual');
+  recordSuggestionPick(text);
+  speakTextWithCallback(text, () => {}, false);
+}
+
+/** Suspend l'écoute le temps d'une lecture TTS. En natif, on GARDE le moteur
+ *  chaud (pause) au lieu de le détruire — conversation bien plus fluide (P1.1). */
+function pauseListeningForTTS() {
+  if (nativeSTTActive) {
+    try { window.webkit?.messageHandlers?.pauseNativeSTT?.postMessage({}); } catch(_) {}
+  } else if (isListening) {
+    stopListening();
+  }
 }
 
 /** Reprend l'écoute après TTS — jamais automatique pendant un appel (iOS). */
 function resumeListeningAfterTTS() {
   if (callModeActive) return;
-  startListening();
+  if (nativeSTTActive && isListening) {
+    try { window.webkit?.messageHandlers?.resumeNativeSTT?.postMessage({}); } catch(_) {}
+    _flushPendingTurns();
+  } else {
+    startListening();
+  }
 }
 
 // ─── Keychain Bridge ───
@@ -4392,6 +4580,16 @@ safeClick('backFromSettingsBtn', () => {
   if (userHasInteracted) startListening();
 });
 safeClick('btnKeyboard', () => switchToManual());
+// P2.3: long-press "Écrire" → repeat the last thing the user said aloud.
+(function() {
+  const kb = document.getElementById('btnKeyboard');
+  if (!kb) return;
+  let t = null, fired = false;
+  kb.addEventListener('touchstart', () => { fired = false; t = setTimeout(() => { fired = true; repeatLastSpoken(); }, 550); }, { passive: true });
+  const cancel = () => { if (t) { clearTimeout(t); t = null; } };
+  kb.addEventListener('touchend', (e) => { cancel(); if (fired) { e.preventDefault(); e.stopPropagation(); } });
+  kb.addEventListener('touchmove', cancel, { passive: true });
+})();
 safeClick('btnBackToSuggestions', () => switchToSuggestions());
 safeClick('btnCloseManual', () => switchToSuggestions());
 safeClick('btnRefresh', () => refreshSuggestions());
@@ -4413,6 +4611,31 @@ function switchToManual() {
   stopListening();
   showView('manual');
   setTimeout(() => $('manualInput').focus(), 100);
+}
+
+// P2.3: re-speak the last phrase the user said aloud ("pardon, tu répètes ?").
+function repeatLastSpoken() {
+  const hist = state.history || [];
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].isUser && hist[i].text) {
+      hapticTap('medium');
+      const wasListening = isListening;
+      if (wasListening) pauseListeningForTTS();
+      speakTextWithCallback(hist[i].text, () => {
+        if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
+      }, wasListening);
+      return;
+    }
+  }
+  showToast(currentLang === 'fr' ? 'Rien à répéter' : 'Nothing to repeat');
+}
+
+// P2.2: open the keyboard pre-filled with a suggestion so the user can tweak it.
+function editSuggestion(text) {
+  switchToManual();
+  const ta = $('manualInput');
+  ta.value = text || '';
+  setTimeout(() => { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(_) {} }, 130);
 }
 
 function switchToSuggestions(resumeMic = true) {
@@ -4488,7 +4711,16 @@ function renderSuggestionCards(suggestions) {
     card.textContent = text;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', t('suggestionAriaLabel')(i + 1, text));
-    card.onclick = () => speakSuggestion(text, i);
+    card.onclick = () => { if (card._lp) { card._lp = false; return; } speakSuggestion(text, i); };
+    // P2.2: long-press → edit the reply in the keyboard before speaking it.
+    let _lpTimer = null;
+    card.addEventListener('touchstart', () => {
+      _lpTimer = setTimeout(() => { card._lp = true; hapticTap('medium'); editSuggestion(text); }, 500);
+    }, { passive: true });
+    const _cancelLp = () => { if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; } };
+    card.addEventListener('touchend', _cancelLp);
+    card.addEventListener('touchmove', _cancelLp, { passive: true });
+    card.addEventListener('contextmenu', (e) => e.preventDefault());
     // Report flag button
     const flag = document.createElement('button');
     flag.textContent = '\u2691';
@@ -4554,7 +4786,7 @@ function speakSuggestion(text, cardIndex) {
   const card = $('suggestionCard' + cardIndex);
   if (card) card.classList.add('speaking');
   const wasListening = isListening;
-  if (wasListening) stopListening();
+  if (wasListening) pauseListeningForTTS();
   addToHistory(text, true);
   addToPhraseHistory(text, 'llm');
   maybeExtractMemory();
@@ -4569,7 +4801,7 @@ function speakManual() {
   const text = $('manualInput').value.trim();
   if (!text) return;
   const wasListening = isListening;
-  if (wasListening) stopListening();
+  if (wasListening) pauseListeningForTTS();
   addToHistory(text, true);
   addToPhraseHistory(text, 'manual');
   recordSuggestionPick(text);
@@ -5232,7 +5464,7 @@ function startListening(opts) {
     // audio session asynchronously, killing the engine we just started.
     resetNativeAudioSession();
     _armNativeWatchdog(8000);
-    try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode }); } catch(_) {}
+    try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4) }); } catch(_) {}
     return;
   }
 
@@ -5283,12 +5515,20 @@ function stopListening() {
 function updateListeningUI(active) {
   const bar = $('listeningBar');
   const txt = $('listeningText');
+  // In a call, the chip is a calm status ("Appel en cours"), not a listen toggle.
+  if (callModeActive) {
+    bar.classList.add('inactive');
+    bar.classList.add('in-call');
+    txt.textContent = currentLang === 'fr' ? 'Appel en cours' : 'On a call';
+    return;
+  }
+  bar.classList.remove('in-call');
   if (active) {
     bar.classList.remove('inactive');
-    txt.textContent = callModeActive ? t('callModeListening') : t('listening');
+    txt.textContent = t('listening');
   } else {
     bar.classList.add('inactive');
-    txt.textContent = callModeActive ? t('callModeListenRetry') : t('tapToListen');
+    txt.textContent = t('tapToListen');
   }
 }
 
@@ -5949,6 +6189,17 @@ checkNativeSTT();
 if (state.tableMode) document.body.classList.add('table-mode');
 renderTableThread();
 showView('suggestions');
+// P2.6: start listening automatically on open (opt-in) — fewer taps for reduced
+// motricity. Skips first-run onboarding and phone calls; small delay lets the
+// native STT availability probe answer first.
+if (state.autoListen && localStorage.getItem('talkie_onboarded')) {
+  setTimeout(() => {
+    if (state.autoListen && !isListening && !callModeActive && !isSpeaking) {
+      userHasInteracted = true;
+      startListening();
+    }
+  }, 900);
+}
 $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
