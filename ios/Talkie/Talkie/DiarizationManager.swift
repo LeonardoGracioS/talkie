@@ -260,6 +260,16 @@ final class DiarizationManager {
     // segments' timestamps onto the caller's session timeline, so overlaps with
     // transcript ranges can be computed directly.
 
+    /// Speaker embedding of one phrase's audio (16 kHz mono), off the main thread.
+    /// This is what SpeechCaptureManager's identity uses — see VoiceIdentity for why
+    /// per-phrase embeddings replaced windowed diarization segments.
+    func embed(_ samples: [Float]) async -> [Float]? {
+        guard let diarizer else { return nil }
+        return await Task.detached(priority: .userInitiated) {
+            try? diarizer.extractSpeakerEmbedding(from: samples)
+        }.value
+    }
+
     /// Returns *all* speaker segments for `samples` (empty on any failure).
     func diarize(_ samples: [Float], startTime: TimeInterval) async -> [TimedSpeakerSegment] {
         guard let diarizer else { return [] }

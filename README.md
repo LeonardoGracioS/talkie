@@ -1,51 +1,34 @@
 # Talkie
 
-Assistive communication app for people with ALS (Charcot disease) and speech impairments. Combines voice cloning, speech recognition, and AI-powered response suggestions to help users communicate naturally.
+Assistive communication app for people with ALS (Charcot disease) and speech impairments. It listens to the
+conversation, suggests replies, and speaks the chosen one — in the user's own (cloned or Personal) voice.
 
-## Components
+## iOS App (`ios/Talkie/`)
 
-### iOS App (`ios/Talkie/`)
+SwiftUI shell + `WKWebView` UI (`Talkie/Resources/web/index.html`). Requires **iOS 26**.
 
-Native iOS app wrapping a web-based interface with:
+- **Speech-to-text**: on-device `SpeechTranscriber` / `SpeechAnalyzer` (`SpeechCaptureManager.swift`), with
+  FluidAudio speaker diarization on the same audio clock ("who said what"). Web Speech is only a fallback.
+- **Reply suggestions**: Apple Foundation Models on device (`TalkieLLMModels.swift`); optional Claude (user API key).
+- **Text-to-speech**: AVSpeechSynthesizer / Apple Personal Voice, or ElevenLabs (cloned voice). During phone calls,
+  speech is injected into the call via iOS 18.2+ microphone injection (`CallModeManager.swift`).
+- Settings are native (`SettingsView.swift`); API keys live in the Keychain.
 
-- **Voice cloning** via ElevenLabs API — clone any voice from short audio samples
-- **Speech-to-text** using Web Speech API for real-time transcription
-- **AI response suggestions** — context-aware quick replies powered by Apple Intelligence (on-device)
-- **Text-to-speech** with the cloned voice for natural-sounding output
-- **Conversation management** — multiple threads with history
-
-Built with SwiftUI + WKWebView. Requires iOS 17+. Uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) for project generation.
-
-#### Setup
+### Build
 
 ```bash
 cd ios/Talkie
-xcodegen generate    # generates Talkie.xcodeproj
+xcodegen generate    # project.yml is the source of truth
 open Talkie.xcodeproj
 ```
 
-Configure API keys in the app's Settings screen:
-- **ElevenLabs** — for voice cloning and TTS
+### Tests
 
-### Voice Cloner (`app.py`)
-
-Standalone Gradio web app for local voice cloning, supporting multiple TTS engines:
-
-- **Qwen3-TTS 0.6B** — multilingual (10 languages including French)
-- **NeuTTS Air 0.5B** — EN/FR/ES/DE
-- **Sopro 135M** — English only, ultra-fast
-
-Runs fully on-device (MPS on Apple Silicon, CPU fallback).
-
-#### Setup
+Pure web helpers (content filter, suggestion parsing, TTS chunking) live in `Resources/web/pure.js`:
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+node --test tests/web/pure.test.js
 ```
-
-Open `http://localhost:7860` — record a voice sample, then generate speech.
 
 ## License
 

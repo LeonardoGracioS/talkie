@@ -84,6 +84,13 @@ class SettingsViewModel: ObservableObject {
     @Published var quickPhrases: [QuickPhrase] = []
     @Published var patience: Double = 1.4      // end-of-phrase wait (P1.4)
     @Published var autoListen = false          // start listening on open (P2.6)
+    /// Send memory / profile / style to the model (was only reachable in the hidden web settings — T1).
+    @Published var llmRichContext = true
+    /// Set by a reset so the sheet's onDismiss doesn't sync stale values back (T2).
+    var isResetting = false
+    /// Let AI suggestions contain slurs/crude language (only prompt-injection echoes are dropped).
+    @Published var allowCrude = false
+    var onClearSpeakers: (() -> Void)?
     var onExportData: (() -> Void)?            // P2.4
     var onImportData: (() -> Void)?
 
@@ -112,6 +119,7 @@ struct SettingsView: View {
     @State private var devTapCount = 0
     @State private var showELKey = false
     @State private var showClaudeKey = false
+    @State private var showClearSpeakersConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -155,6 +163,28 @@ struct SettingsView: View {
                             Text(vm.lang == "fr"
                                  ? "Génère 3 réponses avec Apple Intelligence sur l'appareil"
                                  : "Generate 3 replies with on-device Apple Intelligence")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $vm.llmRichContext) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(vm.lang == "fr" ? "Personnaliser les suggestions" : "Personalize suggestions")
+                            Text(vm.lang == "fr"
+                                 ? "Utilise votre mémoire, votre profil et votre style"
+                                 : "Uses your memory, profile and style")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Toggle(isOn: $vm.allowCrude) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(vm.lang == "fr" ? "Langage familier / cru" : "Casual / crude language")
+                            Text(vm.lang == "fr"
+                                 ? "Les suggestions peuvent contenir des gros mots"
+                                 : "Suggestions may include swear words")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -252,35 +282,9 @@ struct SettingsView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
-                Section(vm.lang == "fr" ? "À propos" : "About") {
-                    Button {
-                        vm.onReplayTutorial?()
-                        dismiss()
-                    } label: {
-                        Label(vm.lang == "fr" ? "Tutoriel" : "Tutorial", systemImage: "questionmark.circle")
-                    }
-
-                    NavigationLink {
-                        PrivacyPolicyNativeView()
-                    } label: {
-                        Label(vm.lang == "fr" ? "Politique de confidentialité" : "Privacy Policy", systemImage: "hand.raised")
-                    }
-
-                    NavigationLink {
-                        SupportNativeView()
-                    } label: {
-                        Label("Support", systemImage: "lifepreserver")
-                    }
-
-                    NavigationLink {
-                        ReportNativeView()
-                    } label: {
-                        Label(vm.lang == "fr" ? "Signaler un problème" : "Report an issue", systemImage: "exclamationmark.triangle")
-                    }
-                }
-
-                if vm.devMode {
-                    Section("Mode développeur") {
+                // The cloned voice is the app's promise ("Votre voix, préservée") — it used
+                // to be hidden behind 5 taps on the version number.
+                Section(vm.lang == "fr" ? "Ma voix clonée" : "My cloned voice") {
                         Toggle(isOn: Binding(
                             get: { vm.useElevenLabs },
                             set: { newValue in
@@ -292,8 +296,8 @@ struct SettingsView: View {
                             }
                         )) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("ElevenLabs TTS")
-                                Text("Synthèse vocale via l'API ElevenLabs")
+                                Text(vm.lang == "fr" ? "Voix clonée (ElevenLabs)" : "Cloned voice (ElevenLabs)")
+                                Text(vm.lang == "fr" ? "Parle avec votre voix — nécessite un compte ElevenLabs" : "Speaks with your voice — requires an ElevenLabs account")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -331,6 +335,51 @@ struct SettingsView: View {
                             }
                         }
 
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        showClearSpeakersConfirm = true
+                    } label: {
+                        Label(vm.lang == "fr" ? "Effacer tous les interlocuteurs" : "Delete all speakers", systemImage: "person.2.slash")
+                    }
+                } header: {
+                    Text(vm.lang == "fr" ? "Interlocuteurs" : "Speakers")
+                } footer: {
+                    Text(vm.lang == "fr"
+                         ? "Supprime les personnes et les voix reconnues. Les voix seront réapprises à la prochaine conversation."
+                         : "Removes people and learned voices. Voices are learned again in the next conversation.")
+                }
+
+                Section(vm.lang == "fr" ? "À propos" : "About") {
+                    Button {
+                        vm.onReplayTutorial?()
+                        dismiss()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Tutoriel" : "Tutorial", systemImage: "questionmark.circle")
+                    }
+
+                    NavigationLink {
+                        PrivacyPolicyNativeView()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Politique de confidentialité" : "Privacy Policy", systemImage: "hand.raised")
+                    }
+
+                    NavigationLink {
+                        SupportNativeView()
+                    } label: {
+                        Label("Support", systemImage: "lifepreserver")
+                    }
+
+                    NavigationLink {
+                        ReportNativeView()
+                    } label: {
+                        Label(vm.lang == "fr" ? "Signaler un problème" : "Report an issue", systemImage: "exclamationmark.triangle")
+                    }
+                }
+
+                if vm.devMode {
+                    Section(vm.lang == "fr" ? "Mode développeur" : "Developer mode") {
                         Toggle(isOn: $vm.useClaude) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(vm.lang == "fr" ? "Suggestions Claude (cloud)" : "Claude suggestions (cloud)")
@@ -403,6 +452,10 @@ struct SettingsView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(vm.lang == "fr" ? "Fermer" : "Close") { dismiss() }
                 }
+            }
+            .alert(vm.lang == "fr" ? "Effacer les interlocuteurs ?" : "Delete all speakers?", isPresented: $showClearSpeakersConfirm) {
+                Button(vm.lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}
+                Button(vm.lang == "fr" ? "Effacer" : "Delete", role: .destructive) { vm.onClearSpeakers?() }
             }
             .alert(vm.lang == "fr" ? "Réinitialiser ?" : "Reset?", isPresented: $showResetConfirm) {
                 Button(vm.lang == "fr" ? "Annuler" : "Cancel", role: .cancel) {}

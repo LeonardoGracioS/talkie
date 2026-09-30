@@ -14,6 +14,7 @@
 		5B1398A1EC221724DFE01AE2 /* web in Resources */ = {isa = PBXBuildFile; fileRef = 1B2266128EF4F9554C689C8F /* web */; };
 		5FD54401E294587DF14C9088 /* DiarizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB2D800E62EE8C416EDE46F /* DiarizationManager.swift */; };
 		67A5249D6D764042BF21594F /* FluidAudio in Frameworks */ = {isa = PBXBuildFile; productRef = E488AD1F887CCD0880A88457 /* FluidAudio */; };
+		8B251A9B23A32CA94B793E16 /* VoiceIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF9EAA0922C839FB94CEDDF /* VoiceIdentity.swift */; };
 		9457AD9A2E0A7E3049D95F80 /* CallModeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263EF0998874FA9386188D2F /* CallModeManager.swift */; };
 		A000C45F60E9FF9EA7982BF1 /* TalkieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0426D57ECBB419694D3263 /* TalkieApp.swift */; };
 		CDD69EB0CF38F8BE6BC9A17F /* TalkieLLMModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D8D78D86A4016DA41F91BD /* TalkieLLMModels.swift */; };
@@ -32,6 +33,7 @@
 		80D8D78D86A4016DA41F91BD /* TalkieLLMModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkieLLMModels.swift; sourceTree = "<group>"; };
 		905A42CA21CA00086495C57D /* WebAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebAppView.swift; sourceTree = "<group>"; };
 		92173E2C177853E5ADD8A345 /* Talkie.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Talkie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ECF9EAA0922C839FB94CEDDF /* VoiceIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIdentity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +68,7 @@
 				6C994A41952617EB8E39829D /* SpeechCaptureManager.swift */,
 				1B0426D57ECBB419694D3263 /* TalkieApp.swift */,
 				80D8D78D86A4016DA41F91BD /* TalkieLLMModels.swift */,
+				ECF9EAA0922C839FB94CEDDF /* VoiceIdentity.swift */,
 				905A42CA21CA00086495C57D /* WebAppView.swift */,
 			);
 			path = Talkie;
@@ -163,6 +166,7 @@
 				2EA464985EC8A0AD8160BDCF /* SpeechCaptureManager.swift in Sources */,
 				A000C45F60E9FF9EA7982BF1 /* TalkieApp.swift in Sources */,
 				CDD69EB0CF38F8BE6BC9A17F /* TalkieLLMModels.swift in Sources */,
+				8B251A9B23A32CA94B793E16 /* VoiceIdentity.swift in Sources */,
 				F33CE4580393952A335322A0 /* WebAppView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -241,7 +245,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Talkie/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Talkie;
@@ -254,7 +258,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.1;
+				MARKETING_VERSION = 3.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leonardogracios.talkie;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -325,7 +329,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Talkie/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Talkie;
@@ -338,7 +342,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.1.1;
+				MARKETING_VERSION = 3.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leonardogracios.talkie;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;

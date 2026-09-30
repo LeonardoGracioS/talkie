@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F5F6FA">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.elevenlabs.io; frame-src https://leonardogracios.github.io; worker-src 'self'">
 <title>Talkie</title>
 <style>
 @font-face {
@@ -1767,6 +1768,143 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 body:not(.call-mode) .call-hint { display:none; }
 /* In a call we're not listening — the "waiting for speech" transcript is misleading. */
 body.call-mode .context-zone { display:none; }
+
+/* ════════════════════════════════════════════════════════════
+   UI AUDIT 2026-09 — appended last so it wins. Targets: motor-impaired
+   taps (≥ 44 px, nothing small inside a big target), readable status,
+   no layout jumps, a usable group thread.
+   ════════════════════════════════════════════════════════════ */
+:root { --accent-strong: var(--accent); }
+:root[data-app-theme="dark"] { --accent-strong: #4F5AE0; }   /* white text ≥ 4.5:1 */
+html.theme-switching *, html.theme-switching *::before, html.theme-switching *::after { transition: none !important; }
+
+/* Status chip: never wraps; distinct state while Talkie speaks (mic paused). */
+.listen-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.listen-chip.speaking { background:var(--accent-soft); color:var(--accent); }
+.listen-chip.speaking .listen-waves i { animation-duration:.6s; }
+
+/* Chips: one row, never wrap (speed moved into the tone sheet). */
+.chip-row { flex-wrap:nowrap; }
+.chip { min-height:44px; min-width:0; flex:1 1 auto; }
+#speakerPill { max-width:45%; flex:0 1 auto; }
+#tonePill { flex:0 0 auto; }
+.chip .chip-label { overflow:hidden; text-overflow:ellipsis; }
+#speedPill { display:none; }
+.chip-mini { flex:1 1 0; }
+body.call-mode .chip-row { display:none; }
+
+/* Who is speaking: readable, not the faintest text on screen. */
+.context-label { font:600 0.9rem var(--font); color:var(--text-secondary); }
+.context-reset-btn { width:44px; height:44px; top:-10px; right:-8px; }
+
+/* Group thread: a real conversation view that scales with text size. */
+body.table-mode .context-zone { max-height:min(26vh, 13rem); }
+body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loading) { font-size:clamp(1.15rem, 2.6vh, 1.45rem); min-height:60px; }
+.speaker-thread .st-dot { align-self:flex-start; margin-top:0.5em; }
+.speaker-thread .st-line { font:400 1rem/1.35 var(--font); padding:3px 0; }
+.speaker-thread .st-line.latest .st-text { color:var(--text); font-weight:500; }
+.speaker-thread .st-name {
+  border:none; background:none; padding:0 2px; margin:0; cursor:pointer;
+  font:700 0.95rem var(--font); min-height:28px; flex:0 0 auto;
+}
+.speaker-thread .st-name.unknown { text-decoration:underline dotted; text-underline-offset:3px; }
+.table-suggest {
+  display:block; width:100%; min-height:44px; margin:4px 0 8px; padding:8px 14px;
+  border:1px dashed var(--accent); border-radius:14px; background:var(--accent-soft);
+  color:var(--accent); font:600 0.95rem var(--font); cursor:pointer; text-align:left;
+}
+.table-suggest.hidden { display:none; }
+
+/* Reply cards: the hero fills the free space — bigger text, bigger targets. */
+.suggestions-zone > .suggestion-card:not(.call-card):not(.loading) {
+  flex:1 0 auto; max-height:34%; min-height:72px;
+  font-size:clamp(1.3rem, 3.1vh, 1.75rem); padding:16px 22px;
+}
+.suggestion-card { padding-right:22px; }
+
+/* TTS bar: accent (green = listening only), floating like the bottom bar. */
+#ttsOverlay {
+  left:12px; right:12px; bottom:calc(var(--safe-bottom) + 8px);
+  padding:12px 16px; border-radius:22px;
+  background:var(--accent-strong); box-shadow:var(--shadow-md);
+  transform:translateY(calc(100% + 40px)); opacity:0; visibility:hidden;
+  transition:transform .2s ease, opacity .2s ease, visibility 0s linear .2s;
+}
+#ttsOverlay.active { transform:translateY(0); opacity:1; visibility:visible; transition:transform .2s ease, opacity .2s ease; }
+
+/* Bottom bar: primary button contrast; labelled icon buttons. */
+.control-btn.keyboard { background:var(--accent-strong); }
+.control-btn.refresh, .control-btn.history { width:64px; flex-direction:column; gap:2px; }
+.ctl-label { font:500 0.68rem var(--font); line-height:1; }
+.ai-attribution { font-size:0.7rem !important; }
+
+/* Quick phrases: 4×2 grid visible at once (horizontal swiping is hard with ALS);
+   more than 8 scroll sideways by column. */
+.soundboard-scroll {
+  /* row-major 2-row grid; columns set from JS (ceil(n/2)), 4 visible at a time */
+  display:grid; grid-auto-flow:row; gap:8px; overflow-x:auto;
+  grid-template-columns:repeat(4, calc((100% - 3 * 8px) / 4));
+}
+.soundboard-btn {
+  min-height:48px; padding:4px; border-radius:14px;
+  justify-content:center; text-align:center; hyphens:auto; -webkit-hyphens:auto;
+}
+.soundboard-btn .sb-label {
+  font-size:0.78rem; white-space:normal; line-height:1.12;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+
+/* Sheets: real buttons, colour dot = thread colour, destructive action apart. */
+.speaker-row { min-height:56px; }
+.speaker-row .sp-dot { width:12px; height:12px; border-radius:50%; flex:none; }
+.sp-actions { display:flex; gap:8px; flex:none; }
+.sp-action {
+  min-height:44px; min-width:44px; padding:0 12px; border-radius:12px;
+  border:1px solid var(--separator); background:var(--bg-card);
+  color:var(--text); font:600 0.9rem var(--font); cursor:pointer;
+}
+.sp-action.primary { color:var(--accent); border-color:var(--accent); }
+.sp-action.danger { color:var(--red); }
+.speaker-clear-btn {
+  width:100%; min-height:48px; margin-top:14px; border:none; border-radius:14px;
+  background:transparent; color:var(--red); font:600 0.95rem var(--font); cursor:pointer;
+}
+.sp-hint { padding:12px; color:var(--text-secondary); font:400 0.95rem var(--font); }
+.tone-tile .tt-swatch { width:14px; height:14px; border-radius:50%; background:var(--text-tertiary); display:block; margin:0 auto 6px; }
+.tt-swatch.tone-warm, .tt-swatch.tone-joyful { background:var(--orange); }
+.tt-swatch.tone-firm { background:var(--red); }
+.tt-swatch.tone-sad { background:var(--accent); }
+.tt-swatch.tone-calm { background:var(--green); }
+.tt-section-title { grid-column:1 / -1; margin:14px 0 6px; font:600 0.9rem var(--font); color:var(--text-secondary); }
+.tt-speed { grid-column:1 / -1; display:flex; gap:8px; }
+.tt-speed-btn {
+  flex:1; min-height:48px; border-radius:12px; border:1px solid var(--separator);
+  background:var(--bg); color:var(--text); font:600 0.95rem var(--font); cursor:pointer;
+}
+.tt-speed-btn.selected { background:var(--accent-soft); color:var(--accent); border-color:var(--accent); }
+
+/* History: same reading size as elsewhere. */
+.phrase-history-text { font:500 1.02rem/1.35 var(--font); }
+.phrase-history-item { min-height:56px; }
+.phrase-history-speak { width:44px; height:44px; }
+
+/* Manual view: report link (only when editing a suggestion). */
+.manual-report-btn {
+  display:block; margin:10px auto 0; min-height:44px; padding:0 16px; border:none; background:none;
+  color:var(--text-secondary); font:500 0.9rem var(--font); text-decoration:underline; cursor:pointer;
+}
+.manual-report-btn.hidden { display:none; }
+
+/* Call mode: one calm hint, phrases in a 2-column pad that fits on screen. */
+.call-mode-banner { display:none !important; }
+.call-hint { display:flex; gap:8px; align-items:flex-start; }
+.call-hint span { flex:1; }
+.call-hint-close {
+  flex:none; width:44px; height:44px; margin:-10px -8px -10px 0; border:none; background:none;
+  color:var(--text-tertiary); font:400 22px/1 var(--font); cursor:pointer;
+}
+.call-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.call-grid .suggestion-card.call-card { min-height:64px; font-size:1.15rem; justify-content:center; text-align:center; padding:12px; }
 </style>
 </head>
 <body>
@@ -1907,6 +2045,7 @@ body.call-mode .context-zone { display:none; }
     <div class="context-zone">
       <button type="button" class="context-reset-btn" id="contextResetBtn" aria-label="Réinitialiser le contexte">×</button>
       <div class="context-label" id="contextLabel">L'interlocuteur dit</div>
+      <button type="button" class="table-suggest hidden" id="tableSuggest">Plusieurs voix détectées · Passer en mode groupe</button>
       <div class="speaker-thread hidden" id="speakerThread" aria-live="polite"></div>
       <div class="context-text empty" id="contextText">En attente de parole…</div>
     </div>
@@ -1929,10 +2068,10 @@ body.call-mode .context-zone { display:none; }
     <!-- Bottom bar (floating glass) -->
     <div class="controls-zone">
       <button class="control-btn refresh" id="btnRefresh" aria-label="Relancer les réponses" title="Relancer les réponses">
-        <svg class="icon"><use href="#i-refresh"/></svg>
+        <svg class="icon"><use href="#i-refresh"/></svg><span class="ctl-label" id="ctlRefreshLabel">Relancer</span>
       </button>
       <button class="control-btn history" id="btnPhraseHistory" aria-label="Historique des phrases" title="Historique">
-        <svg class="icon"><use href="#i-clock"/></svg>
+        <svg class="icon"><use href="#i-clock"/></svg><span class="ctl-label" id="ctlHistoryLabel">Historique</span>
       </button>
       <button class="control-btn keyboard" id="btnKeyboard">
         <svg class="icon"><use href="#i-keyboard"/></svg>
@@ -1960,6 +2099,7 @@ body.call-mode .context-zone { display:none; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a7 7 0 010 13.42v2.06A9 9 0 0014 3.23z"/></svg>
       Prononcer
     </button>
+    <button type="button" class="manual-report-btn hidden" id="btnReportSuggestion">Signaler cette suggestion</button>
   </div>
 
   <!-- ═══ SETTINGS ═══ -->
@@ -2316,9 +2456,10 @@ body.call-mode .context-zone { display:none; }
 <!-- ═══════════════════════════════════════════
      JAVASCRIPT
      ═══════════════════════════════════════════ -->
+<script src="pure.js"></script>
 <script>
 
-const BUILD_VERSION = 'v3.2.0 (22)';
+const BUILD_VERSION = window.__TALKIE_VERSION__ || 'dev';
 
 // ─── i18n ───
 const I18N = {
@@ -2500,7 +2641,7 @@ const I18N = {
     speedFastLabel: 'Rapide',
     speakerNonePill: 'Interlocuteur',
     speakerPickerTitle: 'À qui parlez-vous ?',
-    speakerPickerNone: 'Personne précise',
+    speakerPickerNone: 'Personne en particulier',
     speakerAddNew: 'Ajouter un interlocuteur',
     speakerNamePrompt: 'Nom de l\'interlocuteur',
     speakerRelationshipPrompt: 'Relation (famille, médecin, ami…) — optionnel',
@@ -2740,7 +2881,7 @@ const I18N = {
     speedFastLabel: 'Fast',
     speakerNonePill: 'Speaker',
     speakerPickerTitle: 'Who are you talking to?',
-    speakerPickerNone: 'No one specific',
+    speakerPickerNone: 'No one in particular',
     speakerAddNew: 'Add a speaker',
     speakerNamePrompt: 'Speaker name',
     speakerRelationshipPrompt: 'Relationship (family, doctor, friend…) — optional',
@@ -3102,15 +3243,21 @@ function applyStaticTranslations() {
     setText(advPage.querySelector('p'), 'promptDesc');
     setText(el('resetPromptBtn'), 'resetPrompt');
   }
-  if (typeof renderSoundboard === "function") renderSoundboard();
+  // At boot the defaults are not defined yet; init renders the soundboard later.
+  if (el('ctlRefreshLabel')) el('ctlRefreshLabel').textContent = currentLang === 'fr' ? 'Relancer' : 'Retry';
+  if (el('ctlHistoryLabel')) el('ctlHistoryLabel').textContent = currentLang === 'fr' ? 'Historique' : 'History';
+  if (el('btnReportSuggestion')) el('btnReportSuggestion').textContent = currentLang === 'fr' ? 'Signaler cette suggestion' : 'Report this suggestion';
+  if (el('tableSuggest')) el('tableSuggest').textContent = currentLang === 'fr' ? 'Plusieurs voix détectées · Passer en mode groupe' : 'Several voices detected · Switch to group mode';
+  if (typeof renderSoundboard === "function" && typeof DEFAULT_QUICK_PHRASES !== "undefined") renderSoundboard();
   } catch(e) { console.warn('[i18n]', e); }
 }
 
-// TEMP debug — mirror the WebView console to native stdout so `devicectl … --console`
-// shows JS activity (the WebView console is otherwise invisible on device).
+// Debug builds only (native injects __TALKIE_DEBUG__): mirror the WebView console
+// to native stdout so `devicectl … --console` shows JS activity. Never in Release —
+// logs can contain transcripts.
 (function() {
   const bridge = () => window.webkit?.messageHandlers?.debugLog;
-  if (!bridge()) return;
+  if (!window.__TALKIE_DEBUG__ || !bridge()) return;
   ['log', 'warn', 'error'].forEach(level => {
     const orig = console[level].bind(console);
     console[level] = function(...args) {
@@ -3297,8 +3444,10 @@ function renderVoiceControls() {
   if (!tonePill || !speedPill || !speakerPill) return;
 
   const tone = currentTone();
-  toneIcon.textContent = toneProfile(tone).icon;
-  toneLabel.textContent = _toneLabel(tone);
+  toneIcon.textContent = '';
+  const spd = currentSpeed();
+  toneLabel.textContent = _toneLabel(tone) + (spd !== 'normal'
+    ? ' · ' + _label(spd === 'slow' ? 'speedSlowLabel' : 'speedFastLabel') : '');
   tonePill.classList.remove('tone-warm', 'tone-firm', 'tone-joyful', 'tone-sad', 'tone-calm');
   if (tone !== 'neutral') tonePill.classList.add('tone-' + tone);
 
@@ -3330,8 +3479,8 @@ function renderVoiceControls() {
   if (tablePill && tableLabel) {
     const on = !!(state && state.tableMode);
     tableLabel.textContent = currentLang === 'fr'
-      ? (on ? 'Plusieurs voix' : 'Une voix')
-      : (on ? 'Group' : 'One-on-one');
+      ? (on ? 'Groupe' : 'Une voix')
+      : (on ? 'Group' : 'One voice');
     tablePill.classList.toggle('table-active', on);
     tablePill.setAttribute('aria-pressed', String(on));
   }
@@ -3357,10 +3506,25 @@ function openTonePicker() {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'tone-tile' + (tone === currentTone() ? ' selected' : '');
-    row.innerHTML = `<span class="tt-icon">${toneProfile(tone).icon}</span><span class="tt-label">${_toneLabel(tone)}</span>`;
+    row.innerHTML = `<span class="tt-swatch tone-${tone}"></span><span class="tt-label">${_toneLabel(tone)}</span>`;
     row.onclick = () => { setTone(tone); closeTonePicker(); };
     list.appendChild(row);
   });
+  // Speed lives here too (it used to be its own chip and made the chip row wrap).
+  const speedTitle = document.createElement('div');
+  speedTitle.className = 'tt-section-title';
+  speedTitle.textContent = currentLang === 'fr' ? 'Vitesse' : 'Speed';
+  const seg = document.createElement('div');
+  seg.className = 'tt-speed';
+  ['slow', 'normal', 'fast'].forEach(sp => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tt-speed-btn' + (sp === currentSpeed() ? ' selected' : '');
+    b.textContent = _label(sp === 'slow' ? 'speedSlowLabel' : sp === 'fast' ? 'speedFastLabel' : 'speedNormalLabel');
+    b.onclick = () => { state.speed = sp; save(); renderVoiceControls(); seg.querySelectorAll('.tt-speed-btn').forEach(x => x.classList.toggle('selected', x === b)); };
+    seg.appendChild(b);
+  });
+  list.append(speedTitle, seg);
   closeBtn.onclick = closeTonePicker;
   overlay.onclick = (e) => { if (e.target === overlay) closeTonePicker(); };
   overlay.classList.add('active');
@@ -3382,51 +3546,83 @@ function currentSpeakerObj() {
   return (state.speakers || []).find(s => s.id === state.currentSpeakerId) || null;
 }
 
-// ─── Native diarization bridge ───
-// The native layer runs FluidAudio in parallel with the WebKit speech recognizer.
-// Every time the active voice changes, it calls _diarizationSpeakerChange with
-// a stable per-session id. We map those ids to speakers in our list, creating
-// auto-labels ("Locuteur 1", etc.) on first sight, then make the matching
-// speaker the active one so the next captured phrase is tagged correctly.
-const _fluidToTalkie = {};
+// ─── Voices → people ───
+// The native layer gives each phrase a voice id ("S1"…) from a per-phrase voiceprint
+// (VoiceIdentity.swift). Ids are persisted natively, so the id → Talkie speaker
+// mapping lives in state and survives restarts. New voices get a neutral name
+// ("Voix 2") that the user can attach to a real person ("C'est qui ?").
+function _nativeMap() {
+  if (!state.fluidMap || typeof state.fluidMap !== 'object') state.fluidMap = {};
+  return state.fluidMap;
+}
+
+/** Auto-generated names — current ("Voix 3") and legacy ("Locuteur 3"). */
+const _AUTO_NAME_RE = /^(Voix|Voice|Locuteur|Speaker) \d+$/;
+function isAutoSpeakerName(name) { return _AUTO_NAME_RE.test(String(name || '').trim()); }
 
 function _autoSpeakerName(n) {
-  return (currentLang === 'fr' ? 'Locuteur ' : 'Speaker ') + n;
+  return (currentLang === 'fr' ? 'Voix ' : 'Voice ') + n;
 }
 
 function _countAutoSpeakers() {
-  const re = currentLang === 'fr' ? /^Locuteur (\d+)$/ : /^Speaker (\d+)$/;
   let max = 0;
   (state.speakers || []).forEach(sp => {
-    const m = re.exec(sp.name || '');
+    const m = /^(?:Voix|Voice) (\d+)$/.exec(sp.name || '');   // legacy "Locuteur N" don't continue the numbering
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
   return max;
 }
 
-window._diarizationSpeakerChange = function(fluidId, startSec) {
-  if (!fluidId) return;
-  let talkieId = _fluidToTalkie[fluidId];
-  let wasNew = false;
-  if (!talkieId) {
-    const n = _countAutoSpeakers() + 1;
-    const sp = addSpeaker(_autoSpeakerName(n), '');
-    if (!sp) return;
-    talkieId = sp.id;
-    _fluidToTalkie[fluidId] = talkieId;
-    wasNew = true;
-    console.log('[Talkie] New speaker detected:', fluidId, '→', sp.name);
-    showToast((currentLang === 'fr' ? 'Nouvelle voix détectée : ' : 'New voice detected: ') + sp.name, 3500);
+/** Fold speaker `fromId` into `intoId` everywhere (history, thread, voice map).
+ *  If only `fromId` carries a real name, that name survives. */
+function mergeSpeakers(fromId, intoId) {
+  if (!fromId || !intoId || fromId === intoId) return;
+  const list = state.speakers || [];
+  const from = list.find(s => s.id === fromId), into = list.find(s => s.id === intoId);
+  if (!from || !into) return;
+  if (isAutoSpeakerName(into.name) && !isAutoSpeakerName(from.name)) {
+    into.name = from.name; into.relationship = into.relationship || from.relationship;
   }
-  if (state.currentSpeakerId !== talkieId) {
-    setCurrentSpeaker(talkieId);
-    updateContextDisplay(lastInterlocutorText || '', false);
-    if (!wasNew) {
-      const sp = currentSpeakerObj();
-      if (sp) showToast((currentLang === 'fr' ? 'Passage à : ' : 'Switched to: ') + sp.name, 2000);
-    }
-  }
+  const map = _nativeMap();
+  Object.keys(map).forEach(k => { if (map[k] === fromId) map[k] = intoId; });
+  (state.history || []).forEach(h => { if (h.speakerId === fromId) h.speakerId = intoId; });
+  tableTurns.forEach(tt => { if (tt.talkieId === fromId) tt.talkieId = intoId; });
+  if (state.currentSpeakerId === fromId) state.currentSpeakerId = intoId;
+  state.speakers = list.filter(s => s.id !== fromId);
+  save();
+  renderTableThread();
+  renderVoiceControls();
+}
+
+/** Native side found that two voice ids are the same person. */
+window._nativeSpeakerMerge = function(fromRaw, intoRaw) {
+  const map = _nativeMap();
+  const a = map[fromRaw], b = map[intoRaw];
+  delete map[fromRaw];
+  if (a && b) mergeSpeakers(a, b);
+  else if (a && !b) map[intoRaw] = a;
+  save();
 };
+
+/** "Effacer tous les interlocuteurs": people, voiceprints and their traces. */
+function clearAllSpeakers(skipConfirm) {
+  if (!skipConfirm && !confirm(currentLang === 'fr'
+      ? 'Effacer tous les interlocuteurs et les voix reconnues ?'
+      : 'Delete all speakers and learned voices?')) return false;
+  state.speakers = [];
+  state.currentSpeakerId = null;
+  state.fluidMap = {};
+  (state.history || []).forEach(h => { delete h.speakerId; });
+  tableTurns = [];
+  _nativeSpeakersSeen.clear();
+  try { window.webkit?.messageHandlers?.resetVoiceIdentities?.postMessage({}); } catch(_) {}
+  save();
+  renderTableThread();
+  renderVoiceControls();
+  showToast(currentLang === 'fr' ? 'Interlocuteurs effacés' : 'Speakers cleared');
+  return true;
+}
+window.clearAllSpeakers = clearAllSpeakers;
 
 let _diarStatus = 'unloaded';
 window._diarizationStatus = function(status) {
@@ -3480,6 +3676,19 @@ function _armNativeWatchdog(ms) {
   }, ms);
 }
 
+// Proper nouns the recognizer should favour (T23): named speakers, the user's
+// name, capitalised words from the profile (family, favourites).
+function _sttVocabulary() {
+  const words = new Set();
+  (state.speakers || []).forEach(sp => { if (sp.name && !isAutoSpeakerName(sp.name)) words.add(sp.name.trim()); });
+  if (state.userName) words.add(String(state.userName).trim());
+  const p = state.profile || {};
+  [p.family, p.favorites, p.interests].forEach(v => {
+    (String(v || '').match(/\p{Lu}[\p{L}'’-]+/gu) || []).forEach(w => words.add(w));
+  });
+  return Array.from(words).filter(w => w.length > 1).slice(0, 100);
+}
+
 function _isNativeBridge() {
   return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.startNativeSTT);
 }
@@ -3496,6 +3705,9 @@ function checkNativeSTT() {
 
 window._nativeSTTStatus = function(status) {
   console.log('[Talkie] native STT status:', status);
+  if (status === 'available' || status === 'needs_download' || status === 'unavailable') {
+    setTimeout(() => { if (typeof _maybeAutoListen === 'function') _maybeAutoListen(); }, 0);
+  }
   if (status === 'available' || status === 'needs_download') {
     nativeSTTAvailable = true;
   } else if (status === 'unavailable') {
@@ -3529,20 +3741,29 @@ function _fallbackToWebSpeech() {
 // first sight — same convention as the legacy diarization bridge.
 function _mapNativeSpeaker(rawId) {
   if (!rawId) return null;
-  let talkieId = _fluidToTalkie[rawId];
+  const map = _nativeMap();
+  let talkieId = map[rawId];
+  if (talkieId && !(state.speakers || []).some(s => s.id === talkieId)) talkieId = null;
   if (!talkieId) {
     const n = _countAutoSpeakers() + 1;
     const sp = addSpeaker(_autoSpeakerName(n), '');
     if (!sp) return null;
     talkieId = sp.id;
-    _fluidToTalkie[rawId] = talkieId;
-    showToast((currentLang === 'fr' ? 'Nouvelle voix détectée : ' : 'New voice detected: ') + sp.name, 3000);
+    map[rawId] = talkieId;
+    save();
+    // Only announce once there is more than one voice (1-to-1 needs no ceremony).
+    if ((state.speakers || []).length > 1) {
+      showToast(currentLang === 'fr'
+        ? 'Nouvelle voix : ' + sp.name + ' — touchez son nom pour dire qui c\'est'
+        : 'New voice: ' + sp.name + ' — tap the name to say who it is', 4000);
+    }
   }
   return talkieId;
 }
 
 window._nativeTranscriptInterim = function(text) {
   if (!isListening || isSpeaking) return;
+  if (!interimBuf) _prewarmSuggestions();
   interimBuf = (text || '').trim();
   updateContextDisplay(interimBuf, true);
 };
@@ -3551,9 +3772,11 @@ window._nativeTranscriptInterim = function(text) {
 // person often reacts to the reply). Buffer them, replay when we resume.
 let _pendingTurns = [];
 
+let _lastTurnId = null;
 function _processNativeTurn(turn, suppressSuggest) {
   const text = inferQuestionMark((turn.text || '').trim());
   if (text.length < 2) return;
+  _lastTurnId = turn.turnId || null;
   const talkieId = turn.speakerId ? _mapNativeSpeaker(turn.speakerId) : null;
   if (talkieId && state.currentSpeakerId !== talkieId) setCurrentSpeaker(talkieId);
   if (turn.speakerId) { _nativeSpeakersSeen.add(turn.speakerId); _maybeAutoTableMode(); }
@@ -3601,9 +3824,23 @@ window._importData = function(json) {
     const obj = JSON.parse(json);
     const s = (obj && obj.state) ? obj.state : obj;
     if (!s || typeof s !== 'object') throw new Error('bad');
-    // Keep the API keys currently in the Keychain; replace everything else.
-    const keys = { elApiKey: state.elApiKey, claudeApiKey: state.claudeApiKey };
-    Object.assign(state, s, keys);
+    // Only known keys with the expected type — a backup file is untrusted input (T11).
+    const KNOWN = {
+      userName: 'string', systemPrompt: 'string', lang: 'string', voiceId: 'string',
+      useClaude: 'boolean', llmEnabled: 'boolean', useApplePersonalVoice: 'boolean', useElevenLabs: 'boolean',
+      history: 'array', memory: 'string', learnedMemory: 'string', oledMode: 'boolean', quickPhrases: 'array',
+      tone: 'string', speed: 'string', allowCrude: 'boolean', speakers: 'array', currentSpeakerId: 'string', tableMode: 'boolean',
+      patience: 'number', autoListen: 'boolean', profile: 'object', styleSummary: 'string',
+      suggestionStats: 'object', phraseHistory: 'object', llmRichContext: 'boolean', callPhrases: 'array',
+      fluidMap: 'object',
+    };
+    const typeOf = v => Array.isArray(v) ? 'array' : (v === null ? 'null' : typeof v);
+    const clean = {};
+    Object.keys(KNOWN).forEach(k => { if (k in s && typeOf(s[k]) === KNOWN[k]) clean[k] = s[k]; });
+    if (clean.quickPhrases) clean.quickPhrases = clean.quickPhrases
+      .filter(q => q && typeof q.text === 'string')
+      .map(q => ({ emoji: String(q.emoji || '').slice(0, 8), text: q.text.slice(0, 200) }));
+    Object.assign(state, clean);
     save();
     showToast(currentLang === 'fr' ? 'Sauvegarde restaurée' : 'Backup restored', 3000);
     setTimeout(() => location.reload(), 900);
@@ -3615,9 +3852,14 @@ window._importData = function(json) {
 // P1.3: an earlier turn just got a confident speaker — patch its history entry.
 window._nativeTurnSpeakerUpdate = function(turnId, rawSpeakerId) {
   if (!turnId || !rawSpeakerId) return;
+  // Turn still buffered during TTS: patch it before it is replayed.
+  const pending = _pendingTurns.find(t => t.turnId === turnId);
+  if (pending) { pending.speakerId = rawSpeakerId; return; }
   const talkieId = _mapNativeSpeaker(rawSpeakerId);
   if (!talkieId) return;
   const entry = (state.history || []).find(e => e.nativeTurnId === turnId);
+  const tt = tableTurns.find(x => x.turnId === turnId);
+  if (tt) tt.talkieId = talkieId;
   if (entry && entry.speakerId !== talkieId) {
     entry.speakerId = talkieId;
     save();
@@ -3645,8 +3887,8 @@ function _escHtml(s) {
 function pushTableTurn(talkieId, text) {
   const sp = (state.speakers || []).find(s => s.id === talkieId);
   const name = sp ? sp.name : (currentLang === 'fr' ? 'Interlocuteur' : 'Speaker');
-  tableTurns.push({ name, text, color: _speakerColor(talkieId) });
-  if (tableTurns.length > 8) tableTurns = tableTurns.slice(-8);
+  tableTurns.push({ talkieId, name, text, turnId: _lastTurnId });
+  if (tableTurns.length > 12) tableTurns = tableTurns.slice(-12);
   renderTableThread();
 }
 
@@ -3662,22 +3904,34 @@ function renderTableThread() {
     return;
   }
   el.classList.remove('hidden');
-  el.innerHTML = tableTurns.map(tt =>
-    `<div class="st-line"><span class="st-dot" style="background:${tt.color}"></span>` +
-    `<span class="st-name" style="color:${tt.color}">${_escHtml(tt.name)}</span>` +
-    `<span class="st-text">${_escHtml(tt.text)}</span></div>`
-  ).join('');
+  // Resolve name/colour at render time so a later speaker fix (P1.3) or a rename shows up.
+  // Resolve name/colour at render time so a later speaker fix or a rename shows up.
+  // Tap a name → "C'est qui ?" to attach that voice to a real person.
+  el.innerHTML = tableTurns.map((tt, i) => {
+    const sp = (state.speakers || []).find(s => s.id === tt.talkieId);
+    const name = sp ? sp.name : tt.name;
+    const color = _speakerColor(tt.talkieId);
+    const auto = sp && isAutoSpeakerName(sp.name);
+    return `<div class="st-line${i === tableTurns.length - 1 ? ' latest' : ''}"><span class="st-dot" style="background:${color}"></span>` +
+      `<button type="button" class="st-name${auto ? ' unknown' : ''}" data-sid="${_escHtml(tt.talkieId || '')}" style="color:${color}">${_escHtml(name)}</button>` +
+      `<span class="st-text">${_escHtml(frenchSpacing(tt.text))}</span></div>`;
+  }).join('');
+  el.querySelectorAll('.st-name').forEach(b => {
+    b.onclick = (e) => { e.stopPropagation(); if (b.dataset.sid) openVoiceAssign(b.dataset.sid); };
+  });
   // The thread lives inside the scrollable .context-zone — scroll the parent.
   if (zone) zone.scrollTop = zone.scrollHeight;
 }
 
 function _maybeAutoTableMode() {
-  if (state.tableMode || _tableAutoPrompted) return;
+  if (state.tableMode || _tableAutoPrompted || callModeActive) return;
   if (_nativeSpeakersSeen.size >= 2) {
     _tableAutoPrompted = true;
-    enableTableMode(true, true);
+    const el = document.getElementById('tableSuggest');
+    if (el) el.classList.remove('hidden');
   }
 }
+function _hideTableSuggest() { document.getElementById('tableSuggest')?.classList.add('hidden'); }
 
 function enableTableMode(on, auto) {
   state.tableMode = !!on;
@@ -3690,13 +3944,18 @@ function enableTableMode(on, auto) {
     try { window.webkit?.messageHandlers?.stopNativeSTT?.postMessage({}); } catch(_) {}
     setTimeout(() => {
       if (!isListening) return;
-      try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4) }); } catch(_) {}
+      try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4), vocabulary: _sttVocabulary() }); } catch(_) {}
     }, 250);
   } else {
     try { window.webkit?.messageHandlers?.setTableMode?.postMessage({ on: state.tableMode }); } catch(_) {}
   }
   document.body.classList.toggle('table-mode', state.tableMode);
   if (!state.tableMode) tableTurns = [];
+  // Entering group mode: start the thread with what was just said, not empty.
+  if (state.tableMode && !tableTurns.length) {
+    tableTurns = (state.history || []).filter(h => !h.isUser && h.speakerId).slice(-6)
+      .map(h => ({ talkieId: h.speakerId, name: '', text: h.text, turnId: h.nativeTurnId || null }));
+  }
   renderTableThread();
   renderVoiceControls();
   if (on && auto) {
@@ -3709,7 +3968,7 @@ function enableTableMode(on, auto) {
   }
 }
 
-function toggleTableMode() { enableTableMode(!state.tableMode, false); }
+function toggleTableMode() { _hideTableSuggest(); enableTableMode(!state.tableMode, false); }
 
 function _genSpeakerId() {
   return 'sp_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -3737,6 +3996,8 @@ function addSpeaker(name, relationship) {
 
 function removeSpeaker(id) {
   state.speakers = (state.speakers || []).filter(s => s.id !== id);
+  const map = _nativeMap();
+  Object.keys(map).forEach(k => { if (map[k] === id) delete map[k]; });
   if (state.currentSpeakerId === id) state.currentSpeakerId = null;
   save();
 }
@@ -3752,6 +4013,22 @@ function renameSpeaker(id, name, relationship) {
   save();
 }
 
+function _sheetButton(label, cls, onClick) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = cls; b.textContent = label;
+  b.onclick = (e) => { e.stopPropagation(); onClick(); };
+  return b;
+}
+
+function _renameSpeakerFlow(sp) {
+  const newName = prompt(currentLang === 'fr' ? 'Nom' : 'Name', isAutoSpeakerName(sp.name) ? '' : (sp.name || ''));
+  if (newName === null || !newName.trim()) return false;
+  const newRel = prompt(currentLang === 'fr' ? 'Relation (ex : épouse, ami…)' : 'Relationship (e.g. wife, friend…)', sp.relationship || '');
+  renameSpeaker(sp.id, newName, newRel == null ? sp.relationship : newRel);
+  renderVoiceControls(); renderTableThread();
+  return true;
+}
+
 function openSpeakerPicker() {
   const overlay = document.getElementById('speakerOverlay');
   const list = document.getElementById('speakerSheetList');
@@ -3759,67 +4036,52 @@ function openSpeakerPicker() {
   const addBtn = document.getElementById('speakerAddBtn');
   const closeBtn = document.getElementById('speakerCloseBtn');
   if (!overlay || !list) return;
+  const fr = currentLang === 'fr';
   titleEl.textContent = t('speakerPickerTitle');
   addBtn.textContent = '+ ' + t('speakerAddNew');
-  closeBtn.textContent = currentLang === 'fr' ? 'Fermer' : 'Close';
+  closeBtn.textContent = fr ? 'Fermer' : 'Close';
 
   function render() {
     list.innerHTML = '';
-    const items = [{ id: null, name: t('speakerPickerNone'), relationship: '' }]
-      .concat(state.speakers || []);
+    const items = [{ id: null, name: t('speakerPickerNone'), relationship: '' }].concat(state.speakers || []);
     items.forEach(sp => {
       const row = document.createElement('div');
       row.className = 'speaker-row' + (sp.id === (state.currentSpeakerId || null) ? ' selected' : '');
-      const info = document.createElement('div');
-      info.className = 'sp-info';
-      const nameEl = document.createElement('div');
-      nameEl.className = 'sp-name';
-      nameEl.textContent = sp.name;
+      row.setAttribute('role', 'button');
+      if (sp.id) {
+        const dot = document.createElement('span');
+        dot.className = 'sp-dot'; dot.style.background = _speakerColor(sp.id);
+        row.appendChild(dot);
+      }
+      const info = document.createElement('div'); info.className = 'sp-info';
+      const nameEl = document.createElement('div'); nameEl.className = 'sp-name'; nameEl.textContent = sp.name;
       info.appendChild(nameEl);
       if (sp.relationship) {
-        const rel = document.createElement('div');
-        rel.className = 'sp-relation';
-        rel.textContent = sp.relationship;
+        const rel = document.createElement('div'); rel.className = 'sp-relation'; rel.textContent = sp.relationship;
         info.appendChild(rel);
       }
       row.appendChild(info);
-      const check = document.createElement('div');
-      check.className = 'sp-check';
-      row.appendChild(check);
       if (sp.id) {
-        const ed = document.createElement('button');
-        ed.type = 'button';
-        ed.className = 'sp-remove';
-        ed.textContent = currentLang === 'fr' ? 'Modifier' : 'Edit';
-        ed.onclick = (e) => {
-          e.stopPropagation();
-          const newName = prompt(currentLang === 'fr' ? 'Nom du locuteur' : 'Speaker name', sp.name || '');
-          if (newName === null) return;
-          const newRel = prompt(currentLang === 'fr' ? 'Relation (ex : épouse, ami…)' : 'Relationship (e.g. wife, friend…)', sp.relationship || '');
-          renameSpeaker(sp.id, newName, newRel == null ? sp.relationship : newRel);
-          render();
-          renderVoiceControls();
-          if (state.tableMode) renderTableThread();
-        };
-        row.appendChild(ed);
-        const rm = document.createElement('button');
-        rm.type = 'button';
-        rm.className = 'sp-remove';
-        rm.textContent = t('speakerRemove');
-        rm.onclick = (e) => {
-          e.stopPropagation();
-          removeSpeaker(sp.id);
-          render();
-          renderVoiceControls();
-        };
-        row.appendChild(rm);
+        const actions = document.createElement('div'); actions.className = 'sp-actions';
+        if (isAutoSpeakerName(sp.name) && (state.speakers || []).length > 1) {
+          actions.appendChild(_sheetButton(fr ? "C'est qui ?" : 'Who is it?', 'sp-action primary', () => { closeSpeakerPicker(); openVoiceAssign(sp.id); }));
+        } else {
+          actions.appendChild(_sheetButton(fr ? 'Renommer' : 'Rename', 'sp-action', () => { if (_renameSpeakerFlow(sp)) render(); }));
+        }
+        actions.appendChild(_sheetButton(t('speakerRemove'), 'sp-action danger', () => {
+          if (!confirm((fr ? 'Supprimer ' : 'Remove ') + sp.name + ' ?')) return;
+          removeSpeaker(sp.id); render(); renderVoiceControls(); renderTableThread();
+        }));
+        row.appendChild(actions);
       }
-      row.onclick = () => {
-        setCurrentSpeaker(sp.id);
-        closeSpeakerPicker();
-      };
+      row.onclick = () => { setCurrentSpeaker(sp.id); closeSpeakerPicker(); };
       list.appendChild(row);
     });
+    if ((state.speakers || []).length) {
+      list.appendChild(_sheetButton(fr ? 'Effacer tous les interlocuteurs' : 'Delete all speakers', 'speaker-clear-btn', () => {
+        if (clearAllSpeakers(false)) render();
+      }));
+    }
   }
   render();
 
@@ -3828,11 +4090,49 @@ function openSpeakerPicker() {
     if (!name || !name.trim()) return;
     const rel = prompt(t('speakerRelationshipPrompt')) || '';
     const sp = addSpeaker(name, rel);
-    if (sp) {
-      setCurrentSpeaker(sp.id);
-      render();
-    }
+    if (sp) { setCurrentSpeaker(sp.id); render(); }
   };
+  closeBtn.onclick = closeSpeakerPicker;
+  overlay.onclick = (e) => { if (e.target === overlay) closeSpeakerPicker(); };
+  overlay.classList.add('active');
+}
+
+/** "C'est qui ?" — attach an unknown voice to a known person (merge), or name it. */
+function openVoiceAssign(talkieId) {
+  const overlay = document.getElementById('speakerOverlay');
+  const list = document.getElementById('speakerSheetList');
+  const sp = (state.speakers || []).find(s => s.id === talkieId);
+  if (!overlay || !list || !sp) return;
+  const fr = currentLang === 'fr';
+  document.getElementById('speakerSheetTitle').textContent = (fr ? 'Qui est « ' : 'Who is "') + sp.name + (fr ? ' » ?' : '"?');
+  const addBtn = document.getElementById('speakerAddBtn');
+  const closeBtn = document.getElementById('speakerCloseBtn');
+  addBtn.textContent = fr ? '+ Une nouvelle personne (lui donner un nom)' : '+ A new person (give a name)';
+  closeBtn.textContent = fr ? 'Fermer' : 'Close';
+  list.innerHTML = '';
+  const others = (state.speakers || []).filter(s => s.id !== talkieId);
+  if (!others.length) {
+    const hint = document.createElement('div'); hint.className = 'sp-hint';
+    hint.textContent = fr ? 'Aucune autre personne enregistrée.' : 'No other saved person.';
+    list.appendChild(hint);
+  }
+  others.forEach(o => {
+    const row = document.createElement('div');
+    row.className = 'speaker-row'; row.setAttribute('role', 'button');
+    const dot = document.createElement('span'); dot.className = 'sp-dot'; dot.style.background = _speakerColor(o.id);
+    const info = document.createElement('div'); info.className = 'sp-info';
+    const n = document.createElement('div'); n.className = 'sp-name'; n.textContent = o.name;
+    info.appendChild(n);
+    if (o.relationship) { const r = document.createElement('div'); r.className = 'sp-relation'; r.textContent = o.relationship; info.appendChild(r); }
+    row.append(dot, info);
+    row.onclick = () => {
+      mergeSpeakers(talkieId, o.id);
+      closeSpeakerPicker();
+      showToast((fr ? 'Voix associée à ' : 'Voice linked to ') + o.name);
+    };
+    list.appendChild(row);
+  });
+  addBtn.onclick = () => { if (_renameSpeakerFlow(sp)) closeSpeakerPicker(); };
   closeBtn.onclick = closeSpeakerPicker;
   overlay.onclick = (e) => { if (e.target === overlay) closeSpeakerPicker(); };
   overlay.classList.add('active');
@@ -3952,6 +4252,7 @@ async function callLLMText(sys, prompt) {
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
+        signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
           model: 'claude-haiku-4-5',
           max_tokens: 400,
@@ -4004,26 +4305,26 @@ function resetStyleLearning() {
 }
 
 // ─── Soundboard (quick phrases) ───
-const DEFAULT_QUICK_PHRASES = {
+var DEFAULT_QUICK_PHRASES = {  // var: renderSoundboard() runs at boot before this line
   fr: [
-    { emoji: "✋", text: "Attends" },
-    { emoji: "❌", text: "Non" },
-    { emoji: "✅", text: "Oui" },
-    { emoji: "🤔", text: "Je réfléchis" },
-    { emoji: "✍️", text: "J'écris ma réponse" },
-    { emoji: "😊", text: "Haha" },
-    { emoji: "👋", text: "Bonjour" },
-    { emoji: "🙏", text: "Merci" },
+    { emoji: "", text: "Attends" },
+    { emoji: "", text: "Non" },
+    { emoji: "", text: "Oui" },
+    { emoji: "", text: "Je réfléchis" },
+    { emoji: "", text: "J'écris ma réponse" },
+    { emoji: "", text: "Haha" },
+    { emoji: "", text: "Bonjour" },
+    { emoji: "", text: "Merci" },
   ],
   en: [
-    { emoji: "✋", text: "Wait" },
-    { emoji: "❌", text: "No" },
-    { emoji: "✅", text: "Yes" },
-    { emoji: "🤔", text: "Let me think" },
-    { emoji: "✍️", text: "I'm typing" },
-    { emoji: "😊", text: "Haha" },
-    { emoji: "👋", text: "Hello" },
-    { emoji: "🙏", text: "Thanks" },
+    { emoji: "", text: "Wait" },
+    { emoji: "", text: "No" },
+    { emoji: "", text: "Yes" },
+    { emoji: "", text: "Let me think" },
+    { emoji: "", text: "I'm typing" },
+    { emoji: "", text: "Haha" },
+    { emoji: "", text: "Hello" },
+    { emoji: "", text: "Thanks" },
   ]
 };
 
@@ -4038,11 +4339,19 @@ function renderSoundboard() {
   if (!container) return;
   container.innerHTML = "";
   var phrases = getQuickPhrases();
+  // Row-major 2-row grid: "Attends Oui … / Non Merci …" reads left to right.
+  container.style.gridTemplateColumns = 'repeat(' + Math.max(4, Math.ceil(phrases.length / 2)) + ', calc((100% - 24px) / 4))';
   phrases.forEach(function(phrase) {
     var btn = document.createElement("button");
     btn.className = "soundboard-btn";
     btn.setAttribute("aria-label", phrase.text);
-    btn.innerHTML = '<span class="sb-emoji">' + phrase.emoji + '</span><span class="sb-label">' + phrase.text + '</span>';
+    const lb = document.createElement('span'); lb.className = 'sb-label'; lb.textContent = phrase.text || '';
+    if (phrase.emoji) {
+      const em = document.createElement('span'); em.className = 'sb-emoji'; em.textContent = phrase.emoji;
+      btn.append(em, lb);
+    } else {
+      btn.append(lb);
+    }
     btn.addEventListener("click", function() { speakSoundboardPhrase(phrase.text); });
     container.appendChild(btn);
   });
@@ -4050,12 +4359,15 @@ function renderSoundboard() {
 
 function speakSoundboardPhrase(text) {
   userHasInteracted = true;
-  stopListening();
+  // Pause (not stop) and only resume if we were listening — the mic used to turn
+  // on after every quick phrase, even when the user had switched it off (T7).
+  const wasListening = isListening;
+  if (wasListening) pauseListeningForTTS();
   addToHistory(text, true);
   addToPhraseHistory(text, 'manual');
   speakTextWithCallback(text, () => {
-    if (!_ttsPlayActive && !_ttsPlayQueue.length) startListening();
-  }, false);
+    if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
+  }, wasListening);
 }
 
 // ─── Phrase history (repeat manual / LLM phrases) ───
@@ -4130,7 +4442,7 @@ function renderPhraseHistoryList() {
     row.className = 'phrase-history-item';
     row.setAttribute('aria-label', t('phraseHistoryRepeat') + ': ' + entry.text);
     row.innerHTML =
-      '<span class="phrase-history-text">' + esc(entry.text) + '</span>' +
+      '<span class="phrase-history-text">' + esc(frenchSpacing(entry.text)) + '</span>' +
       '<span class="phrase-history-meta">' + esc(entry.time || '') + '</span>' +
       '<span class="phrase-history-speak" aria-hidden="true">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5z"/></svg></span>';
@@ -4143,7 +4455,7 @@ function repeatPhraseFromHistory(text, source) {
   closePhraseHistoryOverlay();
   userHasInteracted = true;
   const wasListening = isListening;
-  if (wasListening) stopListening();
+  if (wasListening) pauseListeningForTTS();
   addToHistory(text, true);
   addToPhraseHistory(text, source === 'llm' ? 'llm' : 'manual');
   speakTextWithCallback(text, () => {
@@ -4229,7 +4541,28 @@ function loadState() {
       if (!s.styleSummary) s.styleSummary = '';
       if (!s.suggestionStats) s.suggestionStats = { picked: [], pickedSinceLastSummary: 0 };
       if (!s.phraseHistory) s.phraseHistory = { manual: [], llm: [] };
-      if (s.llmRichContext === undefined) s.llmRichContext = false;
+      // T1: the "rich context" switch was only reachable in the hidden web settings,
+      // so everyone was stuck on `false`. Nobody chose it — turn it on once.
+      if (!s.richCtxV2) { s.llmRichContext = true; s.richCtxV2 = true; }
+      if (!s.fluidMap || typeof s.fluidMap !== 'object') s.fluidMap = {};
+      // The old windowed diarization minted a new "Locuteur N" for noise and on every
+      // relaunch. Its voice ids are gone (native store v1 dropped); keep only people
+      // the user actually named, drop the auto ghosts once.
+      if (!s.speakersV2) {
+        const auto = /^(Locuteur|Speaker) \d+$/;
+        const keep = (s.speakers || []).filter(sp => !(auto.test(sp.name || '') && !(sp.relationship || '').trim()));
+        const kept = new Set(keep.map(sp => sp.id));
+        s.speakers = keep;
+        (s.history || []).forEach(h => { if (h.speakerId && !kept.has(h.speakerId)) delete h.speakerId; });
+        if (s.currentSpeakerId && !kept.has(s.currentSpeakerId)) s.currentSpeakerId = null;
+        s.fluidMap = {};
+        s.tableMode = false;
+        s.speakersV2 = true;
+      }
+      // T4: base64 samples blew the ~5 MB localStorage quota (then nothing saved).
+      // Once a voice is cloned ElevenLabs holds them; drop the local copies.
+      if (s.voiceId && Array.isArray(s.samples) && s.samples.length) s.samples = [];
+      if (!Array.isArray(s.samples)) s.samples = [];
       return s;
     }
   } catch {}
@@ -4263,18 +4596,29 @@ function loadState() {
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
     phraseHistory: { manual: [], llm: [] },
-    llmRichContext: false,
+    llmRichContext: true, richCtxV2: true, fluidMap: {}, speakersV2: true, allowCrude: false,
   };
 }
 
+var _saveErrorShown = false;  // var: save() runs during init, before this line
 function save() {
+  // A reset is wiping storage and reloading — never write the old state back (T2).
+  if (window._resetting) return;
   try {
     // Save state without API keys (stored in Keychain)
     const toSave = Object.assign({}, state);
     delete toSave.elApiKey;
     delete toSave.claudeApiKey;
     localStorage.setItem(DB_KEY, JSON.stringify(toSave));
-  } catch {}
+    _saveErrorShown = false;
+  } catch (e) {
+    // Used to be swallowed: a full quota silently stopped ALL persistence (T4).
+    console.error('[Talkie] save failed', e);
+    if (!_saveErrorShown) {
+      _saveErrorShown = true;
+      try { showToast(currentLang === 'fr' ? 'Stockage plein — vos données ne sont plus enregistrées' : 'Storage full — your data is no longer being saved', 5000); } catch(_) {}
+    }
+  }
 }
 
 function addToHistory(text, isUser) {
@@ -4320,11 +4664,14 @@ async function maybeExtractMemory() {
   const prompt = t('memoryExtractPrompt')(recent, currentLearned);
 
   try {
-    const result = await callLLMText(sys, prompt);
-    if (result && !result.includes('RIEN') && !result.includes('NOTHING') && result.trim().length > 5) {
-      state.learnedMemory = result.trim();
-      save();
-    }
+    const result = (await callLLMText(sys, prompt) || '').trim();
+    const sentinel = result.replace(/[."'«»\s]/g, '').toUpperCase();
+    if (!result || sentinel === 'RIEN' || sentinel === 'NOTHING' || result.length <= 5) return;
+    // The model returns the whole updated memory; refuse an update that drops most
+    // of what was there (a bad generation used to wipe it).
+    if (currentLearned && result.length < currentLearned.length * 0.5) return;
+    state.learnedMemory = result;
+    save();
   } catch(e) {
     console.debug('[Talkie] Memory extraction skipped:', e && e.message);
   }
@@ -4363,8 +4710,10 @@ window._callModeChanged = function(active) {
   const wasInCall = callModeActive;
   callModeActive = !!active;
   document.body.classList.toggle('call-mode', callModeActive);
+  // The separate red banner duplicated the in-zone hint and looked like an error.
   const banner = $('callModeBanner');
-  if (banner) banner.style.display = callModeActive ? 'flex' : 'none';
+  if (banner) banner.style.display = 'none';
+  if (!callModeActive) window._callHintDismissed = false;
   if (callModeActive) {
     wasListeningBeforeCall = isListening;
     stopAudio();
@@ -4429,19 +4778,29 @@ function renderCallPhrases() {
   const zone = $('suggestionsZone');
   if (!zone) return;
   zone.innerHTML = '';
-  const hint = document.createElement('div');
-  hint.className = 'call-hint';
-  hint.textContent = currentLang === 'fr'
-    ? "iOS ne permet pas aux apps d'écouter l'appel. Vos phrases, elles, sont bien entendues par votre correspondant."
-    : "iOS doesn't let apps hear the call. Your phrases, though, are heard by the other person.";
-  zone.appendChild(hint);
+  if (!window._callHintDismissed) {
+    const hint = document.createElement('div');
+    hint.className = 'call-hint';
+    const txt = document.createElement('span');
+    txt.textContent = currentLang === 'fr'
+      ? "Votre correspondant entend vos phrases. Talkie ne peut pas l'écouter (limite iOS). Si on ne vous entend pas : Réglages ▸ Accessibilité ▸ « Ajouter l'audio lors des appels »."
+      : "The other person hears your phrases. Talkie can't hear the call (iOS limit). If you're not heard: Settings ▸ Accessibility ▸ \"Allow Apps to Add Audio in Calls\".";
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'call-hint-close'; x.setAttribute('aria-label', currentLang === 'fr' ? 'Masquer' : 'Dismiss'); x.textContent = '×';
+    x.onclick = () => { window._callHintDismissed = true; hint.remove(); };
+    hint.append(txt, x);
+    zone.appendChild(hint);
+  }
+  const grid = document.createElement('div');
+  grid.className = 'call-grid';
+  zone.appendChild(grid);
   getCallPhrases().forEach((text) => {
     const card = document.createElement('div');
     card.className = 'suggestion-card call-card';
     card.textContent = text;
     card.setAttribute('role', 'button');
     card.onclick = () => speakCallPhrase(text);
-    zone.appendChild(card);
+    grid.appendChild(card);
   });
   const att = $('aiAttribution'); if (att) att.style.display = 'none';
 }
@@ -4566,6 +4925,7 @@ function _exitVoiceCloningOnly() {
 }
 
 safeClick('settingsBtn', () => {
+  window._listeningBeforeSettings = isListening;
   stopListening();
   try {
     window.webkit.messageHandlers.openNativeSettings.postMessage('open');
@@ -4577,7 +4937,8 @@ safeClick('settingsBtn', () => {
 safeClick('backFromSettingsBtn', () => {
   if (_voiceCloningOnly) _exitVoiceCloningOnly();
   showView('suggestions');
-  if (userHasInteracted) startListening();
+  if (window._listeningBeforeSettings) startListening();
+  window._listeningBeforeSettings = false;
 });
 safeClick('btnKeyboard', () => switchToManual());
 // P2.3: long-press "Écrire" → repeat the last thing the user said aloud.
@@ -4607,7 +4968,13 @@ safeClick('listeningBar', () => {
   if (isListening) stopListening(); else startListening();
 });
 
+let _micBeforeManual = false;
 function switchToManual() {
+  _editingSuggestion = null;
+  $('btnReportSuggestion')?.classList.add('hidden');
+  // Remember whether to re-arm the mic after typing (it stayed off after a
+  // long-press edit, losing the other person's next reply — T7).
+  _micBeforeManual = _micBeforeManual || isListening;
   stopListening();
   showView('manual');
   setTimeout(() => $('manualInput').focus(), 100);
@@ -4631,8 +4998,20 @@ function repeatLastSpoken() {
 }
 
 // P2.2: open the keyboard pre-filled with a suggestion so the user can tweak it.
+let _editingSuggestion = null;
+function _reportSuggestion(text) {
+  const subject = encodeURIComponent(t('flagEmailSubject'));
+  const body = encodeURIComponent(t('flagEmailBodyIntro') + '\n"' + text + '"\n\n' + t('flagEmailContext') + ' ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
+  const mailto = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
+  try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
+  showToast(t('reportReady'));
+}
+safeClick('btnReportSuggestion', () => { if (_editingSuggestion) _reportSuggestion(_editingSuggestion); });
+
 function editSuggestion(text) {
   switchToManual();
+  _editingSuggestion = text || null;
+  $('btnReportSuggestion')?.classList.toggle('hidden', !_editingSuggestion);
   const ta = $('manualInput');
   ta.value = text || '';
   setTimeout(() => { ta.focus(); try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(_) {} }, 130);
@@ -4641,7 +5020,9 @@ function editSuggestion(text) {
 function switchToSuggestions(resumeMic = true) {
   $('manualInput').value = '';
   showView('suggestions');
-  if (resumeMic) startListening();
+  const resume = resumeMic && _micBeforeManual;
+  _micBeforeManual = false;
+  if (resume) startListening();
 }
 
 let refreshCount = 0;
@@ -4676,7 +5057,7 @@ function updateContextDisplay(text, isInterim) {
     if (resetBtn) resetBtn.classList.remove('visible');
     return;
   }
-  el.textContent = text;
+  el.textContent = frenchSpacing(text);
   el.className = isInterim ? 'context-text interim' : 'context-text';
   // Reveal the reset button only when a real phrase is being shown, not the
   // interim partial transcript (would be jumpy and tempt false taps).
@@ -4708,7 +5089,7 @@ function renderSuggestionCards(suggestions) {
     const card = document.createElement('div');
     card.className = 'suggestion-card';
     card.id = 'suggestionCard' + i;
-    card.textContent = text;
+    card.textContent = frenchSpacing(text);
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', t('suggestionAriaLabel')(i + 1, text));
     card.onclick = () => { if (card._lp) { card._lp = false; return; } speakSuggestion(text, i); };
@@ -4721,20 +5102,9 @@ function renderSuggestionCards(suggestions) {
     card.addEventListener('touchend', _cancelLp);
     card.addEventListener('touchmove', _cancelLp, { passive: true });
     card.addEventListener('contextmenu', (e) => e.preventDefault());
-    // Report flag button
-    const flag = document.createElement('button');
-    flag.textContent = '\u2691';
-    flag.setAttribute('aria-label', t('flagAriaLabel'));
-    flag.style.cssText = 'position:absolute;top:8px;right:8px;background:none;border:none;font-size:16px;color:var(--text-tertiary);cursor:pointer;padding:4px;z-index:2;';
-    flag.onclick = (e) => {
-      e.stopPropagation();
-      const subject = encodeURIComponent(t('flagEmailSubject'));
-      const body = encodeURIComponent(t('flagEmailBodyIntro') + '\n"' + text + '"\n\n' + t('flagEmailContext') + ' ' + (lastInterlocutorText || 'N/A') + '\n\nVersion: ' + BUILD_VERSION);
-      const mailto = 'mailto:samuelgracio@gmail.com?subject=' + subject + '&body=' + body;
-      try { window.webkit?.messageHandlers?.openURL?.postMessage(mailto); } catch(_) { window.location.href = mailto; }
-      showToast(t('reportReady'));
-    };
-    card.appendChild(flag);
+    // No flag inside the card any more: an 18 px target inside the "speak" target
+    // opened the mail composer on imprecise taps. Reporting lives in the edit view
+    // (long-press a card) and in Settings ▸ Signaler un problème.
     zone.appendChild(card);
   });
   updateAiAttribution();
@@ -4765,11 +5135,13 @@ function clearSuggestionCards() {
 function showTTSOverlay() {
   isSpeaking = true;
   $('ttsOverlay').classList.add('active');
+  updateListeningUI(isListening);
 }
 
 function hideTTSOverlay() {
   isSpeaking = false;
   $('ttsOverlay').classList.remove('active');
+  updateListeningUI(isListening);
   document.querySelectorAll('.suggestion-card.speaking').forEach(c => c.classList.remove('speaking'));
 }
 
@@ -4805,10 +5177,14 @@ function speakManual() {
   addToHistory(text, true);
   addToPhraseHistory(text, 'manual');
   recordSuggestionPick(text);
+  const resumeAfter = wasListening || _micBeforeManual;
+  _micBeforeManual = false;
   speakTextWithCallback(text, () => {
     showView('suggestions');
-    if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
-  }, wasListening);
+    if (resumeAfter && !_ttsPlayActive && !_ttsPlayQueue.length) {
+      if (wasListening) resumeListeningAfterTTS(); else startListening();
+    }
+  }, resumeAfter);
 }
 
 // ─── TTS (bridge-compatible) ───
@@ -4872,39 +5248,6 @@ function _scheduleTtsSafetyTimeout(text, opts = {}) {
     _ttsCallback = null;
     if (cb) cb();
   }, estimateTtsDurationMs(text, opts));
-}
-
-/** Découpe un texte long aux limites de phrase pour fiabiliser AVSpeech / Web Speech / ElevenLabs. */
-function splitTextForTTS(text, maxLen = 900) {
-  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
-  if (!normalized) return [];
-  if (normalized.length <= maxLen) return [normalized];
-
-  const chunks = [];
-  let remaining = normalized;
-  while (remaining.length > maxLen) {
-    const window = remaining.slice(0, maxLen);
-    let splitAt = -1;
-    const punctIdx = window.search(/[.!?…](?:\s|$)/);
-    if (punctIdx >= Math.floor(maxLen * 0.35)) {
-      splitAt = punctIdx + 1;
-      while (splitAt < window.length && /\s/.test(window[splitAt])) splitAt++;
-    } else {
-      const clauseIdx = window.search(/[,;:](?:\s|$)/);
-      if (clauseIdx >= Math.floor(maxLen * 0.35)) {
-        splitAt = clauseIdx + 1;
-        while (splitAt < window.length && /\s/.test(window[splitAt])) splitAt++;
-      } else {
-        splitAt = window.lastIndexOf(' ');
-        if (splitAt < Math.floor(maxLen * 0.25)) splitAt = maxLen;
-      }
-    }
-    const piece = remaining.slice(0, splitAt).trim();
-    if (piece) chunks.push(piece);
-    remaining = remaining.slice(splitAt).trim();
-  }
-  if (remaining) chunks.push(remaining);
-  return chunks.length ? chunks : [normalized.slice(0, maxLen)];
 }
 
 function _ttsMaxChunkLen() {
@@ -5054,7 +5397,7 @@ async function playElevenLabsBlobHTML5(blob) {
   try { await audio.play(); } catch (_) { clearTimeout(fallbackTimer); currentAudio = null; _onTTSDone(); }
 }
 
-async function playElevenLabsBlob(blob) {
+async function playElevenLabsBlob(blob, text) {
   const playbackId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2);
   // WKWebView postMessage : au-delà ~450 Ko l'audio base64 peut échouer silencieusement.
   const NATIVE_TTS_MAX_BYTES = 450000;
@@ -5071,7 +5414,9 @@ async function playElevenLabsBlob(blob) {
         window._nativeTTSProgress = null;
         currentAudio = null;
         if (err && err !== 'stopped') {
-          void playElevenLabsBlobHTML5(blob);
+          // WebKit audio is not injected into a phone call — stay native there (T10).
+          if (callModeActive && text) speakApplePersonalVoice(text);
+          else void playElevenLabsBlobHTML5(blob);
         } else {
           _onTTSDone();
         }
@@ -5237,16 +5582,34 @@ function stopAudio(clearTtsCallback = true) {
   }
 }
 
+// Short phrases (quick phrases, call phrases, "Oui"/"Non") are re-spoken constantly:
+// keep their audio so they play instantly and cost nothing the second time (T21).
+// ponytail: in-memory only (lost on relaunch); persist to disk natively if it matters.
+const _ttsCache = new Map();
+const TTS_CACHE_MAX = 40, TTS_CACHE_MAX_CHARS = 80;
+async function _cachedTTSAudio(text) {
+  if (text.length > TTS_CACHE_MAX_CHARS) return fetchTTSAudio(text);
+  const key = state.voiceId + '|' + currentTone() + '|' + text;
+  const hit = _ttsCache.get(key);
+  if (hit) { _ttsCache.delete(key); _ttsCache.set(key, hit); return hit; }   // LRU bump
+  const blob = await fetchTTSAudio(text);
+  _ttsCache.set(key, blob);
+  if (_ttsCache.size > TTS_CACHE_MAX) _ttsCache.delete(_ttsCache.keys().next().value);
+  return blob;
+}
+
 async function playTTS(text) {
   try {
-    const blob = await fetchTTSAudio(text);
+    const blob = await _cachedTTSAudio(text);
     // Recalibrer le timer sur la durée audio réelle (évite coupure en fin de phrase).
     _scheduleTtsSafetyTimeout(text, { audioBytes: blob.size, includeFetch: false });
     stopPlaybackOnly();
-    await playElevenLabsBlob(blob);
+    await playElevenLabsBlob(blob, text);
   } catch (e) {
     console.warn('[Talkie] playTTS fallback', e);
-    speakLocal(text);
+    // Web Speech is inaudible to the other party during a call (T10).
+    if (callModeActive && window.webkit?.messageHandlers?.speakApplePersonalVoice) speakApplePersonalVoice(text);
+    else speakLocal(text);
   }
 }
 
@@ -5270,19 +5633,7 @@ async function fetchTTSAudio(text) {
   return await resp.blob();
 }
 
-// ─── Punctuation post-processing ───
-function inferQuestionMark(text) {
-  if (/[?!]$/.test(text)) return text;
-  // Strip trailing period — Speech API often adds one even for questions
-  const cleaned = text.replace(/\.\s*$/, '').trim();
-  const lower = cleaned.toLowerCase();
-  const frQ = /^(est[-\s]ce qu|qu[''\u2019]est[-\s]ce qu|comment|pourquoi|quand|o[uù]\s|qui\s|que\s|quel|quelle|quels|quelles|combien|ça va|c[''\u2019]est vrai|tu vas|tu veux|tu peux|tu crois|tu penses|vous voulez|vous pouvez|vous pensez|y a[-\s]t[-\s]il|as[-\s]tu|avez[-\s]vous|es[-\s]tu|êtes[-\s]vous|on va|on peut)/i;
-  const frEnd = /(n[''\u2019]est[-\s]ce pas|non|hein|d[''\u2019]accord|ou pas|ou quoi)$/i;
-  const enQ = /^(is |are |was |were |do |does |did |will |would |could |can |should |shall |have |has |had |how |what |when |where |who |whom |which |why |whose )/i;
-  if (currentLang === 'fr' && (frQ.test(lower) || frEnd.test(lower))) return cleaned + ' ?';
-  if (currentLang === 'en' && enQ.test(lower)) return cleaned + '?';
-  return text;
-}
+function inferQuestionMark(text) { return inferQuestionMarkFor(text, currentLang); }
 
 // ─── Speech Recognition ───
 let micSession = 0;
@@ -5446,15 +5797,13 @@ function startListening(opts) {
     // past session over-segmented voices.
     (function() {
       const usedIds = new Set((state.history || []).map(h => h.speakerId).filter(Boolean));
-      const autoRe = /^(Locuteur|Speaker) \d+$/;
       const keep = (state.speakers || []).filter(s =>
-        !(autoRe.test(s.name || '') && !(s.relationship || '').trim() && !usedIds.has(s.id)));
+        !(isAutoSpeakerName(s.name) && !(s.relationship || '').trim() && !usedIds.has(s.id)));
       if (keep.length !== (state.speakers || []).length) {
         state.speakers = keep;
         if (state.currentSpeakerId && !keep.some(s => s.id === state.currentSpeakerId)) state.currentSpeakerId = null;
-        Object.keys(_fluidToTalkie).forEach(k => {
-          if (!keep.some(s => s.id === _fluidToTalkie[k])) delete _fluidToTalkie[k];
-        });
+        const nm = _nativeMap();
+        Object.keys(nm).forEach(k => { if (!keep.some(s => s.id === nm[k])) delete nm[k]; });
         save();
       }
     })();
@@ -5464,7 +5813,7 @@ function startListening(opts) {
     // audio session asynchronously, killing the engine we just started.
     resetNativeAudioSession();
     _armNativeWatchdog(8000);
-    try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4) }); } catch(_) {}
+    try { window.webkit?.messageHandlers?.startNativeSTT?.postMessage({ lang: currentLang, tableMode: !!state.tableMode, patience: (state.patience || 1.4), vocabulary: _sttVocabulary() }); } catch(_) {}
     return;
   }
 
@@ -5523,6 +5872,12 @@ function updateListeningUI(active) {
     return;
   }
   bar.classList.remove('in-call');
+  bar.classList.toggle('speaking', !!isSpeaking);
+  if (isSpeaking) {
+    bar.classList.remove('inactive');
+    txt.textContent = currentLang === 'fr' ? 'Talkie parle…' : 'Talkie is speaking…';
+    return;
+  }
   if (active) {
     bar.classList.remove('inactive');
     txt.textContent = t('listening');
@@ -5570,23 +5925,35 @@ function callNativeLLM(sys, prompt, opts = {}) {
   });
 }
 
-const _LLM_REFUSAL_RE = /(désolé|desole|je ne peux pas|en tant qu'?ia|en tant qu'?assistant|sorry|i can't help|i cannot help|as an ai|as a language model|i'm unable|i am unable|not able to help)/i;
-
-function isLlmRefusal(text) {
-  if (!text || typeof text !== 'string') return true;
-  return _LLM_REFUSAL_RE.test(text);
-}
-
-function buildRichContextBlock() {
-  if (state.llmRichContext === false) return '';
-  const parts = [];
-  // In table mode several people alternate, so give the model a longer
-  // speaker-labelled thread — that's how it keeps "who is talking to whom" straight.
+/** Recent speaker-labelled exchanges. Always sent: without them the model only
+ *  sees the last sentence (T1). In table mode give a longer thread — that's how it
+ *  keeps "who is talking to whom" straight. */
+function buildHistoryBlock() {
   const histCount = state.tableMode ? 5 : 2;
   const hist = state.history.slice(-histCount).map(m =>
     `${speakerLabelForEntry(m)}: ${m.text}`
   ).join('\n');
-  if (hist) parts.push(`${t('recentHistory')}\n${hist}`);
+  return hist ? `${t('recentHistory')}\n${hist}` : '';
+}
+
+function buildRichContextBlock() {
+  const hist = buildHistoryBlock();
+  const stable = buildStableContextBlock();
+  return [hist, stable].filter(Boolean).join('\n\n');
+}
+
+/** Context that does not change turn to turn (so a prewarmed on-device session
+ *  can be reused — T22). Personal data only when "Personnaliser" is on. */
+function buildStableContextBlock() {
+  const parts = [];
+  const sp = currentSpeakerObj();
+  if (sp) {
+    const relStr = sp.relationship ? ` (${sp.relationship})` : '';
+    parts.push(`${t('currentSpeakerHeader')} ${sp.name}${relStr}`);
+  }
+  const toneHint = t('toneHint')(currentTone());
+  if (toneHint) parts.push(toneHint);
+  if (state.llmRichContext === false) return parts.join('\n\n');
 
   const memParts = [];
   if (state.memory && state.memory.trim()) memParts.push(state.memory.trim());
@@ -5609,15 +5976,6 @@ function buildRichContextBlock() {
     parts.push(`${t('styleContextHeader')}\n${style.length > 200 ? style.slice(0, 200) + '…' : style}`);
   }
 
-  const sp = currentSpeakerObj();
-  if (sp) {
-    const relStr = sp.relationship ? ` (${sp.relationship})` : '';
-    parts.push(`${t('currentSpeakerHeader')} ${sp.name}${relStr}`);
-  }
-
-  const toneHint = t('toneHint')(currentTone());
-  if (toneHint) parts.push(toneHint);
-
   const custom = (state.systemPrompt || '').trim();
   const defaultP = getDefaultPrompt().trim();
   if (custom && custom !== defaultP) {
@@ -5625,26 +5983,6 @@ function buildRichContextBlock() {
   }
 
   return parts.join('\n\n');
-}
-
-function parseSuggestionLines(content) {
-  const _preambleRe = /^(voici|here are|suggestions?|réponses?|options?|bien sûr|sure|ok|d'accord|super|je suis prêt|i'm ready|désolé|sorry)/i;
-  const _labelRe = /^(directe?|warm|chaleureux|pragmatique|sociale|émotive|émotiv|relance|followup|follow.?up|nuance|autre|option\s*\d|social|emotive)\s*[:–—-]\s*/i;
-  const MAX_WORDS = 14;
-  function trimToOneIdea(s) {
-    const m = s.match(/^(.+?[.!?…])(\s|$)/);
-    const first = m ? m[1] : s;
-    const words = first.split(/\s+/);
-    if (words.length <= MAX_WORDS) return first.trim();
-    return words.slice(0, MAX_WORDS).join(' ').replace(/[,;:\-—]\s*$/, '') + '…';
-  }
-  return content.split('\n')
-    .map(s => s.replace(/^\d+[\.\):\-]\s*/, '').replace(/^["«]|["»]$/g, '').trim())
-    .map(s => s.replace(_labelRe, '').trim())
-    .filter(s => s.length > 2 && !isInappropriate(s) && !_preambleRe.test(s) && !isLlmRefusal(s))
-    .map(trimToOneIdea)
-    .filter(s => s.length > 1)
-    .slice(0, 3);
 }
 
 /** Optional cloud suggestions via Claude (Anthropic), using the user's own API key.
@@ -5670,6 +6008,8 @@ async function callClaude(interlocutorText, opts = {}) {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
+    // Fall back to on-device quickly instead of showing skeleton cards for a minute (T14).
+    signal: AbortSignal.timeout(4000),
     body: JSON.stringify({
       model: 'claude-haiku-4-5',
       max_tokens: 256,
@@ -5685,6 +6025,15 @@ async function callClaude(interlocutorText, opts = {}) {
   return (data.content && data.content[0] && data.content[0].text) || '';
 }
 
+/** Start loading the on-device model as soon as the other person starts talking. */
+function _prewarmSuggestions() {
+  if (!llmAvailable || state.llmEnabled === false || !hasAiConsent()) return;
+  if (state.useClaude && (state.claudeApiKey || '').trim()) return;
+  try {
+    window.webkit?.messageHandlers?.prewarmLLM?.postMessage({ language: currentLang, richContext: buildStableContextBlock() });
+  } catch (_) {}
+}
+
 async function requestStructuredSuggestions(interlocutorText, diversityHint, opts = {}) {
   // Optional Claude cloud path (user's API key). Any failure falls back to on-device.
   if (state.useClaude && (state.claudeApiKey || '').trim()) {
@@ -5696,50 +6045,17 @@ async function requestStructuredSuggestions(interlocutorText, diversityHint, opt
     }
   }
   _lastSuggestionEngine = 'apple';
-  const prompt = t('llmPromptCore')(interlocutorText, diversityHint);
-  const richContext = opts.minimal ? '' : buildRichContextBlock();
+  // History goes in the prompt, stable context in the instructions, so the session
+  // prewarmed while the other person was talking matches and is reused (T22).
+  const hist = opts.minimal ? '' : buildHistoryBlock();
+  const prompt = (hist ? hist + '\n\n' : '') + t('llmPromptCore')(interlocutorText, diversityHint);
+  const richContext = opts.minimal ? '' : buildStableContextBlock();
   return callNativeLLM('', prompt, {
     structured: true,
     language: currentLang,
     richContext,
     minimal: !!opts.minimal,
   });
-}
-
-// ─── Content Filter (Guideline 4.7) ───
-const _blocklist = [
-  // Violence / harm
-  'tuer', 'suicide', 'suicider', 'arme à feu', 'bombe', 'terroris', 'viol ',
-  'meurtr', 'assassin', 'poignard', 'égorger', 'torturer', 'mutiler',
-  'automutil', 'se couper les vein', 'overdose',
-  // Hate speech
-  'nazi', 'nègre', 'pédé', 'tapette', 'salope', 'pute', 'enculé',
-  'gouine', 'bougnoule', 'youpin', 'négro', 'sous-race', 'race inférieure',
-  // Explicit
-  'pornograph', 'orgasm', 'masturb', 'sodomie', 'fellation',
-  // Drugs
-  'cocaïne', 'héroïne', 'méthamphétamine', 'crack',
-];
-
-const _blockPatterns = [
-  /tu\s+vas\s+mourir/i,
-  /je\s+vais\s+te\s+tuer/i,
-  /va\s+te\s+faire/i,
-  /n[i1]qu[eé]/i,
-  /fils?\s+de\s+pute/i,
-  /cr[eè]ve/i,
-  /je\s+te\s+hais/i,
-  /t[uw]e[rz]?\s+(l[ea]s?|tout|ces)/i,
-  /comment\s+(fabriquer|faire)\s+(une?\s+)?(bombe|arme|drogue|poison)/i,
-  /ignore\s+(tes|les)\s+instructions/i,
-  /oublie\s+(tes|les)\s+(instructions|règles|consignes)/i,
-];
-
-function isInappropriate(text) {
-  const lower = text.toLowerCase();
-  if (_blocklist.some(term => lower.includes(term))) return true;
-  if (_blockPatterns.some(re => re.test(text))) return true;
-  return false;
 }
 
 let _currentSuggestionGen = 0;
@@ -5764,11 +6080,6 @@ async function fetchSuggestions(interlocutorText) {
   _currentSuggestionText = interlocutorText;
   showSuggestionLoading();
 
-  if (isInappropriate(interlocutorText)) {
-    clearSuggestionCards();
-    return;
-  }
-
   const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
 
   try {
@@ -5780,11 +6091,13 @@ async function fetchSuggestions(interlocutorText) {
       if (myGen !== _currentSuggestionGen) return;
     }
 
-    const suggestions = parseSuggestionLines(content);
+    const suggestions = parseSuggestionLines(content, { allowCrude: !!state.allowCrude });
     if (suggestions.length) {
       renderSuggestionCards(suggestions);
     } else if (!isLlmRefusal(content)) {
       clearSuggestionCards();
+      // Replies existed but were all filtered — tell the user instead of going silent.
+      if ((content || '').trim()) showToast(currentLang === 'fr' ? 'Pas de suggestion ici — utilisez « Écrire »' : 'No suggestion here — use “Write”', 3500);
     } else {
       clearSuggestionCards();
       showToast(t('suggestionsUnavailable'));
@@ -5795,7 +6108,7 @@ async function fetchSuggestions(interlocutorText) {
       try {
         const content = await requestStructuredSuggestions(interlocutorText, diversityHint, { minimal: true });
         if (myGen !== _currentSuggestionGen) return;
-        const suggestions = parseSuggestionLines(content);
+        const suggestions = parseSuggestionLines(content, { allowCrude: !!state.allowCrude });
         if (suggestions.length) renderSuggestionCards(suggestions);
         else { clearSuggestionCards(); showToast(t('suggestionsUnavailable')); }
         return;
@@ -5864,7 +6177,8 @@ $('cloneBtn').onclick = async () => {
     });
     if (!r.ok) throw new Error(await r.text());
     const d = await r.json();
-    state.voiceId = d.voice_id; save(); renderSamples();
+    // ElevenLabs now holds the samples; keeping base64 copies filled localStorage (T4).
+    state.voiceId = d.voice_id; state.samples = []; save(); renderSamples();
     showToast(t('voiceCloned'));
   } catch(e) { showToast((currentLang === 'fr' ? 'Erreur : ' : 'Error: ') + e.message.substring(0,60)); }
   finally { $('cloneBtn').disabled = false; $('cloneBtn').textContent = t('cloneBtn'); }
@@ -5995,7 +6309,10 @@ $('reportSendBtn').onclick = () => {
 // Data management
 $('deleteAllDataBtn').onclick = () => {
   if (confirm(t('deleteConfirm'))) {
+    window._resetting = true;
     keychainDelete('elApiKey');
+    keychainDelete('claudeApiKey');
+    try { window.webkit?.messageHandlers?.resetVoiceIdentities?.postMessage({}); } catch(_) {}
     localStorage.removeItem(AI_CONSENT_KEY);
     localStorage.removeItem(AI_CONSENT_DECLINED_KEY);
     localStorage.removeItem(EL_CONSENT_KEY);
@@ -6184,6 +6501,7 @@ safeClick('tonePill', openTonePicker);
 safeClick('speedPill', cycleSpeed);
 safeClick('speakerPill', function() { if (typeof openSpeakerPicker === 'function') openSpeakerPicker(); });
 safeClick('tablePill', toggleTableMode);
+safeClick('tableSuggest', () => { _hideTableSuggest(); enableTableMode(true, false); });
 // Probe native STT availability (iOS 26); restore saved table mode.
 checkNativeSTT();
 if (state.tableMode) document.body.classList.add('table-mode');
@@ -6192,14 +6510,17 @@ showView('suggestions');
 // P2.6: start listening automatically on open (opt-in) — fewer taps for reduced
 // motricity. Skips first-run onboarding and phone calls; small delay lets the
 // native STT availability probe answer first.
-if (state.autoListen && localStorage.getItem('talkie_onboarded')) {
-  setTimeout(() => {
-    if (state.autoListen && !isListening && !callModeActive && !isSpeaking) {
-      userHasInteracted = true;
-      startListening();
-    }
-  }, 900);
+// Waits for the native STT probe (otherwise a slow probe meant Web Speech was used).
+let _pendingAutoListen = !!(state.autoListen && localStorage.getItem('talkie_onboarded'));
+function _maybeAutoListen() {
+  if (!_pendingAutoListen) return;
+  _pendingAutoListen = false;
+  if (state.autoListen && !isListening && !callModeActive && !isSpeaking) {
+    userHasInteracted = true;
+    startListening();
+  }
 }
+if (_pendingAutoListen) setTimeout(_maybeAutoListen, _isNativeBridge() ? 3000 : 900);
 $('buildTag').textContent = BUILD_VERSION;
 // Hide memory section if LLM not available (checked after LLM callback)
 checkLLMAvailability();
@@ -6211,6 +6532,9 @@ keychainLoad('claudeApiKey');
   const update = () => {
     const isDark = document.documentElement.getAttribute('data-app-theme') === 'dark';
     if (meta) meta.content = isDark ? '#1C1C1E' : '#F5F6FA';
+    // Swap themes in one frame: colour transitions made text flip before backgrounds.
+    document.documentElement.classList.add('theme-switching');
+    requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove('theme-switching')));
   };
   update();
   new MutationObserver(update).observe(document.documentElement, { attributes: true, attributeFilter: ['data-app-theme'] });
