@@ -1847,10 +1847,13 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
 }
 .soundboard-btn {
   min-height:48px; padding:4px; border-radius:14px;
-  justify-content:center; text-align:center; hyphens:auto; -webkit-hyphens:auto;
+  justify-content:center; text-align:center;
+  /* never hyphenate ("At-tends"): wrap only between words, size to fit the column */
+  hyphens:manual; -webkit-hyphens:manual;
 }
 .soundboard-btn .sb-label {
-  font-size:0.78rem; white-space:normal; line-height:1.12;
+  font-size:clamp(0.72rem, 3.6vw, 0.9rem); white-space:normal; line-height:1.12;
+  word-break:normal; overflow-wrap:normal; hyphens:manual; -webkit-hyphens:manual;
   display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
 }
 
@@ -4544,6 +4547,8 @@ function loadState() {
       // T1: the "rich context" switch was only reachable in the hidden web settings,
       // so everyone was stuck on `false`. Nobody chose it — turn it on once.
       if (!s.richCtxV2) { s.llmRichContext = true; s.richCtxV2 = true; }
+      // Listening starts with the app by default (one tap fewer); still switchable in Réglages.
+      if (!s.autoListenV2) { s.autoListen = true; s.autoListenV2 = true; }
       if (!s.fluidMap || typeof s.fluidMap !== 'object') s.fluidMap = {};
       // The old windowed diarization minted a new "Locuteur N" for noise and on every
       // relaunch. Its voice ids are gone (native store v1 dropped); keep only people
@@ -4592,7 +4597,7 @@ function loadState() {
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
     tone: 'neutral', speed: 'normal',
-    speakers: [], currentSpeakerId: null, tableMode: false, patience: 1.4, autoListen: false,
+    speakers: [], currentSpeakerId: null, tableMode: false, patience: 1.4, autoListen: true, autoListenV2: true,
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
     phraseHistory: { manual: [], llm: [] },
@@ -5606,9 +5611,13 @@ async function playTTS(text) {
     stopPlaybackOnly();
     await playElevenLabsBlob(blob, text);
   } catch (e) {
-    console.warn('[Talkie] playTTS fallback', e);
-    // Web Speech is inaudible to the other party during a call (T10).
-    if (callModeActive && window.webkit?.messageHandlers?.speakApplePersonalVoice) speakApplePersonalVoice(text);
+    console.warn('[Talkie] playTTS fallback', e && e.message);
+    if (!window._elErrorShown) {
+      window._elErrorShown = true;
+      showToast((currentLang === 'fr' ? 'Voix clonée indisponible : ' : 'Cloned voice unavailable: ') + String(e && e.message || '').slice(0, 90), 6000);
+    }
+    // Native iOS voice (also the only one heard during a call) rather than WebKit's.
+    if (window.webkit?.messageHandlers?.speakApplePersonalVoice) speakApplePersonalVoice(text);
     else speakLocal(text);
   }
 }
@@ -5629,7 +5638,12 @@ async function fetchTTSAudio(text) {
       })
     }
   );
-  if (!resp.ok) throw new Error(`ElevenLabs ${resp.status}`);
+  if (!resp.ok) {
+    // Keep ElevenLabs' reason (quota, invalid voice id, plan…) — it was thrown away.
+    let detail = '';
+    try { const j = await resp.json(); detail = (j.detail && (j.detail.message || j.detail.status || JSON.stringify(j.detail))) || ''; } catch (_) {}
+    throw new Error(`ElevenLabs ${resp.status}${detail ? ' — ' + detail : ''}`);
+  }
   return await resp.blob();
 }
 

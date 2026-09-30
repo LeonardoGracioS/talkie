@@ -596,7 +596,7 @@ final class SpeechCaptureManager {
                     self.identity.mergeConverged()
                 }
                 if !speaker.isEmpty { self.lastSpeakerId = speaker }
-                dbg("TURN \(turnId) speaker=\(speaker.isEmpty ? "?" : speaker)")
+                dbg("TURN \(turnId) speaker=\(speaker.isEmpty ? "?" : speaker) dur=\(String(format: "%.1f", sEnd - sStart))s \(samples == nil ? "no-audio" : self.identity.debugSummary)")
                 // "" = voice not confirmed yet: the UI keeps the current speaker, and
                 // onPromote fixes this turn retroactively if it becomes a new person.
                 self.onTurn?(text, speaker, sStart, sEnd, turnId)

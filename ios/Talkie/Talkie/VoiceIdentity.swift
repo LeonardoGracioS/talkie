@@ -23,17 +23,23 @@ final class VoiceIdentity {
     private var candidates: [Candidate] = []
     private(set) var nextId = 1
 
+    /// Debug: similarity to the closest known voice / candidate for the last phrase.
+    private(set) var lastBestSim: Float = -2
+    private(set) var lastCandSim: Float = -2
+
     /// A candidate became a voice: (voiceId, earlier turn ids now attributable to it).
     var onPromote: ((String, [String]) -> Void)?
     /// `from` was merged into `into` — the UI must remap.
     var onMerge: ((String, String) -> Void)?
 
-    // Thresholds sit in the gap measured on the bench (0.39 … 0.55), leaning
-    // toward "same person" because far-field phone audio lowers similarity.
-    let matchSim: Float = 0.45       // phrase belongs to a known voice
-    let updateSim: Float = 0.55      // confident enough to refine the voiceprint
-    let candidateSim: Float = 0.50   // two unknown phrases from the same new person
-    let mergeSim: Float = 0.68       // two voiceprints converged → same person
+    // Bench (clean synthetic voices): same ≥ 0.55, different ≤ 0.39. Real phone
+    // audio at a table scored lower (first device test: 9/15 phrases stayed
+    // unknown at 0.45), so lean toward "same person". Tune from the device logs
+    // ("[STT] TURN … best=… cand=…").
+    let matchSim: Float = 0.35       // phrase belongs to a known voice
+    let updateSim: Float = 0.50      // confident enough to refine the voiceprint
+    let candidateSim: Float = 0.40   // two unknown phrases from the same new person
+    let mergeSim: Float = 0.65       // two voiceprints converged → same person
     let promoteTurns = 2
     let promoteDur: Float = 3.0      // seconds of speech before creating a person
     let maxVoices = 8
@@ -58,6 +64,7 @@ final class VoiceIdentity {
         let w = min(duration, 8)
         var best = -1; var bs: Float = -2
         for (i, v) in voices.enumerated() { let s = Self.cos(e, v.emb); if s > bs { bs = s; best = i } }
+        lastBestSim = bs; lastCandSim = -2
 
         if best >= 0 && bs >= matchSim {
             if bs >= updateSim {
@@ -71,6 +78,7 @@ final class VoiceIdentity {
         candidates.removeAll { now - $0.lastSeen > 180 }
         var ci = -1; var cs: Float = -2
         for (i, c) in candidates.enumerated() { let s = Self.cos(e, c.emb); if s > cs { cs = s; ci = i } }
+        lastCandSim = cs
         if ci < 0 || cs < candidateSim {
             candidates.append(Candidate(emb: e, weight: w, turnIds: [turnId], dur: duration, lastSeen: now))
             if candidates.count > 6 { candidates.removeFirst() }
@@ -113,6 +121,10 @@ final class VoiceIdentity {
             }
             i += 1
         }
+    }
+
+    var debugSummary: String {
+        String(format: "best=%.2f cand=%.2f voices=%d", lastBestSim, lastCandSim, voices.count)
     }
 
     func reset() { voices.removeAll(); candidates.removeAll(); nextId = 1 }
