@@ -9,6 +9,8 @@ build/
 
 # iOS / Xcode
 *.xcodeproj/
+# Force-tracked despite the rule above (Xcode Cloud needs them): project.pbxproj and
+# project.xcworkspace/xcshareddata/swiftpm/Package.resolved — `git add -f` if regenerated.
 *.xcworkspace/
 xcuserdata/
 DerivedData/
