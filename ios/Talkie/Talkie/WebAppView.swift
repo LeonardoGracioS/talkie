@@ -1546,6 +1546,17 @@ struct WebAppView: UIViewRepresentable {
             let pct = AppState.shared.textSizePercent
             let oled = AppState.shared.oledMode
             let callActive = CallModeManager.shared.isPhoneCallActive
+            #if DEBUG
+            // App Store screenshots: `-TalkieDemo <scene> [-TalkieDemoLang en]` (Debug only).
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-TalkieDemo"), i + 1 < args.count {
+                let lang = args.firstIndex(of: "-TalkieDemoLang").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } ?? "fr"
+                let scene = args[i + 1]
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak webView] in
+                    webView?.evaluateJavaScript("window._demoScene && window._demoScene(\(WebAppView.js(scene)), \(WebAppView.js(lang)));", completionHandler: nil)
+                }
+            }
+            #endif
             let js = """
             window._setTextSize && window._setTextSize(\(pct));
             window._setOledMode && window._setOledMode(\(oled));

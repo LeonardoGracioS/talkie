@@ -3953,6 +3953,7 @@ function enableTableMode(on, auto) {
     try { window.webkit?.messageHandlers?.setTableMode?.postMessage({ on: state.tableMode }); } catch(_) {}
   }
   document.body.classList.toggle('table-mode', state.tableMode);
+  if (state.tableMode) _hideTableSuggest();   // already in group mode: drop the invitation
   if (!state.tableMode) tableTurns = [];
   // Entering group mode: start the thread with what was just said, not empty.
   if (state.tableMode && !tableTurns.length) {
@@ -4802,7 +4803,7 @@ function renderCallPhrases() {
   getCallPhrases().forEach((text) => {
     const card = document.createElement('div');
     card.className = 'suggestion-card call-card';
-    card.textContent = text;
+    card.textContent = frenchSpacing(text);
     card.setAttribute('role', 'button');
     card.onclick = () => speakCallPhrase(text);
     grid.appendChild(card);
@@ -6584,6 +6585,49 @@ window._setOledMode = function(enabled) {
 if (state.oledMode) {
   document.body.classList.add('oled-mode');
 }
+
+// DEBUG builds only: deterministic states for App Store screenshots
+// (native passes -TalkieDemo <scene> -TalkieDemoLang <fr|en>).
+if (window.__TALKIE_DEBUG__) window._demoScene = function(scene, lang) {
+  const fr = lang !== 'en';
+  if (currentLang !== (fr ? 'fr' : 'en')) window.changeLanguage(fr ? 'fr' : 'en');
+  localStorage.setItem('talkie_onboarded', '1'); $('onboarding')?.classList.add('hidden');
+  _pendingAutoListen = false; killRecognition(); micSession++;
+  window.webkit = { messageHandlers: new Proxy({}, { get: () => ({ postMessage: () => {} }) }) };
+  state.speakers = []; state.fluidMap = {}; state.history = []; tableTurns = []; state.tableMode = false;
+  document.body.classList.remove('table-mode');
+  llmAvailable = true; nativeSTTActive = true; isListening = true;
+  const turn = (t, s, i) => _nativeTranscript(JSON.stringify({ text: t, speakerId: s, turnId: i }));
+  const cards = a => { renderSuggestionCards(a); _lastSuggestionEngine = 'apple'; updateAiAttribution(); };
+  if (scene === 'main' || scene === 'tone') {
+    turn(fr ? "Tu veux qu'on passe te chercher demain pour le rendez-vous à la clinique ?" : "Do you want us to pick you up tomorrow for the clinic appointment?", 'S1', 't1');
+    renameSpeaker(state.fluidMap.S1, 'Marie', fr ? 'épouse' : 'wife');
+    updateContextDisplay(lastInterlocutorText, false); renderVoiceControls();
+    cards(fr ? ['Oui, avec plaisir, vers 10 h.', "C'est gentil, merci beaucoup !", 'Tu pourras rester déjeuner après ?']
+             : ["Yes please, around 10.", "That's so kind, thank you!", "Can you stay for lunch after?"]);
+    if (scene === 'tone') { state.tone = 'warm'; renderVoiceControls(); openTonePicker(); }
+  } else if (scene === 'group') {
+    turn(fr ? 'On mange quoi ce soir ?' : "What's for dinner tonight?", 'S1', 't1');
+    turn(fr ? 'Moi je veux des pâtes !' : 'I want pasta!', 'S2', 't2');
+    turn(fr ? 'Encore ? On en a mangé hier.' : 'Again? We had some yesterday.', 'S3', 't3');
+    renameSpeaker(state.fluidMap.S1, 'Marie', fr ? 'épouse' : 'wife');
+    renameSpeaker(state.fluidMap.S2, 'Lucas', fr ? 'fils' : 'son');
+    enableTableMode(true, false);
+    turn(fr ? 'Et toi Papa, tu préfères quoi ?' : 'And you Dad, what would you like?', 'S1', 't4');
+    cards(fr ? ['Des pâtes, ça me va très bien.', 'Plutôt un poisson ce soir.', 'Une pizza, ce soir ?']
+             : ['Pasta works for me.', "I'd rather have fish tonight.", 'Pizza tonight?']);
+  } else if (scene === 'call') {
+    _callModeChanged(true);
+  } else if (scene === 'typing') {
+    turn(fr ? 'Tu as besoin de quelque chose ?' : 'Do you need anything?', 'S1', 't1');
+    switchToManual();
+    $('manualInput').value = fr ? "Oui, peux-tu ouvrir un peu la fenêtre ? Il fait chaud ici." : "Yes, could you open the window a little? It's warm in here.";
+    $('manualInput').blur();
+  }
+  isListening = scene !== 'typing' && scene !== 'call';
+  if (scene !== 'call') updateListeningUI(isListening);
+  document.querySelector('.toast, #toast')?.classList.remove('show');
+};
 
 console.log('[Talkie] Initialized ' + BUILD_VERSION);
 
