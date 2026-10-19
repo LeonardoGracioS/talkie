@@ -66,15 +66,19 @@ final class SpeechCaptureManager {
     private(set) var isRunning = false
     /// Far-field table mode changes diarization sensitivity slightly.
     var tableMode = false
-    /// Paused during TTS playback: engine stays alive but we stop feeding the
-    /// analyzer/diarizer (so Talkie's own voice from the speaker is never
-    /// transcribed) — far cheaper than tearing the whole session down (P1.1).
+    /// Paused during TTS playback: the analyzer and models stay loaded but the mic
+    /// is closed (engine paused) and nothing is fed — Talkie's own voice is never
+    /// transcribed, and an open input would duck the TTS output. Far cheaper than
+    /// tearing the whole session down (P1.1).
     /// Read on the audio thread; a stale read costs at most one extra buffer.
     private nonisolated(unsafe) var suspended = false
 
     // MARK: - Audio + Speech
 
     private var engine: AVAudioEngine?
+    /// Hardware input format the tap was installed with — if it differs after a
+    /// pause (route change during TTS), the tap must be rebuilt, not restarted.
+    private var tapInputFormat: AVAudioFormat?
     private var analyzer: SpeechAnalyzer?
     private var transcriber: SpeechTranscriber?
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
@@ -186,7 +190,8 @@ final class SpeechCaptureManager {
 
     // MARK: - Pause / resume (during TTS) — P1.1
     //
-    // Keep the analyzer + engine + loaded model alive; just stop feeding audio.
+    // Keep the analyzer + loaded model alive; pause the engine so the mic is really
+    // closed while Talkie speaks (an open input makes iOS lower the output volume).
     // Tearing the whole session down after every spoken reply cost ~1 s of
     // "reloading" and churned memory.
 
@@ -199,6 +204,7 @@ final class SpeechCaptureManager {
             Task { try? await a.finalize(through: nil) }
         }
         lastVolatileText = ""; lastVolatileAt = .distantPast
+        engine?.pause()
         saveVoices()
         dbg("paused (TTS)")
     }
@@ -209,7 +215,18 @@ final class SpeechCaptureManager {
         // Drop whatever leaked in around the TTS so it's never transcribed/diarized.
         pcmRing.removeAll(keepingCapacity: true)
         lastVolatileText = ""; lastVolatileAt = .distantPast
-        dbg("resumed")
+        // TTS switched the session to playback; the mic needs playAndRecord back.
+        WebAppView.reassertPlayAndRecordSession()
+        do {
+            guard let engine, engine.inputNode.outputFormat(forBus: 0) == tapInputFormat else {
+                throw CocoaError(.featureUnsupported)   // route changed while paused → rebuild the tap
+            }
+            try engine.start()
+            dbg("resumed")
+        } catch {
+            sttLogger.info("Engine restart after TTS failed — rebuilding capture.")
+            restartCapture()
+        }
     }
 
     func stop() {
@@ -267,18 +284,23 @@ final class SpeechCaptureManager {
         let work = DispatchWorkItem { [weak self] in
             MainActor.assumeIsolated {
                 guard let self, self.isRunning, !CallModeManager.shared.isPhoneCallActive else { return }
-                guard self.engine?.isRunning == false else { return }
+                // Paused on purpose during TTS (the session switch to playback fires a
+                // config change) — resume() restarts the engine itself.
+                guard !self.suspended, self.engine?.isRunning == false else { return }
                 sttLogger.info("Audio engine stopped (\(reason, privacy: .public)) — restarting capture.")
-                let wasSuspended = self.suspended
-                let (lang, table, patience, vocab) = (self.lastLang, self.tableMode, self.lastPatience, self.vocabulary)
-                self.stop()
-                WebAppView.configureAudioSessionForCurrentMode()
-                self.start(lang: lang, tableMode: table, patience: patience, vocabulary: vocab)
-                if wasSuspended { self.suspended = true }
+                self.restartCapture()
             }
         }
         restartWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
+    }
+
+    /// Full stop → start with the last parameters (new engine + tap).
+    private func restartCapture() {
+        let (lang, table, patience, vocab) = (lastLang, tableMode, lastPatience, vocabulary)
+        stop()
+        WebAppView.configureAudioSessionForCurrentMode()
+        start(lang: lang, tableMode: table, patience: patience, vocabulary: vocab)
     }
 
     // MARK: - Persistent voice identity
@@ -500,6 +522,7 @@ final class SpeechCaptureManager {
         do {
             try engine.start()
             self.engine = engine
+            self.tapInputFormat = inputFormat
             return true
         } catch {
             sttLogger.error("engine.start failed: \(error.localizedDescription)")

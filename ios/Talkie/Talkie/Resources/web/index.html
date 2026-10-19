@@ -199,9 +199,10 @@ body::before {
    MAIN VIEW — SUGGESTIONS
    ═══════════════════════════════════════════ */
 
+/* No `display` here: an id rule beats `.view { display:none }` and kept this view
+   on screen underneath the other ones (typing, texts). */
 #view-suggestions {
   padding: calc(var(--safe-top) + 12px) 20px calc(var(--safe-bottom) + 12px);
-  display:flex; flex-direction:column; gap:0;
 }
 
 /* ─── Top bar ─── */
@@ -1751,7 +1752,7 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
 .control-btn.keyboard:active { filter:brightness(0.94); }
 
 /* Landscape: keep the simple flex column (the old grid referenced dead classes) */
-@media (orientation: landscape) { #view-suggestions { display:flex; flex-direction:column; } }
+@media (orientation: landscape) { #view-suggestions.active { display:flex; flex-direction:column; } }
 
 /* — Call mode (P2.7) — */
 .listen-phone-ic { width:20px; height:20px; display:none; }
@@ -1908,6 +1909,88 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
 }
 .call-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .call-grid .suggestion-card.call-card { min-height:64px; font-size:1.15rem; justify-content:center; text-align:center; padding:12px; }
+
+/* Refresh lives with the replies it refreshes (not in the bottom bar). Shown only
+   when there are cards; turns into an accent "New phrase" chip while newer phrases
+   wait for the current cards' reading time (suggestion pacing). */
+.suggestions-header {
+  display:flex; justify-content:flex-end; flex-shrink:0; margin:-4px 0 6px;
+}
+.suggestions-header[hidden], body.call-mode .suggestions-header { display:none; }
+.suggestions-refresh {
+  display:flex; align-items:center; gap:6px;
+  min-height:44px; padding:0 14px;
+  border:none; border-radius:22px;
+  background:transparent; color:var(--text-secondary);
+  font:500 0.9rem var(--font); white-space:nowrap; cursor:pointer;
+  transition:background .2s, color .2s;
+}
+.suggestions-refresh .icon { width:18px; height:18px; }
+.suggestions-refresh:active { background:var(--accent-soft); color:var(--accent); }
+.suggestions-refresh.pending { background:var(--accent-strong); color:#fff; font-weight:600; box-shadow:var(--shadow-md); }
+.suggestions-refresh.pending .icon { animation:blink 1s infinite; }
+
+/* Bottom bar: Historique (icon) · Textes (secondary) · Écrire (primary). */
+.control-btn.texts {
+  flex:1; min-height:56px; gap:8px; border-radius:16px; box-shadow:none;
+  background:var(--accent-soft); color:var(--accent); font:600 1.05rem var(--font);
+}
+.control-btn.texts:active { filter:brightness(0.94); }
+.control-btn.texts .icon { width:22px; height:22px; }
+
+/* ─── Prepared texts: list → editor → reader ─── */
+#view-texts, #view-text-edit, #view-text-read {
+  padding: calc(var(--safe-top) + 12px) 20px calc(var(--safe-bottom) + 12px);
+}
+#view-texts .manual-title, #view-text-edit .manual-title, #view-text-read .manual-title {
+  flex:1; min-width:0; text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.manual-back-btn.strong { font-weight:700; }
+.texts-list, .passage-list {
+  flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  display:flex; flex-direction:column; gap:12px; padding:2px 2px 12px;
+}
+.text-item {
+  display:flex; align-items:center; gap:12px; flex-shrink:0;
+  width:100%; min-height:76px; padding:16px 20px;
+  border:none; border-radius:var(--radius); background:var(--bg-card); box-shadow:var(--shadow-card);
+  color:var(--text); text-align:left; font-family:var(--font); cursor:pointer;
+}
+.text-item:active { transform:scale(0.98); background:var(--bg-card-hover); }
+.text-item .ti-body { flex:1; min-width:0; }
+.text-item .ti-title { font-weight:700; font-size:1.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.text-item .ti-meta { font:500 0.85rem var(--font); color:var(--text-secondary); margin-top:4px; }
+.text-item .icon { width:18px; height:18px; color:var(--text-tertiary); }
+.text-title-input {
+  width:100%; flex-shrink:0; margin-bottom:12px; min-height:56px; padding:14px 20px;
+  background:var(--bg-card); color:var(--text);
+  border:2px solid var(--separator); border-radius:var(--radius);
+  font:700 1.1rem var(--font); outline:none;
+}
+.text-title-input:focus { border-color:var(--accent); }
+.text-title-input::placeholder { color:var(--text-tertiary); }
+.text-edit-hint { flex-shrink:0; margin-top:10px; padding:0 4px; font:400 0.9rem/1.4 var(--font); color:var(--text-secondary); }
+.text-delete-btn {
+  flex-shrink:0; margin-top:6px; min-height:48px; border:none; background:none;
+  color:var(--red); font:600 0.95rem var(--font); cursor:pointer;
+}
+.text-delete-btn[hidden] { display:none; }
+/* Passages reuse the reply-card look; read ones fade, the next one is outlined. */
+.suggestion-card.passage {
+  animation:none; align-items:flex-start; min-height:64px; padding:16px 20px;
+  font-size:clamp(1.15rem, 2.6vh, 1.45rem);
+}
+.suggestion-card.passage::after { display:none; }
+.suggestion-card.passage .ps-num {
+  flex-shrink:0; width:1.6em; margin-right:8px;
+  font:700 0.85em/1.6 var(--font); color:var(--text-tertiary);
+}
+.suggestion-card.passage.read { opacity:0.5; }
+.suggestion-card.passage.next { box-shadow:0 0 0 2px var(--accent), var(--shadow-card); }
+.suggestion-card.passage.speaking { opacity:1; box-shadow:0 0 0 2px var(--accent-strong), var(--shadow-card); }
+#btnReadNext { margin-bottom:0; }
+body.oled-mode .text-item, body.oled-mode .text-title-input { border:2px solid #333333; }
 </style>
 </head>
 <body>
@@ -1989,6 +2072,12 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
   <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
   </symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>
+  </symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18l6-6-6-6"/>
+  </symbol>
   <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>
   </symbol>
@@ -2025,10 +2114,10 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
     <!-- Compact control chips: speaker · group · tone · speed -->
     <div class="chip-row" id="voiceControls">
       <button class="chip" id="speakerPill" type="button" aria-label="Choisir l'interlocuteur">
-        <svg class="icon"><use href="#i-person"/></svg><span class="chip-label" id="speakerLabel">Interlocuteur</span>
+        <svg class="icon"><use href="#i-person"/></svg><span class="chip-label" id="speakerLabel">Qui ?</span>
       </button>
       <button class="chip" id="tablePill" type="button" aria-label="Mode plusieurs interlocuteurs">
-        <svg class="icon"><use href="#i-people"/></svg><span class="chip-label" id="tableLabel">Une voix</span>
+        <svg class="icon"><use href="#i-people"/></svg><span class="chip-label" id="tableLabel">Solo</span>
       </button>
       <button class="chip chip-mini" id="tonePill" type="button" aria-label="Ton de la voix">
         <span class="vp-icon" id="toneIcon"></span><span class="chip-label" id="toneLabel">Neutre</span>
@@ -2055,6 +2144,11 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
 
     <!-- Suggestions -->
     <div class="suggestions-label" id="suggestionsLabel">Vos réponses</div>
+    <div class="suggestions-header" id="suggestionsHeader" hidden>
+      <button type="button" class="suggestions-refresh" id="btnRefresh">
+        <svg class="icon"><use href="#i-refresh"/></svg><span id="refreshLabel">Autres réponses</span>
+      </button>
+    </div>
     <div class="suggestions-zone" id="suggestionsZone">
       <div class="suggestions-empty" id="suggestionsEmpty">
         <span class="suggestions-empty-wave"><i></i><i></i><i></i><i></i><i></i></span>
@@ -2070,11 +2164,11 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
 
     <!-- Bottom bar (floating glass) -->
     <div class="controls-zone">
-      <button class="control-btn refresh" id="btnRefresh" aria-label="Relancer les réponses" title="Relancer les réponses">
-        <svg class="icon"><use href="#i-refresh"/></svg><span class="ctl-label" id="ctlRefreshLabel">Relancer</span>
-      </button>
       <button class="control-btn history" id="btnPhraseHistory" aria-label="Historique des phrases" title="Historique">
         <svg class="icon"><use href="#i-clock"/></svg><span class="ctl-label" id="ctlHistoryLabel">Historique</span>
+      </button>
+      <button class="control-btn texts" id="btnTexts">
+        <svg class="icon"><use href="#i-doc"/></svg><span id="ctlTextsLabel">Textes</span>
       </button>
       <button class="control-btn keyboard" id="btnKeyboard">
         <svg class="icon"><use href="#i-keyboard"/></svg>
@@ -2103,6 +2197,42 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
       Prononcer
     </button>
     <button type="button" class="manual-report-btn hidden" id="btnReportSuggestion">Signaler cette suggestion</button>
+  </div>
+
+  <!-- ═══ PREPARED TEXTS: list ═══ -->
+  <div id="view-texts" class="view">
+    <div class="manual-header">
+      <button class="manual-back-btn" id="btnTextsBack"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg><span id="textsBackLabel">Retour</span></button>
+      <div class="manual-title" id="textsTitle">Mes textes</div>
+      <button class="manual-back-btn strong" id="btnTextNew">+ Nouveau</button>
+    </div>
+    <div class="texts-list" id="textsList"></div>
+  </div>
+
+  <!-- ═══ PREPARED TEXTS: editor ═══ -->
+  <div id="view-text-edit" class="view">
+    <div class="manual-header">
+      <button class="manual-back-btn" id="btnTextEditCancel">Annuler</button>
+      <div class="manual-title" id="textEditTitle">Nouveau texte</div>
+      <button class="manual-back-btn strong" id="btnTextEditSave">Enregistrer</button>
+    </div>
+    <input class="text-title-input" id="textTitleInput" type="text" maxlength="60" placeholder="Titre (facultatif)">
+    <div class="manual-input-wrap">
+      <textarea class="manual-textarea" id="textBodyInput" placeholder="Écrivez votre texte ici…" aria-label="Texte"></textarea>
+    </div>
+    <div class="text-edit-hint" id="textEditHint">Chaque retour à la ligne crée un passage, lu séparément d'un simple appui.</div>
+    <button class="text-delete-btn" id="btnTextDelete" hidden>Supprimer ce texte</button>
+  </div>
+
+  <!-- ═══ PREPARED TEXTS: reader ═══ -->
+  <div id="view-text-read" class="view">
+    <div class="manual-header">
+      <button class="manual-back-btn" id="btnTextReadBack"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg><span id="textReadBackLabel">Mes textes</span></button>
+      <div class="manual-title" id="textReadTitle"></div>
+      <button class="manual-back-btn" id="btnTextEdit">Modifier</button>
+    </div>
+    <div class="passage-list" id="passageList"></div>
+    <button class="manual-speak-btn" id="btnReadNext"></button>
   </div>
 
   <!-- ═══ SETTINGS ═══ -->
@@ -2494,6 +2624,28 @@ const I18N = {
     speak: 'Prononcer',
     aiAttribution: 'Suggestions générées par Apple Intelligence',
     ctrlHistory: 'Historique',
+    suggestionsPending: 'Nouvelle phrase',
+    refreshReplies: 'Autres réponses',
+    // Prepared texts
+    textsBtn: 'Textes',
+    textsTitle: 'Mes textes',
+    textNew: '+ Nouveau',
+    textsEmptyLine1: 'Aucun texte pour le moment',
+    textsEmptyLine2: 'Écrivez un texte à l’avance, puis lisez-le passage par passage.',
+    textNewTitle: 'Nouveau texte',
+    textEditTitle: 'Modifier le texte',
+    textTitlePlaceholder: 'Titre (facultatif)',
+    textBodyPlaceholder: 'Écrivez votre texte ici…',
+    textEditHint: 'Chaque retour à la ligne crée un passage, lu séparément d’un simple appui.',
+    textSave: 'Enregistrer',
+    textCancel: 'Annuler',
+    textEdit: 'Modifier',
+    textDelete: 'Supprimer ce texte',
+    textDeleteConfirm: 'Supprimer ce texte ?',
+    textEmptyBody: 'Le texte est vide',
+    textPassages: (n) => n + (n > 1 ? ' passages' : ' passage'),
+    textReadNext: (i, n) => `Lire le passage ${i} / ${n}`,
+    textRestart: 'Recommencer depuis le début',
     ttsSpeaking: 'En train de parler…',
     ttsStop: 'Stop',
     // Settings
@@ -2642,7 +2794,7 @@ const I18N = {
     speedSlowLabel: 'Lent',
     speedNormalLabel: 'Normal',
     speedFastLabel: 'Rapide',
-    speakerNonePill: 'Interlocuteur',
+    speakerNonePill: 'Qui ?',
     speakerPickerTitle: 'À qui parlez-vous ?',
     speakerPickerNone: 'Personne en particulier',
     speakerAddNew: 'Ajouter un interlocuteur',
@@ -2739,6 +2891,28 @@ const I18N = {
     speak: 'Speak',
     aiAttribution: 'Suggestions generated by Apple Intelligence',
     ctrlHistory: 'History',
+    suggestionsPending: 'New phrase',
+    refreshReplies: 'Other replies',
+    // Prepared texts
+    textsBtn: 'Texts',
+    textsTitle: 'My texts',
+    textNew: '+ New',
+    textsEmptyLine1: 'No texts yet',
+    textsEmptyLine2: 'Write a text in advance, then read it aloud one passage at a time.',
+    textNewTitle: 'New text',
+    textEditTitle: 'Edit text',
+    textTitlePlaceholder: 'Title (optional)',
+    textBodyPlaceholder: 'Write your text here…',
+    textEditHint: 'Each new line becomes a passage you can read with a single tap.',
+    textSave: 'Save',
+    textCancel: 'Cancel',
+    textEdit: 'Edit',
+    textDelete: 'Delete this text',
+    textDeleteConfirm: 'Delete this text?',
+    textEmptyBody: 'The text is empty',
+    textPassages: (n) => n + (n > 1 ? ' passages' : ' passage'),
+    textReadNext: (i, n) => `Read passage ${i} / ${n}`,
+    textRestart: 'Start again from the top',
     ttsSpeaking: 'Speaking…',
     ttsStop: 'Stop',
     settings: 'Settings',
@@ -2882,7 +3056,7 @@ const I18N = {
     speedSlowLabel: 'Slow',
     speedNormalLabel: 'Normal',
     speedFastLabel: 'Fast',
-    speakerNonePill: 'Speaker',
+    speakerNonePill: 'Who?',
     speakerPickerTitle: 'Who are you talking to?',
     speakerPickerNone: 'No one in particular',
     speakerAddNew: 'Add a speaker',
@@ -3247,8 +3421,21 @@ function applyStaticTranslations() {
     setText(el('resetPromptBtn'), 'resetPrompt');
   }
   // At boot the defaults are not defined yet; init renders the soundboard later.
-  if (el('ctlRefreshLabel')) el('ctlRefreshLabel').textContent = currentLang === 'fr' ? 'Relancer' : 'Retry';
   if (el('ctlHistoryLabel')) el('ctlHistoryLabel').textContent = currentLang === 'fr' ? 'Historique' : 'History';
+  setText(el('ctlTextsLabel'), 'textsBtn');
+  // Not renderRefreshButton(): this runs at boot, before the pacing state exists.
+  setText(el('refreshLabel'), $('btnRefresh')?.classList.contains('pending') ? 'suggestionsPending' : 'refreshReplies');
+  setText(el('textsBackLabel'), 'manualBack');
+  setText(el('textsTitle'), 'textsTitle');
+  setText(el('btnTextNew'), 'textNew');
+  setText(el('btnTextEditCancel'), 'textCancel');
+  setText(el('btnTextEditSave'), 'textSave');
+  setPlaceholder(el('textTitleInput'), 'textTitlePlaceholder');
+  setPlaceholder(el('textBodyInput'), 'textBodyPlaceholder');
+  setText(el('textEditHint'), 'textEditHint');
+  setText(el('btnTextDelete'), 'textDelete');
+  setText(el('textReadBackLabel'), 'textsTitle');
+  setText(el('btnTextEdit'), 'textEdit');
   if (el('btnReportSuggestion')) el('btnReportSuggestion').textContent = currentLang === 'fr' ? 'Signaler cette suggestion' : 'Report this suggestion';
   if (el('tableSuggest')) el('tableSuggest').textContent = currentLang === 'fr' ? 'Plusieurs voix détectées · Passer en mode groupe' : 'Several voices detected · Switch to group mode';
   if (typeof renderSoundboard === "function" && typeof DEFAULT_QUICK_PHRASES !== "undefined") renderSoundboard();
@@ -3472,18 +3659,14 @@ function renderVoiceControls() {
     speakerLabel.textContent = _label('speakerNonePill');
     speakerPill.classList.remove('has-speaker');
   }
-  // Less chrome: the speaker pill only earns its place once there ARE speakers
-  // (voices detected / declared) or in group mode. Otherwise hide it.
-  const speakerRelevant = (state.speakers || []).length > 0 || !!state.tableMode;
-  speakerPill.style.display = speakerRelevant ? '' : 'none';
 
   const tablePill = document.getElementById('tablePill');
   const tableLabel = document.getElementById('tableLabel');
   if (tablePill && tableLabel) {
     const on = !!(state && state.tableMode);
     tableLabel.textContent = currentLang === 'fr'
-      ? (on ? 'Groupe' : 'Une voix')
-      : (on ? 'Group' : 'One voice');
+      ? (on ? 'Groupe' : 'Solo')
+      : (on ? 'Group' : 'Solo');
     tablePill.classList.toggle('table-active', on);
     tablePill.setAttribute('aria-pressed', String(on));
   }
@@ -3780,7 +3963,9 @@ function _processNativeTurn(turn, suppressSuggest) {
   const text = inferQuestionMark((turn.text || '').trim());
   if (text.length < 2) return;
   _lastTurnId = turn.turnId || null;
-  const talkieId = turn.speakerId ? _mapNativeSpeaker(turn.speakerId) : null;
+  // One-person mode: the interlocutor is the one picked by hand. Mapping voices here
+  // created "Voix N" people and silently replaced that choice on every phrase.
+  const talkieId = (state.tableMode && turn.speakerId) ? _mapNativeSpeaker(turn.speakerId) : null;
   if (talkieId && state.currentSpeakerId !== talkieId) setCurrentSpeaker(talkieId);
   if (turn.speakerId) { _nativeSpeakersSeen.add(turn.speakerId); _maybeAutoTableMode(); }
   if (state.tableMode) {
@@ -3796,10 +3981,9 @@ function _processNativeTurn(turn, suppressSuggest) {
     state.history[state.history.length - 1].nativeTurnId = turn.turnId;
     save();
   }
-  lastInterlocutorText = text;
   interimBuf = '';
-  refreshCount = 0;
-  if (!suppressSuggest && llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
+  if (suppressSuggest) { lastInterlocutorText = text; refreshCount = 0; }
+  else queueSuggestions(text);
 }
 
 window._nativeTranscript = function(json) {
@@ -3835,7 +4019,7 @@ window._importData = function(json) {
       tone: 'string', speed: 'string', allowCrude: 'boolean', speakers: 'array', currentSpeakerId: 'string', tableMode: 'boolean',
       patience: 'number', autoListen: 'boolean', profile: 'object', styleSummary: 'string',
       suggestionStats: 'object', phraseHistory: 'object', llmRichContext: 'boolean', callPhrases: 'array',
-      fluidMap: 'object',
+      fluidMap: 'object', texts: 'array',
     };
     const typeOf = v => Array.isArray(v) ? 'array' : (v === null ? 'null' : typeof v);
     const clean = {};
@@ -3843,6 +4027,10 @@ window._importData = function(json) {
     if (clean.quickPhrases) clean.quickPhrases = clean.quickPhrases
       .filter(q => q && typeof q.text === 'string')
       .map(q => ({ emoji: String(q.emoji || '').slice(0, 8), text: q.text.slice(0, 200) }));
+    if (clean.texts) clean.texts = clean.texts
+      .filter(x => x && typeof x.body === 'string')
+      .map(x => ({ id: String(x.id || 'tx_' + Math.random().toString(36).slice(2)), title: String(x.title || '').slice(0, 60),
+                   body: x.body.slice(0, 20000), updatedAt: Number(x.updatedAt) || Date.now() }));
     Object.assign(state, clean);
     save();
     showToast(currentLang === 'fr' ? 'Sauvegarde restaurée' : 'Backup restored', 3000);
@@ -3858,6 +4046,7 @@ window._nativeTurnSpeakerUpdate = function(turnId, rawSpeakerId) {
   // Turn still buffered during TTS: patch it before it is replayed.
   const pending = _pendingTurns.find(t => t.turnId === turnId);
   if (pending) { pending.speakerId = rawSpeakerId; return; }
+  if (!state.tableMode) return;   // one-person mode: no automatic voice → person mapping
   const talkieId = _mapNativeSpeaker(rawSpeakerId);
   if (!talkieId) return;
   const entry = (state.history || []).find(e => e.nativeTurnId === turnId);
@@ -4540,6 +4729,7 @@ function loadState() {
       if (!s.tone) s.tone = 'neutral';
       if (!s.speed) s.speed = 'normal';
       if (!s.speakers) s.speakers = [];
+      if (!Array.isArray(s.texts)) s.texts = [];
       if (s.currentSpeakerId === undefined) s.currentSpeakerId = null;
       if (!s.profile) s.profile = {};
       if (!s.styleSummary) s.styleSummary = '';
@@ -4598,7 +4788,7 @@ function loadState() {
     samples: [], llmEnabled: true, useApplePersonalVoice: false, useElevenLabs: false,
     history: [], memory: '', learnedMemory: '', oledMode: false, quickPhrases: [],
     tone: 'neutral', speed: 'normal',
-    speakers: [], currentSpeakerId: null, tableMode: false, patience: 1.4, autoListen: true, autoListenV2: true,
+    speakers: [], currentSpeakerId: null, tableMode: false, texts: [], patience: 1.4, autoListen: true, autoListenV2: true,
     profile: {}, styleSummary: '',
     suggestionStats: { picked: [], pickedSinceLastSummary: 0 },
     phraseHistory: { manual: [], llm: [] },
@@ -4947,6 +5137,15 @@ safeClick('backFromSettingsBtn', () => {
   window._listeningBeforeSettings = false;
 });
 safeClick('btnKeyboard', () => switchToManual());
+safeClick('btnTexts', () => { hapticTap('light'); renderTextsList(); leaveMainView('texts'); });
+safeClick('btnTextsBack', () => switchToSuggestions());
+safeClick('btnTextNew', () => openTextEditor(null));
+safeClick('btnTextEditCancel', () => _editingTextId ? openTextReader(_editingTextId) : openTextsList());
+safeClick('btnTextEditSave', () => saveTextFromEditor());
+safeClick('btnTextDelete', () => deleteEditedText());
+safeClick('btnTextReadBack', () => openTextsList());
+safeClick('btnTextEdit', () => openTextEditor(_openTextId));
+safeClick('btnReadNext', () => readNextPassage());
 // P2.3: long-press "Écrire" → repeat the last thing the user said aloud.
 (function() {
   const kb = document.getElementById('btnKeyboard');
@@ -4975,14 +5174,19 @@ safeClick('listeningBar', () => {
 });
 
 let _micBeforeManual = false;
+/** Leave the main screen for a secondary one (typing, texts). Remembers whether to
+ *  re-arm the mic on the way back (it stayed off after a long-press edit, losing
+ *  the other person's next reply — T7). */
+function leaveMainView(view) {
+  _micBeforeManual = _micBeforeManual || isListening;
+  stopListening();
+  showView(view);
+}
+
 function switchToManual() {
   _editingSuggestion = null;
   $('btnReportSuggestion')?.classList.add('hidden');
-  // Remember whether to re-arm the mic after typing (it stayed off after a
-  // long-press edit, losing the other person's next reply — T7).
-  _micBeforeManual = _micBeforeManual || isListening;
-  stopListening();
-  showView('manual');
+  leaveMainView('manual');
   setTimeout(() => $('manualInput').focus(), 100);
 }
 
@@ -5033,12 +5237,74 @@ function switchToSuggestions(resumeMic = true) {
 
 let refreshCount = 0;
 function refreshSuggestions() {
-  if (lastInterlocutorText) {
-    refreshCount++;
-    fetchSuggestions(lastInterlocutorText);
-  } else {
-    showToast(t('noPhrase'));
-  }
+  if (_pendingPhrases.length) { flushSuggestions(); return; }
+  const text = _currentSuggestionText || lastInterlocutorText;
+  if (!text) { showToast(t('noPhrase')); return; }
+  refreshCount++;
+  fetchSuggestions(text);
+}
+
+// ─── Suggestion pacing ───
+// Replacing the cards on every sentence left no time to read or tap them, above all
+// in group mode. New phrases are queued; the cards only change once the current ones
+// have been on screen for `holdMs` and the room has been quiet for `settleMs`.
+// The "Nouvelle phrase" chip lets the user skip the wait.
+const SUGGESTION_PACING = {
+  solo:  { holdMs: 6000,  settleMs: 0 },
+  group: { holdMs: 10000, settleMs: 2500 },
+};
+let _pendingPhrases = [];        // heard since the cards were generated (last 3 kept)
+let _lastPhraseAt = 0;
+let _suggestionsShownAt = 0;     // 0 = no cards on screen
+let _suggestionsInFlight = false;
+let _suggestionTimer = null;
+
+function queueSuggestions(text) {
+  lastInterlocutorText = text;
+  refreshCount = 0;
+  if (!llmAvailable || state.llmEnabled === false) return;
+  _pendingPhrases = _pendingPhrases.concat(text).slice(-3);
+  _lastPhraseAt = Date.now();
+  scheduleSuggestions();
+}
+
+function scheduleSuggestions() {
+  clearTimeout(_suggestionTimer);
+  const waiting = _pendingPhrases.length > 0;
+  renderRefreshButton();
+  if (!waiting || _suggestionsInFlight) return;   // the running request reschedules when done
+  const p = SUGGESTION_PACING[state.tableMode ? 'group' : 'solo'];
+  const readyAt = Math.max(
+    _suggestionsShownAt ? _suggestionsShownAt + p.holdMs : 0,
+    _lastPhraseAt + p.settleMs
+  );
+  _suggestionTimer = setTimeout(flushSuggestions, Math.max(0, readyAt - Date.now()));
+}
+
+function flushSuggestions() {
+  clearTimeout(_suggestionTimer);
+  if (!_pendingPhrases.length) return;
+  // Never swap the cards under a reply that is being spoken.
+  if (isSpeaking) { _suggestionTimer = setTimeout(flushSuggestions, 1000); return; }
+  const text = _pendingPhrases.join(' ');
+  _pendingPhrases = [];
+  renderRefreshButton();
+  fetchSuggestions(text);
+}
+
+/** "Autres réponses" normally; accent "Nouvelle phrase" while phrases wait to be answered. */
+function renderRefreshButton() {
+  const btn = $('btnRefresh');
+  if (!btn) return;
+  const pending = _pendingPhrases.length > 0 && !!_suggestionsShownAt;
+  btn.classList.toggle('pending', pending);
+  $('refreshLabel').textContent = t(pending ? 'suggestionsPending' : 'refreshReplies');
+}
+
+/** The user just said one of the cards: done reading, no need to hold them. */
+function onSuggestionsConsumed() {
+  _suggestionsShownAt = 0;
+  scheduleSuggestions();
 }
 
 // ─── Context zone ───
@@ -5115,6 +5381,9 @@ function renderSuggestionCards(suggestions) {
   });
   updateAiAttribution();
   $('aiAttribution').style.display = 'block';
+  _suggestionsShownAt = Date.now();
+  $('suggestionsHeader').hidden = false;
+  renderRefreshButton();
 }
 
 function showSuggestionLoading() {
@@ -5135,6 +5404,8 @@ function clearSuggestionCards() {
       <div class="suggestions-empty-text">${t('suggestionsEmptyLine1')}<br>${t('suggestionsEmptyLine2')}</div>
     </div>`;
   $('aiAttribution').style.display = 'none';
+  _suggestionsShownAt = 0;
+  $('suggestionsHeader').hidden = true;
 }
 
 // ─── TTS Overlay ───
@@ -5172,6 +5443,7 @@ function speakSuggestion(text, cardIndex) {
   speakTextWithCallback(text, () => {
     document.querySelectorAll('.suggestion-card.speaking').forEach(c => c.classList.remove('speaking'));
     if (wasListening && !_ttsPlayActive && !_ttsPlayQueue.length) resumeListeningAfterTTS();
+    onSuggestionsConsumed();
   }, wasListening);
 }
 
@@ -5191,6 +5463,143 @@ function speakManual() {
       if (wasListening) resumeListeningAfterTTS(); else startListening();
     }
   }, resumeAfter);
+}
+
+// ─── Prepared texts ───
+// Long texts written ahead of time (a speech, a story, a message for the doctor…),
+// read aloud one passage at a time by tapping it. Each line is one passage. The mic
+// is off on these screens (leaveMainView), so reading never needs to pause it.
+let _openTextId = null;
+let _editingTextId = null;       // null = creating a new text
+let _readPassages = new Set();   // passages already read in the open text (session only)
+let _lastReadPassage = -1;
+
+function textById(id) { return (state.texts || []).find(x => x.id === id) || null; }
+function textTitle(tx) { return tx.title || splitPassages(tx.body)[0] || ''; }
+
+function openTextsList() {
+  renderTextsList();
+  showView('texts');
+}
+
+function renderTextsList() {
+  const list = $('textsList');
+  list.innerHTML = '';
+  const texts = (state.texts || []).slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  if (!texts.length) {
+    list.innerHTML = `<div class="suggestions-empty">
+      <div class="suggestions-empty-text">${esc(t('textsEmptyLine1'))}<br>${esc(t('textsEmptyLine2'))}</div>
+    </div>`;
+    return;
+  }
+  texts.forEach(tx => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'text-item';
+    item.innerHTML = '<div class="ti-body"><div class="ti-title"></div><div class="ti-meta"></div></div>'
+      + '<svg class="icon"><use href="#i-chevron"/></svg>';
+    item.querySelector('.ti-title').textContent = textTitle(tx);
+    item.querySelector('.ti-meta').textContent = t('textPassages')(splitPassages(tx.body).length);
+    item.onclick = () => openTextReader(tx.id);
+    list.appendChild(item);
+  });
+}
+
+function openTextEditor(id) {
+  const tx = id ? textById(id) : null;
+  _editingTextId = tx ? tx.id : null;
+  $('textEditTitle').textContent = t(tx ? 'textEditTitle' : 'textNewTitle');
+  $('textTitleInput').value = tx ? tx.title : '';
+  $('textBodyInput').value = tx ? tx.body : '';
+  $('btnTextDelete').hidden = !tx;
+  showView('text-edit');
+  if (!tx) setTimeout(() => $('textBodyInput').focus(), 100);
+}
+
+function saveTextFromEditor() {
+  const body = $('textBodyInput').value.trim();
+  if (!body) { showToast(t('textEmptyBody')); return; }
+  const title = $('textTitleInput').value.trim().slice(0, 60);
+  let tx = _editingTextId ? textById(_editingTextId) : null;
+  if (tx) {
+    // Passage numbering may have shifted — forget what was read.
+    if (tx.body !== body) { _readPassages = new Set(); _lastReadPassage = -1; }
+    Object.assign(tx, { title, body, updatedAt: Date.now() });
+  } else {
+    tx = { id: 'tx_' + Date.now().toString(36), title, body, updatedAt: Date.now() };
+    state.texts = (state.texts || []).concat(tx);
+  }
+  save();
+  openTextReader(tx.id);
+}
+
+function deleteEditedText() {
+  if (!_editingTextId || !confirm(t('textDeleteConfirm'))) return;
+  state.texts = (state.texts || []).filter(x => x.id !== _editingTextId);
+  save();
+  _editingTextId = null;
+  _openTextId = null;
+  openTextsList();
+}
+
+function openTextReader(id) {
+  const tx = textById(id);
+  if (!tx) { openTextsList(); return; }
+  if (_openTextId !== id) { _readPassages = new Set(); _lastReadPassage = -1; }
+  _openTextId = id;
+  $('textReadTitle').textContent = textTitle(tx);
+  renderPassages();
+  showView('text-read');
+}
+
+function renderPassages() {
+  const tx = textById(_openTextId);
+  if (!tx) return;
+  const passages = splitPassages(tx.body);
+  const next = _lastReadPassage + 1;
+  const list = $('passageList');
+  list.innerHTML = '';
+  passages.forEach((text, i) => {
+    const card = document.createElement('div');
+    card.className = 'suggestion-card passage'
+      + (_readPassages.has(i) ? ' read' : '')
+      + (i === next ? ' next' : '');
+    card.setAttribute('role', 'button');
+    card.innerHTML = `<span class="ps-num">${i + 1}</span><span class="ps-text"></span>`;
+    card.querySelector('.ps-text').textContent = frenchSpacing(text);
+    card.onclick = () => readPassage(i);
+    list.appendChild(card);
+  });
+  $('btnReadNext').textContent = next < passages.length
+    ? '▶  ' + t('textReadNext')(next + 1, passages.length)
+    : '↺  ' + t('textRestart');
+}
+
+function readPassage(i) {
+  const tx = textById(_openTextId);
+  const text = tx && splitPassages(tx.body)[i];
+  if (!text || isSpeaking || _ttsPlayActive) return;
+  hapticTap('medium');
+  addToHistory(text, true);
+  addToPhraseHistory(text, 'manual');
+  const card = $('passageList').children[i];
+  card.classList.add('speaking');
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  speakTextWithCallback(text, () => {
+    _readPassages.add(i);
+    _lastReadPassage = i;
+    renderPassages();
+  }, false);
+}
+
+function readNextPassage() {
+  const tx = textById(_openTextId);
+  if (!tx) return;
+  if (_lastReadPassage + 1 >= splitPassages(tx.body).length) {
+    _readPassages = new Set();
+    _lastReadPassage = -1;
+  }
+  readPassage(_lastReadPassage + 1);
 }
 
 // ─── TTS (bridge-compatible) ───
@@ -5710,7 +6119,7 @@ function beginRecognition(sess) {
       lastInterlocutorText = text;
       refreshCount = 0;
       interimBuf = '';
-      if (llmAvailable && state.llmEnabled !== false) fetchSuggestions(lastInterlocutorText);
+      queueSuggestions(lastInterlocutorText);
       killRecognition();
       setTimeout(() => {
         if (micSession === sess && isListening) beginRecognition(sess);
@@ -6093,8 +6502,19 @@ async function fetchSuggestions(interlocutorText) {
   // fresh one and the UI "loops" on an outdated message).
   const myGen = ++_currentSuggestionGen;
   _currentSuggestionText = interlocutorText;
+  _suggestionsInFlight = true;
   showSuggestionLoading();
+  try {
+    await _generateSuggestions(interlocutorText, myGen);
+  } finally {
+    if (myGen === _currentSuggestionGen) {
+      _suggestionsInFlight = false;
+      scheduleSuggestions();   // phrases heard meanwhile wait for these cards' reading time
+    }
+  }
+}
 
+async function _generateSuggestions(interlocutorText, myGen) {
   const diversityHint = refreshCount > 0 ? t('diversityHint')(refreshCount) : '';
 
   try {
@@ -6140,6 +6560,10 @@ async function fetchSuggestions(interlocutorText) {
 function resetSuggestionContext() {
   _currentSuggestionGen++;
   _currentSuggestionText = '';
+  _suggestionsInFlight = false;
+  _pendingPhrases = [];
+  clearTimeout(_suggestionTimer);
+  renderRefreshButton();
   lastInterlocutorText = '';
   refreshCount = 0;
   interimBuf = '';

@@ -59,3 +59,10 @@ test('inferQuestionMarkFor adds "?" to questions only', () => {
   assert.equal(p.inferQuestionMarkFor('Il fait beau.', 'fr'), 'Il fait beau.');
   assert.equal(p.inferQuestionMarkFor('are you coming', 'en'), 'are you coming?');
 });
+
+test('splitPassages: one passage per line, blank lines and spaces ignored', () => {
+  assert.deepEqual(p.splitPassages('Bonjour à tous.\n\n  Merci d\'être là.  \nVive les mariés !\n'),
+    ['Bonjour à tous.', "Merci d'être là.", 'Vive les mariés !']);
+  assert.deepEqual(p.splitPassages(''), []);
+  assert.deepEqual(p.splitPassages(undefined), []);
+});

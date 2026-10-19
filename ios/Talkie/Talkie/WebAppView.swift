@@ -284,6 +284,23 @@ struct WebAppView: UIViewRepresentable {
         reassertPlayAndRecordSession()
     }
 
+    /// Session used while Talkie speaks (outside calls): playback + spokenAudio.
+    /// In playAndRecord — worse, in `.measurement` (table mode) — iOS routes the output
+    /// through the voice-processing path and it comes out much quieter than with the
+    /// mic closed. Capture is paused during TTS anyway, so nothing needs the input.
+    /// The next `reassertPlayAndRecordSession()` (end of TTS, resume) switches back.
+    static func useSpeechOutputSession() {
+        guard !CallModeManager.shared.isPhoneCallActive else { return }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try session.setActive(true)
+        } catch {
+            logger.error("Speech output session failed: \(error.localizedDescription, privacy: .public)")
+        }
+        resetAudioSessionConfiguration()
+    }
+
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
         AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
         weak var webView: WKWebView?
@@ -408,8 +425,7 @@ struct WebAppView: UIViewRepresentable {
                 // call's system-managed route and can break the injection.
                 CallModeManager.prepareForCallModeTTS()
             } else {
-                WebAppView.reassertPlayAndRecordSession()
-                try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+                WebAppView.useSpeechOutputSession()
             }
 
             // Preferred path: AVAudioEngine with mixer gain > 1.0 to compensate for
@@ -850,8 +866,7 @@ struct WebAppView: UIViewRepresentable {
                 if CallModeManager.shared.isPhoneCallActive {
                     CallModeManager.prepareForCallModeTTS()
                 } else {
-                    WebAppView.reassertPlayAndRecordSession()
-                    try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+                    WebAppView.useSpeechOutputSession()
                 }
                 nativeSpeechCallbackId = requestId
                 // Sanitize text aggressively — éviter toute ressemblance SSML / balises (logs « root tag speak »).

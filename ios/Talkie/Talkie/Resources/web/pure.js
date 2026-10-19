@@ -113,6 +113,11 @@ function inferQuestionMarkFor(text, lang) {
   return text;
 }
 
+// ─── Prepared texts: one passage per line (blank lines ignored) ───
+function splitPassages(body) {
+  return String(body || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { isInappropriate, frenchSpacing, isLlmRefusal, parseSuggestionLines, splitTextForTTS, inferQuestionMarkFor };
+  module.exports = { isInappropriate, frenchSpacing, isLlmRefusal, parseSuggestionLines, splitTextForTTS, inferQuestionMarkFor, splitPassages };
 }
