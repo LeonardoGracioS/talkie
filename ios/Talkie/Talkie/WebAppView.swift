@@ -284,17 +284,21 @@ struct WebAppView: UIViewRepresentable {
         reassertPlayAndRecordSession()
     }
 
-    /// Session used while Talkie speaks (outside calls): playback + spokenAudio.
-    /// In playAndRecord — worse, in `.measurement` (table mode) — iOS routes the output
-    /// through the voice-processing path and it comes out much quieter than with the
-    /// mic closed. Capture is paused during TTS anyway, so nothing needs the input.
+    /// Session used while Talkie speaks (outside calls). Talkie's voice is for the
+    /// people in the room, so it always plays on the iPhone's built-in speaker — even
+    /// with hearing aids, AirPods or headphones connected. Only playAndRecord allows
+    /// that override (`.playback` follows the connected device). Volume stays full:
+    /// capture is paused during TTS (no open input), and `.default` mode replaces the
+    /// table mode's `.measurement`, which lowers the output.
     /// The next `reassertPlayAndRecordSession()` (end of TTS, resume) switches back.
     static func useSpeechOutputSession() {
         guard !CallModeManager.shared.isPhoneCallActive else { return }
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .duckOthers])
             try session.setActive(true)
+            // Set after activation, and on every utterance: any route change resets it.
+            try session.overrideOutputAudioPort(.speaker)
         } catch {
             logger.error("Speech output session failed: \(error.localizedDescription, privacy: .public)")
         }
