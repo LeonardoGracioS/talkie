@@ -1,7 +1,7 @@
 # Talkie 4.1 (build 30) — kit de publication
 
 Build envoyé à App Store Connect le 2026-11-03 : **4.1 (30)**. Les builds 26 à 29 sont des étapes TestFlight, à ignorer (le 28 n'a pas le correctif haut-parleur).
-Captures d'écran : inchangées (celles de la 4.0).
+Captures d'écran : inchangées (celles de la 4.0, `app_Talkie/AppStore_Screenshots_v4/`).
 Politique de confidentialité : mise à jour pour les textes préparés et les sauvegardes (`docs/privacy*.html`, copie in-app dans `Resources/web/legal/`).
 
 ---
