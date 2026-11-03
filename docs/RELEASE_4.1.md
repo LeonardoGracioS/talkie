@@ -1,6 +1,6 @@
-# Talkie 4.1 (build 30) — kit de publication
+# Talkie 4.1 (build 31) — kit de publication
 
-Build envoyé à App Store Connect le 2026-11-03 : **4.1 (30)**. Les builds 26 à 29 sont des étapes TestFlight, à ignorer (le 28 n'a pas le correctif haut-parleur).
+Soumis à Apple le 2026-11-03 : **4.1 (31)**. Il remplace le 30 (ElevenLabs en 64 kbps, jugé moins bon par un testeur). Le 31 repasse en 128 kbps, en morceaux de 200 caractères préchargés, et utilise Haiku 5.5 pour les suggestions. Les builds 26 à 30 sont des étapes intermédiaires, à ignorer (le 28 n'a pas le correctif haut-parleur).
 Captures d'écran : inchangées (celles de la 4.0, `app_Talkie/AppStore_Screenshots_v4/`).
 Politique de confidentialité : mise à jour pour les textes préparés et les sauvegardes (`docs/privacy*.html`, copie in-app dans `Resources/web/legal/`).
 
@@ -70,8 +70,8 @@ NEW IN 4.1: speech always plays on the iPhone built-in speaker (even with hearin
 
 ## Checklist App Store Connect
 
-1. TestFlight ▸ build 4.1 (30) : conformité à l'export → chiffrement exempté (HTTPS uniquement).
-2. Distribution ▸ « + » version **4.1** : nouveautés FR + 4 localisations EN, description, notes de validation, sélectionner le build 30.
+1. TestFlight ▸ build 4.1 (31) : conformité à l'export → chiffrement exempté (HTTPS uniquement).
+2. Distribution ▸ « + » version **4.1** : nouveautés FR + 4 localisations EN, description, notes de validation, sélectionner le build 31.
 3. Publier les pages `docs/privacy*.html` et `docs/support*.html` sur le site GitHub Pages (`talkie-support`).
 4. Confidentialité de l'app (étiquettes) : inchangée — les textes restent sur l'appareil.
 5. Ne PAS cliquer sur « Soumettre pour vérification » sans le feu vert de Samuel.
