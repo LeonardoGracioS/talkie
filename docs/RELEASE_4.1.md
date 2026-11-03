@@ -62,7 +62,9 @@ Texte promotionnel : inchangé.
 
 ## Notes pour la validation Apple — ajout en tête
 
-NEW IN 4.1: Talkie's speech always plays on the iPhone built-in speaker (even with hearing aids or AirPods connected), so people in the room hear it. New "Texts" screen: the user writes passages in advance and taps to have them spoken; texts are stored only on the device. The optional ElevenLabs voice (user's own API key, off by default) now uses the eleven_v4 model.
+NEW IN 4.1: speech always plays on the iPhone built-in speaker (even with hearing aids/AirPods). New "Texts" screen: passages written in advance, stored only on device, tapped to be spoken. Optional ElevenLabs voice (user's own key, off by default) now uses eleven_v4.
+
+(Limite 4000 caractères : avec cet ajout les notes font 3991.)
 
 ---
 
