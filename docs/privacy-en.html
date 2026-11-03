@@ -87,7 +87,7 @@ strong { color: var(--text); font-weight: 600; }
 </head>
 <body>
 <h1>Privacy Policy</h1>
-<div class="date">Last updated: October 2026 (Talkie 4.0)</div>
+<div class="date">Last updated: November 2026 (Talkie 4.1)</div>
 
 <p>Talkie is a communication aid for people living with ALS, people who are non-speaking, or who have difficulty speaking. Your privacy is our priority: Talkie has <strong>no server</strong>, and everything is processed on your device except the two optional services in section 3, which only you can enable.</p>
 
@@ -97,6 +97,7 @@ strong { color: var(--text); font-weight: 600; }
   <li><strong>Profile, memory and username</strong> — information you enter (interests, loved ones, notes) and learned memory extracted from your conversations by the on-device AI model. Stored locally; you can view, edit or delete it at any time.</li>
   <li><strong>Speakers</strong> — names and relationships you give to the people who talk to you. Stored locally.</li>
   <li><strong>Speaker voiceprints</strong> — to know who is talking, Talkie computes on the device a numeric representation of each speaker's voice (a vector of numbers, not an audio recording). They stay <strong>only on your device</strong>, are never transmitted, and can be erased at any time (Settings ▸ "Delete all speakers").</li>
+  <li><strong>Prepared texts</strong> — passages you write in advance to read later. Stored only on your device. If they are read with the ElevenLabs voice, their text is sent to ElevenLabs like any spoken message.</li>
   <li><strong>ElevenLabs and Anthropic API keys</strong> — voluntarily provided by the user. Stored in the iOS Keychain.</li>
   <li><strong>Voice samples</strong> — audio files of your voice that you import for voice cloning. Sent to ElevenLabs only at your request, after consent, then deleted from the device once the voice is created.</li>
   <li><strong>Microphone audio</strong> — processed in real time on the device for transcription and speaker recognition. Audio is never recorded or transmitted.</li>
@@ -129,7 +130,8 @@ strong { color: var(--text); font-weight: 600; }
 <h2>5. Data Retention</h2>
 <ul>
   <li><strong>Transcripts</strong> — last 20 exchanges; older ones are deleted automatically.</li>
-  <li><strong>Profile, memory, speakers and voiceprints</strong> — on the device until you delete them.</li>
+  <li><strong>Profile, memory, speakers, voiceprints and texts</strong> — on the device until you delete them.</li>
+  <li><strong>Backups</strong> — Settings ▸ "Export my data" creates an unencrypted file (history, profile, memory, speakers, phrases, texts; no API keys) that you save wherever you choose, for example iCloud Drive. Talkie never sends it anywhere.</li>
   <li><strong>API keys</strong> — in the iOS Keychain until deleted.</li>
   <li><strong>Voice samples</strong> — deleted from the device once the cloned voice is created. The created voice stays in your ElevenLabs account, where you can delete it.</li>
   <li><strong>Microphone audio</strong> — not recorded.</li>
@@ -147,7 +149,7 @@ strong { color: var(--text); font-weight: 600; }
 <p>The microphone is used for transcription and speaker recognition, on the device. During a phone call, Talkie does not listen to the call (iOS doesn't allow it); it can only add the phrases you choose to speak.</p>
 
 <h2>8. Deleting Your Data</h2>
-<p>Settings ▸ "Reset application" immediately and permanently deletes history, profile, memory, speakers, voiceprints and both API keys. Settings ▸ "Delete all speakers" deletes only speakers and their voiceprints.</p>
+<p>Settings ▸ "Reset application" immediately and permanently deletes history, profile, memory, speakers, voiceprints, texts and both API keys. Settings ▸ "Delete all speakers" deletes only speakers and their voiceprints.</p>
 
 <h2>9. Children</h2>
 <p>Talkie is not intended for children under 13.</p>

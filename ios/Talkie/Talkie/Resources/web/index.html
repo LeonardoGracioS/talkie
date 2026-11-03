@@ -755,14 +755,6 @@ body[data-app-theme="dark"] .voice-pill.has-speaker { background:rgba(120,135,25
   transition:transform .12s, background .2s;
 }
 .control-btn:active { transform:scale(0.96); }
-.control-btn.refresh {
-  flex:0 0 auto; width:66px; min-height:66px; padding:0;
-  background:var(--glass-bg); color:var(--accent);
-  border:1px solid var(--glass-border);
-  -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
-  box-shadow:var(--glass-hi);
-}
-.control-btn.refresh:active { background:var(--accent-glow); }
 .control-btn.history {
   flex:0 0 auto; width:66px; min-height:66px; padding:0;
   background:var(--glass-bg); color:var(--text-secondary);
@@ -1738,12 +1730,12 @@ body.oled-mode .soundboard-btn { border: 2px solid #333333; }
   -webkit-backdrop-filter:var(--glass-blur); backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border); border-radius:22px; box-shadow:var(--shadow-md);
 }
-.control-btn.refresh, .control-btn.history {
+.control-btn.history {
   flex:0 0 auto; width:56px; min-height:56px; padding:0;
   background:transparent; color:var(--text-secondary); box-shadow:none; border:none; border-radius:16px;
 }
-.control-btn.refresh:active, .control-btn.history:active { background:var(--accent-soft); color:var(--accent); }
-.control-btn.refresh .icon, .control-btn.history .icon { width:24px; height:24px; }
+.control-btn.history:active { background:var(--accent-soft); color:var(--accent); }
+.control-btn.history .icon { width:24px; height:24px; }
 .control-btn.keyboard {
   flex:1; min-height:56px; background:var(--accent); color:#fff; box-shadow:none;
   font:600 1.05rem var(--font); gap:8px; border-radius:16px;
@@ -1835,7 +1827,7 @@ body.table-mode .suggestions-zone > .suggestion-card:not(.call-card):not(.loadin
 
 /* Bottom bar: primary button contrast; labelled icon buttons. */
 .control-btn.keyboard { background:var(--accent-strong); }
-.control-btn.refresh, .control-btn.history { width:64px; flex-direction:column; gap:2px; }
+.control-btn.history { width:64px; flex-direction:column; gap:2px; }
 .ctl-label { font:500 0.68rem var(--font); line-height:1; }
 .ai-attribution { font-size:0.7rem !important; }
 
@@ -2616,7 +2608,6 @@ const I18N = {
     listening: 'Écoute en cours…',
     contextLabel: "L'interlocuteur dit",
     contextEmpty: 'En attente de parole...',
-    refresh: 'Relancer',
     write: 'Écrire',
     manualBack: 'Retour',
     manualTitle: 'Saisie libre',
@@ -2883,7 +2874,6 @@ const I18N = {
     listening: 'Listening…',
     contextLabel: 'The other person says',
     contextEmpty: 'Waiting for speech...',
-    refresh: 'Refresh',
     write: 'Write',
     manualBack: 'Back',
     manualTitle: 'Free input',
@@ -4024,6 +4014,7 @@ window._importData = function(json) {
     const typeOf = v => Array.isArray(v) ? 'array' : (v === null ? 'null' : typeof v);
     const clean = {};
     Object.keys(KNOWN).forEach(k => { if (k in s && typeOf(s[k]) === KNOWN[k]) clean[k] = s[k]; });
+    if (clean.lang !== 'fr' && clean.lang !== 'en') delete clean.lang;
     if (clean.quickPhrases) clean.quickPhrases = clean.quickPhrases
       .filter(q => q && typeof q.text === 'string')
       .map(q => ({ emoji: String(q.emoji || '').slice(0, 8), text: q.text.slice(0, 200) }));
@@ -5585,7 +5576,9 @@ function readPassage(i) {
   const card = $('passageList').children[i];
   card.classList.add('speaking');
   card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  const textId = _openTextId;
   speakTextWithCallback(text, () => {
+    if (_openTextId !== textId) return;
     _readPassages.add(i);
     _lastReadPassage = i;
     renderPassages();
@@ -6043,7 +6036,7 @@ async function fetchTTSAudio(text) {
       method: 'POST',
       headers: { 'xi-api-key': state.elApiKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
       body: JSON.stringify({
-        text, model_id: 'eleven_multilingual_v2',
+        text, model_id: 'eleven_v4', language_code: currentLang,
         voice_settings: elevenLabsVoiceSettings(currentTone())
       })
     }

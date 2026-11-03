@@ -87,7 +87,7 @@ strong { color: var(--text); font-weight: 600; }
 </head>
 <body>
 <h1>Politique de confidentialité</h1>
-<div class="date">Dernière mise à jour : octobre 2026 (Talkie 4.0)</div>
+<div class="date">Dernière mise à jour : novembre 2026 (Talkie 4.1)</div>
 
 <p>Talkie est une application d'aide à la communication pour les personnes vivant avec la SLA, les personnes muettes ou ayant des difficultés à parler. Votre vie privée est notre priorité : Talkie n'a <strong>aucun serveur</strong>, et tout est traité sur votre appareil sauf les deux services optionnels décrits en section 3, que vous seul pouvez activer.</p>
 
@@ -97,6 +97,7 @@ strong { color: var(--text); font-weight: 600; }
   <li><strong>Profil, mémoire et nom d'utilisateur</strong> — informations que vous saisissez (goûts, proches, notes) et mémoire apprise extraite de vos conversations par le modèle IA de l'appareil. Stockées localement ; consultables, modifiables et supprimables à tout moment.</li>
   <li><strong>Interlocuteurs</strong> — noms et relations que vous donnez aux personnes qui vous parlent. Stockés localement.</li>
   <li><strong>Empreintes vocales des interlocuteurs</strong> — pour savoir qui parle autour de vous, Talkie calcule sur l'appareil une représentation numérique de la voix de chaque interlocuteur (un vecteur de nombres, pas un enregistrement audio). Elles restent <strong>uniquement sur votre appareil</strong>, ne sont jamais transmises et peuvent être effacées à tout moment (Réglages ▸ « Effacer tous les interlocuteurs »).</li>
+  <li><strong>Textes préparés</strong> — passages que vous rédigez à l'avance pour les lire plus tard. Stockés uniquement sur votre appareil. S'ils sont lus avec la voix ElevenLabs, leur texte est envoyé à ElevenLabs comme tout message prononcé.</li>
   <li><strong>Clés API ElevenLabs et Anthropic</strong> — fournies volontairement par l'utilisateur. Stockées dans le trousseau iOS (Keychain).</li>
   <li><strong>Échantillons vocaux</strong> — fichiers audio de votre voix que vous importez pour le clonage vocal. Envoyés à ElevenLabs uniquement à votre initiative, après consentement, puis supprimés de l'appareil une fois la voix créée.</li>
   <li><strong>Données audio (microphone)</strong> — traitées en temps réel sur l'appareil pour la transcription et la reconnaissance des interlocuteurs. L'audio n'est jamais enregistré ni transmis.</li>
@@ -129,7 +130,8 @@ strong { color: var(--text); font-weight: 600; }
 <h2>5. Conservation des données</h2>
 <ul>
   <li><strong>Transcriptions</strong> — 20 derniers échanges ; les plus anciens sont supprimés automatiquement.</li>
-  <li><strong>Profil, mémoire, interlocuteurs et empreintes vocales</strong> — sur l'appareil jusqu'à leur suppression par l'utilisateur.</li>
+  <li><strong>Profil, mémoire, interlocuteurs, empreintes vocales et textes</strong> — sur l'appareil jusqu'à leur suppression par l'utilisateur.</li>
+  <li><strong>Sauvegardes</strong> — Réglages ▸ « Exporter mes données » crée un fichier non chiffré (historique, profil, mémoire, interlocuteurs, phrases, textes ; sans clés API) que vous enregistrez où vous le choisissez, par exemple dans iCloud Drive. Talkie ne l'envoie nulle part.</li>
   <li><strong>Clés API</strong> — dans le trousseau iOS jusqu'à suppression.</li>
   <li><strong>Échantillons vocaux</strong> — supprimés de l'appareil après création de la voix clonée. La voix créée reste sur votre compte ElevenLabs, où vous pouvez la supprimer.</li>
   <li><strong>Audio du microphone</strong> — non enregistré.</li>
@@ -147,7 +149,7 @@ strong { color: var(--text); font-weight: 600; }
 <p>Le microphone sert à la transcription et à la reconnaissance des interlocuteurs, sur l'appareil. Pendant un appel téléphonique, Talkie n'écoute pas l'appel (iOS ne le permet pas) ; il peut seulement y ajouter les phrases que vous choisissez de prononcer.</p>
 
 <h2>8. Suppression des données</h2>
-<p>Réglages ▸ « Réinitialiser l'application » supprime immédiatement et définitivement l'historique, le profil, la mémoire, les interlocuteurs, les empreintes vocales et les deux clés API. Réglages ▸ « Effacer tous les interlocuteurs » supprime uniquement les interlocuteurs et leurs empreintes vocales.</p>
+<p>Réglages ▸ « Réinitialiser l'application » supprime immédiatement et définitivement l'historique, le profil, la mémoire, les interlocuteurs, les empreintes vocales, les textes et les deux clés API. Réglages ▸ « Effacer tous les interlocuteurs » supprime uniquement les interlocuteurs et leurs empreintes vocales.</p>
 
 <h2>9. Enfants</h2>
 <p>Talkie n'est pas destinée aux enfants de moins de 13 ans.</p>

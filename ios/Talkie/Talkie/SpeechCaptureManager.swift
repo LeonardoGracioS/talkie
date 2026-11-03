@@ -217,8 +217,10 @@ final class SpeechCaptureManager {
         lastVolatileText = ""; lastVolatileAt = .distantPast
         // TTS switched the session to playback; the mic needs playAndRecord back.
         WebAppView.reassertPlayAndRecordSession()
+        // Still loading the model: installTap will start the engine itself.
+        guard let engine else { return }
         do {
-            guard let engine, engine.inputNode.outputFormat(forBus: 0) == tapInputFormat else {
+            guard engine.inputNode.outputFormat(forBus: 0) == tapInputFormat else {
                 throw CocoaError(.featureUnsupported)   // route changed while paused → rebuild the tap
             }
             try engine.start()
@@ -521,6 +523,8 @@ final class SpeechCaptureManager {
         engine.prepare()
         do {
             try engine.start()
+            // TTS started while the model was loading: keep the mic closed until resume().
+            if suspended { engine.pause() }
             self.engine = engine
             self.tapInputFormat = inputFormat
             return true

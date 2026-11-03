@@ -279,7 +279,7 @@ struct SettingsView: View {
                     } label: {
                         Label(vm.lang == "fr" ? "Restaurer une sauvegarde" : "Restore a backup", systemImage: "square.and.arrow.down")
                     }
-                    Text(vm.lang == "fr" ? "Profil, mémoire, locuteurs et phrases (hors clés API)." : "Profile, memory, speakers and phrases (API keys excluded).")
+                    Text(vm.lang == "fr" ? "Profil, mémoire, interlocuteurs, phrases et textes (hors clés API)." : "Profile, memory, speakers, phrases and texts (API keys excluded).")
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
