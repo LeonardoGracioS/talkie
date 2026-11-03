@@ -5617,6 +5617,7 @@ let _nativeTTSNearEndTimer = null;
 let _ttsResumeMicAfter = true;
 /** File d'attente pour les morceaux de texte long (TTS séquentiel). */
 let _ttsChunkQueue = null;
+let _ttsPrefetch = null;
 let _ttsFinalCallback = null;
 /** File d'attente des phrases à prononcer (évite chevauchements / volume / bandeau). */
 const _ttsPlayQueue = [];
@@ -5632,8 +5633,8 @@ function estimateTtsDurationMs(text, opts = {}) {
   let ms = t.length * msPerChar + 6000;
   if (opts.includeFetch) ms += 25000;
   if (opts.audioBytes && opts.audioBytes > 0) {
-    // MP3 64 kbps ≈ 8 Ko/s ; ajouter marge pour time-pitch et latence buffer.
-    const audioMs = (opts.audioBytes / 8000) * 1000 / Math.max(0.5, rate);
+    // MP3 128 kbps ≈ 16 Ko/s ; ajouter marge pour time-pitch et latence buffer.
+    const audioMs = (opts.audioBytes / 16000) * 1000 / Math.max(0.5, rate);
     ms = Math.max(ms, audioMs + 5000);
   }
   return Math.min(600000, Math.max(8000, ms));
@@ -5661,7 +5662,8 @@ function _scheduleTtsSafetyTimeout(text, opts = {}) {
 
 function _ttsMaxChunkLen() {
   // Morceaux courts pour ElevenLabs : l'audio MP3 transite en base64 via WKWebView (~450 Ko max).
-  if (state.useElevenLabs && state.voiceId && state.elApiKey) return 400;
+  // 200 car. ≈ 15 s ≈ 240 Ko à 128 kbps ; au-delà, repli WebKit (sans gain ni haut-parleur forcé).
+  if (state.useElevenLabs && state.voiceId && state.elApiKey) return 200;
   return 900;
 }
 
@@ -5985,6 +5987,7 @@ function stopAudio(clearTtsCallback = true) {
     _ttsPlayGen++;
     _ttsCallback = null;
     _ttsChunkQueue = null;
+    _ttsPrefetch = null;
     _ttsFinalCallback = null;
     _clearTtsSafetyTimer();
     hideTTSOverlay();
@@ -6007,9 +6010,26 @@ async function _cachedTTSAudio(text) {
   return blob;
 }
 
+// Next chunk's audio is requested while the current one plays, so splitting long
+// texts into short chunks doesn't add an ElevenLabs round-trip of silence between them.
+function _ttsAudioFor(text) {
+  if (_ttsPrefetch && _ttsPrefetch.text === text) {
+    const p = _ttsPrefetch.promise;
+    _ttsPrefetch = null;
+    return p;
+  }
+  return _cachedTTSAudio(text);
+}
+
 async function playTTS(text) {
   try {
-    const blob = await _cachedTTSAudio(text);
+    const blob = await _ttsAudioFor(text);
+    const next = _ttsChunkQueue && _ttsChunkQueue[0];
+    if (next) {
+      const promise = _cachedTTSAudio(next);
+      promise.catch(() => {});
+      _ttsPrefetch = { text: next, promise };
+    }
     // Recalibrer le timer sur la durée audio réelle (évite coupure en fin de phrase).
     _scheduleTtsSafetyTimeout(text, { audioBytes: blob.size, includeFetch: false });
     stopPlaybackOnly();
@@ -6030,7 +6050,7 @@ async function fetchTTSAudio(text) {
   if (!(await ensureElConsent())) {
     throw new Error('ElevenLabs consent required');
   }
-  const outputFormat = 'mp3_44100_64';
+  const outputFormat = 'mp3_44100_128';
   const resp = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${state.voiceId}?output_format=${outputFormat}`,
     {

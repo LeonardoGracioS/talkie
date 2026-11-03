@@ -49,9 +49,11 @@ test('refusals are detected', () => {
 test('splitTextForTTS keeps short text whole and splits long text on sentences', () => {
   assert.deepEqual(p.splitTextForTTS('Bonjour.'), ['Bonjour.']);
   const long = 'Phrase numéro un assez longue pour remplir. '.repeat(40);
-  const chunks = p.splitTextForTTS(long, 400);
-  assert.ok(chunks.length > 1 && chunks.every(c => c.length <= 400));
+  const chunks = p.splitTextForTTS(long, 200);
+  assert.ok(chunks.length > 1 && chunks.every(c => c.length <= 200));
   assert.equal(chunks.join(' ').replace(/\s+/g, ' ').trim(), long.replace(/\s+/g, ' ').trim());
+  const runOn = 'et puis on est allés voir la mer '.repeat(20);
+  assert.ok(p.splitTextForTTS(runOn, 200).every(c => c.length <= 200));
 });
 
 test('inferQuestionMarkFor adds "?" to questions only', () => {
