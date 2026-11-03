@@ -4438,15 +4438,16 @@ async function callLLMText(sys, prompt) {
         },
         signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
-          max_tokens: 400,
+          model: 'claude-haiku-5-5',
+          max_tokens: 1024,
+          output_config: { effort: 'low' },
           system: sys,
           messages: [{ role: 'user', content: prompt }],
         }),
       });
       if (resp.ok) {
         const data = await resp.json();
-        const out = (data.content && data.content[0] && data.content[0].text) || '';
+        const out = ((data.content || []).find(b => b.type === 'text') || {}).text || '';
         if (out.trim()) return out;
       }
     } catch(_) { /* fall through to on-device */ }
@@ -6428,8 +6429,9 @@ async function callClaude(interlocutorText, opts = {}) {
     // Fall back to on-device quickly instead of showing skeleton cards for a minute (T14).
     signal: AbortSignal.timeout(4000),
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
-      max_tokens: 256,
+      model: 'claude-haiku-5-5',
+      max_tokens: 1024,
+      output_config: { effort: 'low' },
       system: sys,
       messages: [{ role: 'user', content: userMsg }],
     }),
@@ -6439,7 +6441,7 @@ async function callClaude(interlocutorText, opts = {}) {
     throw new Error('Claude ' + resp.status + ' ' + e.slice(0, 140));
   }
   const data = await resp.json();
-  return (data.content && data.content[0] && data.content[0].text) || '';
+  return ((data.content || []).find(b => b.type === 'text') || {}).text || '';
 }
 
 /** Start loading the on-device model as soon as the other person starts talking. */
